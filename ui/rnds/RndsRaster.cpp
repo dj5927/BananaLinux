@@ -671,7 +671,7 @@ namespace rnds
 	// without a space), but not before closing punctuation nor after an opening one
 	static bool cjk(char32_t c)
 	{
-		return (c >= 0x2e80 && c <= 0x9fff) || (c >= 0xf900 && c <= 0xfaff) || (c >= 0xff00 && c <= 0xffef) || (c >= 0x20000 && c <= 0x2fa1f);
+		return (c >= 0x2e80 && c <= 0x9fff) || (c >= 0xac00 && c <= 0xd7a3) || (c >= 0x1100 && c <= 0x11ff) || (c >= 0xf900 && c <= 0xfaff) || (c >= 0xff00 && c <= 0xffef) || (c >= 0x20000 && c <= 0x2fa1f);
 	}
 	static bool closing(char32_t c) { return std::u32string_view(U"，。、；：！？）」』》〉】〕…—,.;:!?)]%").find(c) != std::u32string_view::npos; }
 	static bool opening(char32_t c) { return std::u32string_view(U"（「『《〈【〔([").find(c) != std::u32string_view::npos; }

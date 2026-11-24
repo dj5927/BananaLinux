@@ -23,6 +23,7 @@
 #include "gba/panel.h"
 #include "achievements.h"
 #include "lang.h"
+#include "hangul.h"
 #include <map>
 #include <memory>
 #include <mutex>
@@ -352,6 +353,10 @@ namespace banana
 		std::string account(const char* key);
 		std::string shareUser();
 		static void popChar(std::string& t);
+		bool koreanEntry() const;
+		void keyboardSymbols();
+		bool koreanKeys = false;
+		HangulComposer koreanComposer;
 		std::string smbNewUser;	// the sharing name typed, kept with the password (both at once, or neither)
 		std::string dsName();
 		void setDsName(const std::string& name);

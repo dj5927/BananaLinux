@@ -43,6 +43,12 @@ jobs:
           pkg-config --modversion libsmb2
       - name: banana-ui and its helpers (headless test, both panel sizes; Files' servers; archives, the session, the runner)
         run: make test
+      - name: Korean language pack, Hangul IME and OTA isolation
+        run: |
+          python3 tools/check-ko.py
+          g++ -std=c++17 -O2 -Iui/src ui/tests/hangul-test.cpp -o /tmp/hangul-test
+          /tmp/hangul-test
+          sh system/tests/ko-ota-test.sh
       - name: banana-ui with ALSA
         run: make -C ui clean && make -C ui
       - name: bananad (native and aarch64)
@@ -67,7 +73,7 @@ jobs:
           done
 
   image:
-    if: github.event_name == 'workflow_dispatch' && inputs.image
+    if: (github.event_name == 'workflow_dispatch' && inputs.image) || (github.repository == 'dj5927/BananaLinux' && (github.ref == 'refs/heads/localization/ko' || startsWith(github.ref, 'refs/tags/v')))
     needs: checks
     runs-on: ubuntu-24.04
     timeout-minutes: 360
@@ -117,15 +123,17 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: banana-${{ matrix.board }}
+          if-no-files-found: error
           path: |
             output/${{ matrix.board }}/images/banana-${{ matrix.board }}.img.gz
             output/${{ matrix.board }}/images/banana-${{ matrix.board }}-*.update.tar
+            output/${{ matrix.board }}/images/SHA256SUMS-${{ matrix.board }}.txt
 
   # the whole image booted in QEMU: the first boot makes the data partition, the menu comes up on both panels, a
   # game is started from the library and the menu comes back, a shutdown from the settings powers the VM off; the
   # screenshots and the card's logs are kept as an artifact
   boot:
-    if: github.event_name == 'workflow_dispatch' && inputs.image
+    if: (github.event_name == 'workflow_dispatch' && inputs.image) || (github.repository == 'dj5927/BananaLinux' && (github.ref == 'refs/heads/localization/ko' || startsWith(github.ref, 'refs/tags/v')))
     needs: image
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -152,3 +160,36 @@ jobs:
           path: |
             qemu-out/*.png
             qemu-out/*.log
+
+  publish:
+    if: github.repository == 'dj5927/BananaLinux' && (github.ref == 'refs/heads/localization/ko' || startsWith(github.ref, 'refs/tags/v'))
+    needs: [image, boot]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: banana-*
+          path: release
+          merge-multiple: true
+      - name: Validate and publish Korean firmware
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          version="$(cat VERSION)"
+          tag="v$version"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then test "$GITHUB_REF_NAME" = "$tag"; fi
+          for board in rgds rgds-plus; do
+            test -s "release/banana-$board.img.gz"
+            test -s "release/banana-$board-$version.update.tar"
+            (cd release && sha256sum -c "SHA256SUMS-$board.txt")
+          done
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; refusing to overwrite published assets."
+            exit 1
+          fi
+          gh release create "$tag" --target "$GITHUB_SHA" --prerelease \
+            --title "BananaOS Korean $version" --notes-file docs/KOREAN-RELEASE.md release/*

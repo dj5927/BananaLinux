@@ -2134,6 +2134,12 @@ int main(int argc, char** argv)
 	// the menu's language (Settings > System > Language): every text laid out goes through its translations; the lines
 	// with none stay English and are listed in /run/banana/lang-missing.txt (for the translator's next round)
 	const std::string langDir = o.assets + "/../lang";
+	// Fresh Korean-edition devices default to Korean; preserve an explicitly chosen language.
+	if (o.headless.empty() && settings["language"].empty())
+	{
+		settings["language"] = "ko";
+		setConfValue(o.data + "/settings.conf", "language", "ko");
+	}
 	if (lang::load(langDir, settings["language"], { "menu", "settings", "systems" }) && lang::active())
 	{
 		lang::missingLog(envOr("BANANA_LANG_MISSING", "/run/banana/lang-missing.txt"));

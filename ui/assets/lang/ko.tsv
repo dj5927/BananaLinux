@@ -1,0 +1,2546 @@
+# Korean localization for BananaOS. UI strings reviewed and format fields preserved.
+#: language = 한국어
+#: language-en = Korean
+#: translated-by = Korean localization contributors
+menu		Ready	준비 완료
+menu		Fav	즐겨찾기
+menu		Start	시작
+menu		Resume	계속하기
+menu		Back	뒤로
+menu		No games	게임 없음
+menu		Starting	시작 중
+menu		Plays	실행 횟수
+menu		Last played	최근 실행
+menu		Time	시간
+menu		Game	게임
+menu		Games	게임
+menu		Played	실행함
+menu		App	앱
+menu		{n} game	게임 {n}개
+menu		{n} games	게임 {n}개
+menu		Last played: {game}	최근 실행: {game}
+menu		Play	실행
+menu		No games yet	아직 게임이 없습니다
+menu		{unlocked} / {total} achievements	도전과제 {unlocked} / {total}
+menu		Library	라이브러리
+menu		Open	열기
+menu		Favourite	즐겨찾기
+menu		Unfavourite	즐겨찾기 해제
+menu		Systems	게임기
+menu		Never	없음
+menu		Sunday	일요일
+menu		Monday	월요일
+menu		Tuesday	화요일
+menu		Wednesday	수요일
+menu		Thursday	목요일
+menu		Friday	금요일
+menu		Saturday	토요일
+menu		Jan	1월
+menu		Feb	2월
+menu		Mar	3월
+menu		Apr	4월
+menu		May	5월
+menu		Jun	6월
+menu		Jul	7월
+menu		Aug	8월
+menu		Sep	9월
+menu		Oct	10월
+menu		Nov	11월
+menu		Dec	12월
+menu		Today	오늘
+menu		Yesterday	어제
+menu		Last week	지난주
+menu		Favorites	즐겨찾기
+menu		Collection	컬렉션
+menu		Not played yet	아직 실행하지 않음
+menu		Can't read the card's games	카드의 게임을 읽을 수 없습니다
+menu		Nothing here yet	아직 항목이 없습니다
+menu		The BANANA partition needs exFAT	BANANA 파티션은 exFAT 형식이어야 합니다
+menu		Y on a game adds it here	게임에서 Y 버튼을 누르면 여기에 추가됩니다
+menu		Copy {.ext} files to roms/{folder}	{.ext} 파일을 roms/{folder} 폴더에 복사하세요
+menu		Battery nearly empty: {percent}%	배터리 부족: {percent}%
+menu		Save your game now. At {percent} Banana closes it and shuts down.	지금 게임을 저장하세요. {percent}에서 게임이 종료되고 기기가 꺼집니다.
+menu		Battery low: {percent}%	배터리 부족: {percent}%
+menu		Plug in the charger soon. At {percent} Banana closes the game and shuts down.	충전기를 연결하세요. {percent}에서 게임이 종료되고 기기가 꺼집니다.
+menu		Time to find the charger.	충전기를 연결하세요.
+menu		banana-perf {value}	banana-perf {value}
+menu		Brightness	밝기
+menu		Volume	음량
+settings		1 package	패키지 1개
+settings		{n} packages	패키지 {n}개
+settings		UTC	UTC
+settings		London, Dublin, Lisbon	런던, 더블린, 리스본
+settings		Lagos, Algiers	라고스, 알제
+settings		Amsterdam, Berlin, Paris, Rome	암스테르담, 베를린, 파리, 로마
+settings		Johannesburg	요하네스버그
+settings		Athens, Helsinki, Kyiv	아테네, 헬싱키, 키이우
+settings		Cairo	카이로
+settings		Istanbul, Riyadh, Nairobi	이스탄불, 리야드, 나이로비
+settings		Moscow	모스크바
+settings		Dubai	두바이
+settings		Karachi	카라치
+settings		India	인도
+settings		Bangkok, Jakarta	방콕, 자카르타
+settings		Beijing, Singapore, Perth	베이징, 싱가포르, 퍼스
+settings		Tokyo, Seoul	도쿄, 서울
+settings		Adelaide	애들레이드
+settings		Brisbane	브리즈번
+settings		Sydney, Melbourne	시드니, 멜버른
+settings		Auckland	오클랜드
+settings		Honolulu	호놀룰루
+settings		Anchorage	앵커리지
+settings		Los Angeles, Vancouver	로스앤젤레스, 밴쿠버
+settings		Phoenix	피닉스
+settings		Denver, Calgary	덴버, 캘거리
+settings		Mexico City	멕시코시티
+settings		Chicago, Winnipeg	시카고, 위니펙
+settings		New York, Toronto	뉴욕, 토론토
+settings		Halifax	핼리팩스
+settings		Santiago	산티아고
+settings		Sao Paulo, Buenos Aires	상파울루, 부에노스아이레스
+settings		Display & sound	화면 및 소리
+settings		Theme	테마
+settings		ROCKNIXDS Pixel's two palettes, dark or light for daylight; or Carts (experimental): your games as cartridges on a shelf, in a clean typeface.	ROCKNIXDS Pixel의 어두운 테마와 밝은 테마를 선택할 수 있습니다. Carts(실험적)는 선반 위에 게임 카트리지를 깔끔한 글꼴과 함께 표시합니다.
+settings	Pokémon types	Dark	어둡게
+settings		Light	밝게
+settings		Carts	카트리지
+settings		Accent colour	강조 색상
+settings		The colour of the selection, the logo and the boot animation's banana.	선택 영역, 로고 및 부팅 애니메이션의 바나나 색상입니다.
+settings		Yellow	노란색
+settings		Blue	파란색
+settings		Red	빨간색
+settings		Green	초록색
+settings		Purple	보라색
+settings		Pink	분홍색
+settings		Brightness	밝기
+settings		Both panels' backlights. F + volume changes it anywhere, in games too.	두 화면의 백라이트입니다. 게임 중에도 F + 음량 버튼으로 조절할 수 있습니다.
+settings		Motion	움직임
+settings		The top screen's bob and shine. Off holds it still and saves a little battery.	위 화면의 움직임과 반짝임입니다. 끄면 화면이 고정되고 배터리를 조금 절약합니다.
+settings		On	켜기
+settings		Off	끄기
+settings		Volume	음량
+settings		The speakers or the headphones, whichever is playing. The volume keys change it anywhere.	현재 사용하는 스피커 또는 헤드폰의 음량입니다. 어디서나 음량 버튼으로 변경할 수 있습니다.
+settings		Menu sounds	메뉴 효과음
+settings		The menu's clicks, and the cartridge going into the console.	메뉴 조작 효과음과 카트리지 삽입 효과음입니다.
+settings		Battery	배터리
+settings		The battery on the top screen: its icon, or its icon and how full it is.	위 화면의 배터리를 아이콘만 표시할지, 잔량도 표시할지 설정합니다.
+settings		Icon	아이콘
+settings		Icon and %	아이콘 및 %
+settings		Clock	시계
+settings		How the time on the top screen is written.	위 화면의 시각 표시 형식입니다.
+settings		Boot animation	부팅 애니메이션
+settings		The bananas and the cartridge while Banana starts. Off goes straight to the menu once it is ready.	Banana가 시작될 때 바나나와 카트리지 애니메이션을 표시합니다. 끄면 준비되는 즉시 메뉴를 엽니다.
+settings		Sleep & power	절전 및 전원
+settings		Sleep when idle	유휴 시 절전
+settings		In the menu, after this long with no button pressed. Never while a game is running.	메뉴에서 이 시간 동안 버튼 입력이 없으면 절전합니다. 게임 중에는 작동하지 않습니다.
+settings		Never	없음
+settings		5 minutes	5분
+settings		10 minutes	10분
+settings		15 minutes	15분
+settings		30 minutes	30분
+settings		1 hour	1시간
+settings		2 hours	2시간
+settings		Dim when idle	유휴 시 밝기 낮춤
+settings		In the menu, the panels go down to a third after this long with no button pressed, and back at the first press. Never while a game is running.	메뉴에서 이 시간 동안 버튼 입력이 없으면 밝기를 1/3로 낮춥니다. 버튼을 누르면 복원되며 게임 중에는 작동하지 않습니다.
+settings		1 minute	1분
+settings		2 minutes	2분
+settings		Closing the lid	덮개 닫을 때
+settings		Sleep with the lid: the game pauses, opening the lid carries on where you were.	덮개를 닫으면 절전하고 게임을 일시 정지합니다. 덮개를 열면 이어서 플레이합니다.
+settings		Sleeps	절전
+settings		Does nothing	동작 없음
+settings		Waking up	절전 해제
+settings		Fast: the handheld's parts wake up together. Careful: one after the other, slower but the safest. Banana switches to Careful by itself if a sleep ever fails.	고속: 기기의 장치들이 동시에 절전 해제됩니다. 안전: 순서대로 절전 해제하여 느리지만 안정적입니다. 절전에 실패하면 자동으로 안전 모드로 바뀝니다.
+settings		Fast	빠르게
+settings		Careful	주의
+settings		LEDs	LED
+settings		Green, red when the battery is low, blinking red when nearly empty, amber while charging.	정상은 초록색, 배터리 부족은 빨간색, 매우 부족하면 빨간색 점멸, 충전 중에는 주황색입니다.
+settings		Bright	밝게
+settings		Dim	어둡게
+settings		Nintendo DS	Nintendo DS
+settings		Emulator	에뮬레이터
+settings		SuperDrastic: DraStic straight onto both panels, with its own governor. BananaDS: Banana's own emulator (melonDS's core). Both draw 3D with the Gengis Engine at 2x and have their menu on L3; each keeps its own settings below.	SuperDrastic은 DraStic을 두 화면에 직접 출력하며 자체 클럭 제어를 사용합니다. BananaDS는 melonDS 코어 기반의 자체 에뮬레이터입니다. 둘 다 Gengis Engine으로 3D를 2배 해상도로 그리며 L3로 메뉴를 엽니다. 설정은 각각 유지됩니다.
+settings		SuperDrastic	SuperDrastic
+settings		BananaDS	BananaDS
+settings		Quick resume	빠른 이어하기
+settings		On: quitting keeps where you are, and the game goes on from there next time (a shutdown too). Off: quitting ends the game, which starts from its title next time.	켜기: 종료 시 진행 상태를 저장하고 전원을 꺼도 다음 실행 시 이어서 플레이합니다. 끄기: 종료 후 다음 실행 시 타이틀 화면에서 시작합니다.
+settings		None	없음
+settings		Crisp	선명하게
+settings		Crisp + DS colours	선명하게 + DS 색상
+settings		LCD grid	LCD 격자
+settings		LCD grid + colours	LCD 격자 + 색상
+settings		FSR	FSR
+settings		LCD (DS colours)	LCD (DS 색상)
+settings		LCD 1x	LCD 1배
+settings		LCD 3x	LCD 3배
+settings		Fast LCD	고속 LCD
+settings		DS colours	DS 색상
+settings		Retro	레트로
+settings		Bevel	입체 테두리
+settings		Sharp bilinear	선명한 이중선형
+settings		Sharp + scanlines	선명하게 + 스캔라인
+settings		Fast CRT	고속 CRT
+settings		Integer	정수 배율
+settings		Integer fill	정수 배율 채우기
+settings		LCD grid 2x	LCD 격자 2배
+settings		Dot (MiZai)	도트 (MiZai)
+settings		Dot (MiZai, RG DS+)	도트 (MiZai, RG DS+)
+settings		Retro tiles	레트로 타일
+settings		DraStic LCD	DraStic LCD
+settings		DraStic LCD + colours	DraStic LCD + 색상
+settings		DraStic Quilez	DraStic Quilez
+settings		DraStic sharp	DraStic 선명하게
+settings		DraStic sharp + colours	DraStic 선명하게 + 색상
+settings		DraStic fast LCD	DraStic 고속 LCD
+settings		DraStic fast LCD + colours	DraStic 고속 LCD + 색상
+settings		Crisp: exact pixel-area scaling. Grid and LCD: the DS's screen grid. Colours: the DS's own, duller colours. CRT: a TV's scanlines. FSR: smooth edges, the heaviest. None costs no GPU work.	선명하게: 픽셀 영역을 정확히 확대합니다. 격자 및 LCD: DS 화면 격자. 색상: DS 원래의 차분한 색상. CRT: TV 스캔라인. FSR: 부드러운 가장자리(부하 높음). 없음: GPU 추가 부하 없음.
+settings		Shader	셰이더
+settings		3D resolution	3D 해상도
+settings		2x draws the DS's 3D at twice its size on these panels. 1x is the DS's own, the lightest.	2배는 DS 3D 화면을 두 배 해상도로 그립니다. 1배는 DS 원래 해상도로 부하가 가장 적습니다.
+settings		Edge marking	윤곽선 표시
+settings		The outlines some games draw round their 3D models (Zelda, Kirby, many Pokémon battles). Off leaves them out.	일부 게임의 3D 모델 윤곽선(젤다, 커비, 포켓몬 배틀 등)을 표시합니다. 끄면 윤곽선을 생략합니다.
+settings		Fog	안개 효과
+settings		The distance fog some games draw in 3D. Off leaves it out.	일부 3D 게임의 거리 안개 효과입니다. 끄면 생략합니다.
+settings		Frame pacing	프레임 간격
+settings		Panels runs the DS at the panels' 60 Hz, a new frame every refresh (0.3% fast, the sound matched). DS rate keeps the DS's own 59.83 Hz, a frame shown twice every ~6 s.	화면 주사율은 DS를 60Hz로 실행해 매 주사마다 새 프레임을 표시합니다(0.3% 빠름, 소리 동기화). DS 주사율은 원래 59.83Hz를 유지하며 약 6초마다 한 프레임을 두 번 표시합니다.
+settings		Panels	화면
+settings		DS rate	DS 주사율
+settings		Low latency (experimental)	저지연 (실험적)
+settings		Experimental. On: no frame queue, each frame ready just before the panels' next refresh: a press shows about two refreshes sooner. Run-ahead also runs 1 or 2 frames ahead and back every frame, so the game answers sooner than its own lag; it needs twice the CPU or more (light 2D games at 1x) and turns itself off where it doesn't fit.	실험적 기능입니다. 켜면 프레임 대기열 없이 다음 화면 갱신 직전에 프레임을 준비해 입력 지연을 약 두 프레임 줄입니다. 선행 실행은 매 프레임 1~2프레임을 미리 실행하고 되돌려 게임 자체의 지연도 줄입니다. CPU 부하가 두 배 이상 증가하며(1배 해상도의 가벼운 2D 게임에 적합), 처리할 수 없으면 자동으로 꺼집니다.
+settings		Run-ahead 1 frame	선행 실행 1프레임
+settings		Run-ahead 2 frames	선행 실행 2프레임
+settings		Experimental. On: no frame queue: each frame goes to the panels at the next refresh it can make, and DraStic starts each frame as late as that allows, so a press shows about two refreshes sooner (the sound a little sooner too). Uneven frames (2x, heavy scenes) can show as small stutters the queue would hide.	실험적 기능입니다. 켜면 프레임 대기열 없이 가능한 다음 갱신에 출력하고 DraStic이 가능한 한 늦게 프레임을 시작해 입력 지연을 약 두 프레임 줄입니다(소리도 조금 빠름). 2배 해상도나 복잡한 장면에서 프레임 간격이 불균일하면 끊김이 보일 수 있습니다.
+settings		CPU clock	CPU 클럭
+settings		Saves battery finds the lowest clock each game runs at full speed and remembers it. Always full keeps the top clock.	배터리 절약은 게임이 정상 속도로 실행되는 최저 클럭을 찾아 기억합니다. 항상 최대는 최고 클럭을 유지합니다.
+settings		Saves battery	배터리 절약
+settings		Always full	항상 최대
+settings		Timing	타이밍
+settings		Fast lets the two CPUs run longer between meeting (about 10% faster). Accurate is melonDS's own, for a game that misbehaves.	고속은 두 CPU의 동기화 간격을 늘려 약 10% 빠르게 실행합니다. 정확하게는 melonDS 기본 방식으로, 문제가 있는 게임에 사용하세요.
+settings		Accurate	정확하게
+settings		Microphone	마이크
+settings		How loud a blow or a word must be to reach the game.	게임이 바람이나 목소리를 감지하는 데 필요한 입력 음량입니다.
+settings		Medium	중간
+settings		High	높음
+settings		Low	낮음
+settings		2x draws the DS's 3D at twice its size on these panels, at full speed with SuperDrastic.	SuperDrastic에서 DS 3D 화면을 두 배 해상도로 정상 속도로 그립니다.
+settings		Other systems	기타 게임기
+settings		Screen	화면
+settings		Which panel the systems other than the DS use (RetroArch). The other one shows the game panel (Second screen), or is switched off.	DS 이외의 게임기(RetroArch)가 사용할 화면입니다. 다른 화면에는 게임 패널을 표시하거나 끕니다.
+settings		Top	위
+settings		Bottom	아래
+settings		Second screen	보조 화면
+settings		While a game plays on one screen, the other shows its RetroAchievements and tiles to save, load, open RetroArch's menu, fast forward and quit (by touch when they are on the bottom screen). Off: the other screen stays dark.	한 화면에서 게임을 실행할 때 다른 화면에 RetroAchievements 및 저장, 불러오기, RetroArch 메뉴, 빨리 감기, 종료 타일을 표시합니다(아래 화면에서는 터치 가능). 끄면 다른 화면은 꺼집니다.
+settings		Game panel	게임 패널
+settings		Game panel when idle	유휴 시 게임 패널
+settings		With a game on the top screen, what the game panel on the bottom one does when nothing has touched it or pressed a button for a while: stays on, dims, or turns off. A touch or any button lights it again.	위 화면에서 게임을 실행할 때 아래 게임 패널에 일정 시간 터치나 버튼 입력이 없으면 계속 켜기, 밝기 낮추기 또는 끄기 중 선택합니다. 터치 또는 버튼을 누르면 다시 밝아집니다.
+settings		Dims	어둡게
+settings		Turns off	끄기
+settings		Stays on	계속 켜기
+settings		Game panel idle time	게임 패널 유휴 시간
+settings		How long the game panel waits, with no touch and no button, before it dims or turns off (Game panel when idle).	터치나 버튼 입력 없이 게임 패널의 밝기를 낮추거나 끄기까지 대기할 시간입니다.
+settings		After 10 s	10초 후
+settings		After 30 s	30초 후
+settings		After 1 minute	1분 후
+settings		Pokémon companion	포켓몬 도우미
+settings		Pokémon Ruby, Sapphire, Emerald, FireRed and LeafGreen (the English releases) on the second screen: the party with levels, HP and moves, and in a battle the foe, its types and how each move does against it. Read from the game as it plays; other games keep the panel as it is. Needs Second screen on. Inspired by PokeDaisy by Lidor Itzhari.	포켓몬스터 루비, 사파이어, 에메랄드, 파이어레드, 리프그린 영문판의 파티, 레벨, HP, 기술 및 배틀 상대의 타입과 기술 상성을 보조 화면에 표시합니다. 게임 실행 중 데이터를 읽으며 다른 게임은 기존 패널을 유지합니다. 보조 화면을 켜야 합니다. Lidor Itzhari의 PokeDaisy를 참고했습니다.
+settings		Game companion	게임 도우미
+settings		Other Game Boy Advance games on the second screen: seven pages about the game as it plays (status, a closer look, the fight, the map, the bag, collectibles, progress), read from the game where it can be and notes where not. Pokémon games keep the Pokémon companion. Needs Second screen on. Inspired by PokeDaisy by Lidor Itzhari.	다른 GBA 게임의 상태, 상세, 전투, 지도, 가방, 수집품, 진행도 7개 페이지를 보조 화면에 표시합니다. 가능한 정보는 실행 중인 게임에서 읽고 나머지는 참고 자료를 표시합니다. 포켓몬 게임은 포켓몬 도우미를 사용합니다. 보조 화면을 켜야 합니다. Lidor Itzhari의 PokeDaisy를 참고했습니다.
+settings		Network	네트워크
+settings		Wi-Fi	Wi-Fi
+settings		The networks around: A on one joins it, with a password typed on the keyboard here (or by touch).	주변 네트워크를 표시합니다. A로 선택한 후 버튼 또는 터치 키보드에서 비밀번호를 입력해 연결합니다.
+settings		File sharing	파일 공유
+settings		System	시스템
+settings		Time zone	시간대
+settings		The clock's time zone, summer time included, for the menu and the games (a DS game's clock too). The time itself comes from Wi-Fi or the handheld's own clock.	메뉴와 게임(DS 게임 포함)에 적용할 시간대와 일광절약시간을 설정합니다. 실제 시각은 Wi-Fi 또는 기기의 시계에서 가져옵니다.
+settings		Update	업데이트
+settings		A new version of Banana, downloaded from GitHub over Wi-Fi or from a package on the card, written to the other slot and run from the next restart; this one stays as it is until then.	Wi-Fi로 GitHub에서 다운로드하거나 카드에 복사한 새 Banana 업데이트를 다른 슬롯에 기록합니다. 재시작 시 적용되며 그전까지 현재 시스템은 유지됩니다.
+settings		Box art	게임 표지
+settings		Covers, title screens, genres and years for your games, from libretro's free collections (no account, Wi-Fi needed). It keeps going in the background; games that already have art are skipped, so running it again only fetches what is new.	libretro의 무료 컬렉션에서 게임 표지, 타이틀 화면, 장르, 발매 연도를 가져옵니다(계정 불필요, Wi-Fi 필요). 백그라운드에서 진행되며 이미 이미지가 있는 게임은 건너뜁니다.
+settings		Previous version	이전 버전
+settings		Restarts into the other slot: the version that ran before the last update. Press A twice.	다른 슬롯, 즉 마지막 업데이트 이전 버전으로 재시작합니다. A를 두 번 누르세요.
+settings		SSH	SSH
+settings		First-time setup	초기 설정
+settings		The steps from the first boot again: Wi-Fi, the time zone and the RetroAchievements account (ScreenScraper: not available yet).	최초 부팅 때의 Wi-Fi, 시간대, RetroAchievements 계정 설정을 다시 진행합니다(ScreenScraper는 아직 지원하지 않음).
+settings		About	정보
+settings		Restart	재시작
+settings		Restarts the handheld. Press A twice.	기기를 재시작합니다. A를 두 번 누르세요.
+settings		Shut down	전원 끄기
+settings		Turns the handheld off. Press A twice. (Or hold the power button.)	기기의 전원을 끕니다. A를 두 번 누르세요. 전원 버튼을 길게 눌러도 됩니다.
+settings		%.1f GB free of %.1f GB	%.1f GB 여유 / 전체 %.1f GB
+settings		Connected	연결됨
+settings		Not connected	연결되지 않음
+settings		Connected: {address}	연결됨: {address}
+settings		Banana {version} (slot {slot}) on the {handheld}.	{handheld}의 Banana {version} (슬롯 {slot}).
+settings		handheld	게임기
+settings		dev	개발
+settings		Battery {percent}%.	배터리 {percent}%.
+settings		Card: {free space}.	카드: {free space}.
+settings		The other slot holds no system.	다른 슬롯에 시스템이 없습니다.
+settings		Settings	설정
+settings		%d settings	설정 %d개
+settings		Choose a group	그룹 선택
+settings		Close	닫기
+settings		Open	열기
+settings		Wi-Fi: {status}. Network, below, joins one; networks can also be written in banana/wifi.conf on a computer (see banana/README.txt).	Wi-Fi: {status}. 아래 네트워크에서 연결하세요. PC에서 banana/wifi.conf에 네트워크를 설정할 수도 있습니다(banana/README.txt 참고).
+settings		For working on Banana itself: ssh root@{address}, with the public keys in banana/ssh/authorized_keys on the card (no passwords). Files: scp -O (dropbear has no SFTP), or File sharing.	Banana 시스템 작업: 카드의 banana/ssh/authorized_keys에 공개 키를 넣고 ssh root@{address}로 접속합니다(비밀번호 없음). 파일은 scp -O(Dropbear는 SFTP 미지원) 또는 파일 공유를 사용하세요.
+settings		<address>	<address>
+settings		The card on the network: \\{address}\banana in Windows' File Explorer, smb://{address}/banana on a Mac (Finder, Go, Connect to Server). Anyone on the network can open it with no password: leave it off on networks you don't trust.	Windows 파일 탐색기에서 \\{address}\banana, Mac Finder의 이동 > 서버 연결에서 smb://{address}/banana로 접속하세요. 비밀번호 없이 네트워크의 누구나 접속할 수 있으므로 신뢰할 수 없는 네트워크에서는 끄세요.
+settings		(Not connected to Wi-Fi now.)	(현재 Wi-Fi에 연결되지 않음)
+settings		Fetching covers and title screens. The menu shows them as they come, and it carries on if you leave this screen.	표지와 타이틀 화면을 가져오는 중입니다. 가져오는 대로 메뉴에 표시되며 이 화면을 나가도 계속됩니다.
+settings		Press A again	A 다시 누르기
+settings		Choose	선택
+settings		Back	뒤로
+settings		Confirm	확인
+settings		Start	시작
+settings		Change	변경
+settings		RetroAchievements	RetroAchievements
+settings		RetroAchievements login failed	RetroAchievements 로그인 실패
+settings		Connected to {network} ({address}).	{network}에 연결됨 ({address}).
+settings		Joined {network}, but it gave the handheld no address.	{network}에 연결했지만 IP 주소를 받지 못했습니다.
+settings		Couldn't join {network}. If the password was wrong, A on it types it again.	{network} 연결 실패. 비밀번호가 틀렸다면 A로 다시 입력하세요.
+settings		Joining {network}...	{network}에 연결 중...
+settings		Connected to {network}	{network}에 연결됨
+settings		Password for {network}	{network} 비밀번호
+settings		Shift	Shift
+settings		Space	공백
+settings		Del	지우기
+settings		Done	완료
+settings		Wi-Fi networks	Wi-Fi 네트워크
+settings		Wi-Fi is off	Wi-Fi 꺼짐
+settings		Joining {network}	{network}에 연결 중
+settings		Wi-Fi is switched off. X switches it on and searches.	Wi-Fi가 꺼져 있습니다. X로 켜고 검색합니다.
+settings		Networks	네트워크
+settings		Searching...	검색 중...
+settings		{n} network	네트워크 {n}개
+settings		{n} networks	네트워크 {n}개
+settings		Joining	연결 중
+settings		Saved	저장됨
+settings		No networks found. X searches again.	네트워크가 없습니다. X로 다시 검색하세요.
+settings		Password	비밀번호
+settings		Join	연결
+settings		{n} character	{n}자
+settings		{n} characters	{n}자
+settings		Type here	여기에 입력
+settings		Delete	삭제
+settings		Writing the update: {status}	업데이트 기록 중: {status}
+settings		Written: restart to run it	기록 완료: 재시작하여 적용
+settings		Failed	실패
+settings		Running {version}	실행 중: {version}
+settings		Running {version}, slot {slot}	실행 중: {version}, 슬롯 {slot}
+settings		The new version is being written to the other slot and checked; this one isn't touched. Don't turn the handheld off. It takes a minute or two.	새 버전을 다른 슬롯에 기록하고 검증하는 중입니다. 현재 버전은 변경되지 않습니다. 전원을 끄지 마세요. 잠시 시간이 걸립니다.
+settings		The new version is in the other slot and will run from the next restart. A restarts now. If it ever fails to start, Previous version brings this one back.	새 버전을 다른 슬롯에 설치했습니다. 다음 재시작부터 적용됩니다. A로 재시작하세요. 시작에 실패하면 이전 버전으로 되돌릴 수 있습니다.
+settings		The update wasn't applied: {reason}. This version is untouched.	업데이트 적용 실패: {reason}. 현재 버전은 변경되지 않았습니다.
+settings		No update packages found. Put a banana-{board}-<version>.update.tar from a release in banana/updates on the card (File sharing can copy it over Wi-Fi), then come back here.	업데이트 패키지가 없습니다. 릴리스의 banana-{board}-<version>.update.tar를 카드의 banana/updates에 복사하세요(파일 공유로 Wi-Fi 복사 가능).
+settings		A on a package writes it to the other slot and checks it; the running version stays until the restart. Packages are in banana/updates on the card.	패키지에서 A를 누르면 다른 슬롯에 기록하고 검증합니다. 현재 버전은 재시작 전까지 유지됩니다. 패키지는 카드의 banana/updates에 있습니다.
+settings		Update packages	업데이트 패키지
+settings		{n} package	패키지 {n}개
+settings		Banana {version}	Banana {version}
+settings		for both handhelds	두 기종 공용
+settings		for the {handheld}	{handheld}용
+settings		not for this handheld	이 기종과 호환되지 않음
+settings		Nothing in banana/updates on the card.	카드의 banana/updates 폴더가 비어 있습니다.
+settings		Test versions	테스트 버전
+settings		Whether Update's check counts test versions (GitHub pre-releases). Every BananaOS release so far is one, so with them left out the check finds nothing until a stable version comes out.	업데이트 확인 시 GitHub 테스트 버전을 포함할지 설정합니다. 안정 버전이 아직 없다면 테스트 버전을 제외할 경우 업데이트를 찾을 수 없습니다.
+settings		Included	포함
+settings		Left out	제외
+settings		Update check	업데이트 확인
+settings		When asked: GitHub is only asked when you choose Check for updates. Daily: also when Wi-Fi connects, at most once a day, so the Update row says when a new version is out. Nothing is downloaded without you.	수동 확인: 업데이트 확인을 선택할 때만 GitHub에 요청합니다. 매일: Wi-Fi 연결 시 하루 한 번 새 버전을 확인합니다. 자동으로 다운로드하지는 않습니다.
+settings		When asked	수동 확인
+settings		Daily	매일
+settings		Downloading {n}%	다운로드 중 {n}%
+settings		{version} available	{version} 사용 가능
+settings		Checking for updates...	업데이트 확인 중...
+settings		Checking the download...	다운로드 검증 중...
+settings		{p}% · {done} of {total} MB	{p}% · {done} / {total} MB
+settings		Downloading Banana {version}	Banana {version} 다운로드 중
+settings		Downloaded	다운로드 완료
+settings		Install Banana {version}	Banana {version} 설치
+settings		Install	설치
+settings		Resume: {done} of {total} MB	이어받기: {done} / {total} MB
+settings		Download Banana {version}	Banana {version} 다운로드
+settings		Download	다운로드
+settings		Check for updates	업데이트 확인
+settings		Check	확인
+settings		Cancel	취소
+settings		Up to date	최신 버전
+settings		None for this handheld	이 기종에 해당 없음
+settings		Newest for the {handheld}: {version} (a test version)	{handheld} 최신 버전: {version} (테스트 버전)
+settings		Newest for the {handheld}: {version}	{handheld} 최신 버전: {version}
+settings		Up to date: {version} is the newest for the {handheld}	최신 상태: {handheld}의 최신 버전은 {version}입니다.
+settings		No release for the {handheld} yet	{handheld}용 릴리스 없음
+settings		The check failed	확인 실패
+settings		Asking GitHub which version is the newest for this handheld...	GitHub에서 이 기기용 최신 버전 확인 중...
+settings		Checking the download against the release's SHA-256...	다운로드 파일의 SHA-256 검증 중...
+settings		Downloading to banana/updates on the card. B goes back and the download carries on (this page shows how far it is); A cancels it, and the next Download carries on from where it stopped.	카드의 banana/updates에 다운로드 중입니다. B로 나가도 계속되며 이 화면에서 진행률을 확인할 수 있습니다. A로 취소하고 다음 다운로드에서 이어받을 수 있습니다.
+settings		The download failed: {reason}.	다운로드 실패: {reason}.
+settings		The check failed: {reason}.	확인 실패: {reason}.
+settings		Downloaded and checked against the release's SHA-256. A, then A again, writes it to the other slot; this version stays as it is until the restart.	다운로드 후 SHA-256 검증을 완료했습니다. A를 두 번 누르면 다른 슬롯에 기록합니다. 재시작까지 현재 버전은 유지됩니다.
+settings		A downloads it ({n} MB) to banana/updates on the card and checks it; nothing is installed until you choose Install. X checks again.	A로 패키지({n} MB)를 카드의 banana/updates에 다운로드하고 검증합니다. 설치를 선택하기 전에는 적용되지 않습니다. X로 다시 확인합니다.
+settings		This handheld has the newest version. A checks again.	이 기기에 최신 버전이 설치되어 있습니다. A로 다시 확인합니다.
+settings		GitHub has no release for this handheld. With Settings > System > Test versions left out, only stable versions count, and there are none yet.	GitHub에 이 기기용 릴리스가 없습니다. 설정 > 시스템 > 테스트 버전 제외 시 안정 버전만 확인합니다.
+settings		A asks GitHub (Wi-Fi needed) whether a newer version is out for this handheld. Nothing is downloaded until you choose Download.	A 버튼으로 GitHub에서 새 버전을 확인합니다(Wi-Fi 필요). 다운로드를 선택하기 전에는 파일을 받지 않습니다.
+settings		The check didn't answer.	업데이트 확인에 응답이 없습니다.
+settings		{n} MB	{n} MB
+settings		A Wi-Fi password has 8 to 63 characters; this one has {count}.	Wi-Fi 비밀번호는 8~63자입니다. 현재 {count}자입니다.
+settings		The account's name, as on retroachievements.org.	retroachievements.org에서 사용하는 계정 이름입니다.
+settings		RetroAchievements password for {name}	{name}의 RetroAchievements 비밀번호
+settings		The account's name, as on screenscraper.fr.	screenscraper.fr에서 사용하는 계정 이름입니다.
+settings		ScreenScraper password for {name}	{name}의 ScreenScraper 비밀번호
+settings		Checking the account {name}...	{name} 계정 확인 중...
+settings		No connection: check Wi-Fi, then try again from the setup	연결되지 않았습니다. Wi-Fi 확인 후 초기 설정에서 다시 시도하세요.
+settings		Logged in as {name}	{name}으로 로그인됨
+settings		Logged in as {name} · {score} points	{name}으로 로그인됨 · {score}점
+settings		Wrong account name or password	계정 이름 또는 비밀번호가 틀렸습니다
+settings		The server said no ({code})	서버에서 거부함 ({code})
+settings		Account name	계정 이름
+settings		Finish	완료
+settings		Not signed in	로그인하지 않음
+settings		Your home network: the games' achievements, the clock and the art need it. A picks it from the networks around; the password goes in on the keyboard.	홈 네트워크입니다. 게임 도전과제, 시계 및 표지에 필요합니다. 주변 네트워크에서 A로 선택하고 키보드로 비밀번호를 입력하세요.
+settings		The clock on the top screen, and the games' own clocks. Left and right change it.	위 화면의 시계와 게임 자체의 시계에 적용합니다. 좌우로 변경합니다.
+settings		Your retroachievements.org account: DraStic and RetroArch unlock achievements with it. A types the name, then the password. Leave it if you have none.	retroachievements.org 계정입니다. DraStic과 RetroArch에서 도전과제를 달성할 수 있습니다. A로 계정 이름과 비밀번호를 입력하세요. 계정이 없으면 건너뛰세요.
+settings		Covers, title screens, genres and years for the games on the card, from libretro's free collections: no account. A starts it (Wi-Fi first); it keeps going while you finish the setup, and the menu shows the art as it comes. Settings > System > Box art runs it again for new games.	libretro 무료 컬렉션에서 카드의 게임 표지, 타이틀 화면, 장르, 발매 연도를 가져옵니다(계정 불필요). Wi-Fi 연결 후 A로 시작하세요. 초기 설정을 마치는 동안에도 진행되며 메뉴에 순차적으로 표시됩니다. 새 게임은 설정 > 시스템 > 게임 표지에서 다시 가져올 수 있습니다.
+settings		Everything here is in the settings too (Start in the menu), and this setup is under System > First-time setup. A finishes.	이 항목들은 설정(메뉴의 START)에서도 변경할 수 있습니다. 시스템 > 초기 설정에서 다시 실행할 수 있습니다. A로 완료합니다.
+settings		Fetching covers and title screens. It carries on while you finish the setup.	표지와 타이틀 화면을 가져오는 중입니다. 초기 설정을 마치는 동안에도 계속됩니다.
+settings		Welcome to Banana	Banana에 오신 것을 환영합니다
+settings		Skip	건너뛰기
+settings		Next zone	다음 시간대
+settings		Running	실행 중
+settings		Wi-Fi is off: switch it on in Network first.	Wi-Fi가 꺼져 있습니다. 네트워크에서 먼저 켜세요.
+settings		Starting	시작 중
+settings		{found} of {total} found	{found} / {total}개 발견
+settings		No connection	연결 없음
+settings		Didn't work	실패
+settings		Not yet	아직 없음
+settings		Save	저장
+settings		Load	불러오기
+settings		Menu	메뉴
+settings		Quit	종료
+settings		F + START	F + START
+settings		Latest achievements	최근 도전과제
+settings		None unlocked yet. Good luck!	아직 달성하지 않았습니다. 힘내세요!
+settings		just now	방금
+settings		%lld min ago	%lld분 전
+settings		today %H:%M	오늘 %H:%M
+settings		Waiting for RetroArch...	RetroArch 대기 중...
+settings		Looking the game up...	게임 정보 검색 중...
+settings		This game has no achievements.	이 게임에는 도전과제가 없습니다.
+settings		RetroAchievements is off, or its login failed: check the account in Settings > System > First-time setup.	RetroAchievements가 꺼져 있거나 로그인에 실패했습니다. 설정 > 시스템 > 초기 설정에서 계정을 확인하세요.
+settings		No connection to RetroAchievements: check Wi-Fi.	RetroAchievements에 연결할 수 없습니다. Wi-Fi를 확인하세요.
+settings		Tap a tile, or hold F with the button under it	타일을 터치하거나 F와 아래에 표시된 버튼을 함께 누르세요.
+settings		Hold F with the button under each tile	F와 각 타일 아래 버튼을 함께 누르세요
+settings		Party	파티
+settings		Battle	배틀
+settings		Achievements	도전과제
+settings		Waiting for the game...	게임 대기 중...
+settings		Waiting for the battle...	배틀 대기 중...
+settings		No Pokémon in the party yet.	파티에 포켓몬이 없습니다.
+settings		RetroArch can't read the game's memory with this emulator: %s	RetroArch가 이 에뮬레이터에서 게임 메모리를 읽을 수 없습니다: %s
+settings		Weak to	약점
+settings		EGG	알
+settings		SLP	잠듦
+settings		PSN	독
+settings		BRN	화상
+settings		FRZ	얼음
+settings		PAR	마비
+settings		FNT	기절
+settings		Lv	Lv
+settings		PP	PP
+settings	Pokémon types	Normal	일반
+settings	Pokémon types	Fighting	격투
+settings	Pokémon types	Flying	비행
+settings	Pokémon types	Poison	독
+settings	Pokémon types	Ground	땅
+settings	Pokémon types	Rock	바위
+settings	Pokémon types	Bug	벌레
+settings	Pokémon types	Ghost	고스트
+settings	Pokémon types	Steel	강철
+settings	Pokémon types	Fire	불꽃
+settings	Pokémon types	Water	물
+settings	Pokémon types	Grass	풀
+settings	Pokémon types	Electric	전기
+settings	Pokémon types	Psychic	에스퍼
+settings	Pokémon types	Ice	얼음
+settings	Pokémon types	Dragon	드래곤
+settings		Resists	반감
+settings		Immune to	무효
+settings		Exp	경험치
+settings		Next	다음
+settings		Pwr	위력
+settings		You	아군
+settings		Foe	상대
+settings		It's still an egg.	아직 알입니다.
+settings		the list of covers	표지 목록
+settings		the boot partition can't be written	부팅 파티션에 기록할 수 없습니다
+settings		can't write extlinux.conf	extlinux.conf에 기록할 수 없습니다
+settings		slot {slot} holds no system	슬롯 {slot}에 시스템이 없습니다
+settings		switched {slot}	슬롯 {slot}으로 전환됨
+settings		no such package: {package}	패키지 없음: {package}
+settings		checking	확인 중
+settings		the package can't be unpacked	패키지 압축 해제 실패
+settings		the package has no {file}	패키지에 {file}이 없습니다
+settings		the package has no device tree	패키지에 장치 트리가 없습니다
+settings		that is a package for the {package's handheld}, this is the {this handheld}	이 패키지는 {package's handheld}용이며 현재 기종은 {this handheld}입니다.
+settings		{file} is damaged (its hash is wrong)	{file} 손상 (해시 불일치)
+settings		no partition for slot {slot} ({partition})	슬롯 {slot}의 파티션이 없습니다 ({partition}).
+settings		the system ({size} bytes) doesn't fit the slot ({limit} bytes)	시스템 크기({size}바이트)가 슬롯 크기({limit}바이트)를 초과합니다.
+settings		writing {percent}%	기록 중 {percent}%
+settings		writing slot {slot} failed	슬롯 {slot} 기록 실패
+settings		verifying	검증 중
+settings		slot {slot} reads back wrong	슬롯 {slot} 재검증 실패
+settings		can't write /boot/{slot}/{file}	/boot/{slot}/{file} 기록 실패
+settings		/boot/{slot}/{file} reads back wrong	/boot/{slot}/{file} 재검증 실패
+settings		done {version}	완료 {version}
+bananads		Today %s	오늘 %s
+bananads		Yesterday %s	어제 %s
+bananads		No picture in this save	이 저장 데이터에 미리보기 없음
+bananads		Empty slot	빈 슬롯
+bananads		Slot %d	슬롯 %d
+bananads		A: load this save. You can undo it after.	A: 불러오기 (되돌릴 수 있음)
+bananads		Nothing saved here yet	아직 저장 데이터가 없습니다
+bananads		A: save here (replaces this save)	A: 덮어쓰기
+bananads		A: save here	A: 이곳에 저장
+bananads		THIS SESSION	현재 세션
+bananads		LAST SAVE %s	최근 저장 %s
+bananads		None yet	아직 없음
+bananads		LAST SAVE	최근 저장
+bananads		this menu	이 메뉴
+bananads		save to slot 1	슬롯 1에 저장
+bananads		load slot 1	슬롯 1 불러오기
+bananads		F + START	F + START
+bananads		save your spot and quit	진행 상태 저장 후 종료
+bananads		LATEST ACHIEVEMENTS	최근 도전과제
+bananads		None unlocked yet. Good luck!	아직 달성하지 않았습니다. 힘내세요!
+bananads		Resume	계속하기
+bananads		Save	저장
+bananads		Load	불러오기
+bananads		Quick settings	빠른 설정
+bananads		Restart game	게임 재시작
+bananads		Quit game	게임 종료
+bananads		Please wait	잠시 기다려 주세요
+bananads		One moment...	잠시만요...
+bananads		Paused	일시 정지
+bananads		or press L3	또는 L3 누르기
+bananads		%d slots	슬롯 %d개
+bananads		last: slot %d	최근: 슬롯 %d
+bananads		no saves yet	저장 데이터 없음
+bananads		volume, shader, effects	음량, 셰이더, 효과
+bananads		volume, brightness	음량, 밝기
+bananads		from the title screen	타이틀 화면부터
+bananads		keeps your spot	현재 진행 상태 유지
+bananads		back to the menu	메뉴로 돌아가기
+bananads		Slot %d of %d	슬롯 %d / %d
+bananads		Empty	비어 있음
+bananads		changes apply at once	변경 즉시 적용
+bananads		Volume	음량
+bananads		Brightness	밝기
+bananads		Microphone	마이크
+bananads		Test / blow	테스트 / 바람 불기
+bananads		Left / right to change, or tap the bar	좌우로 조절하거나 막대를 터치하세요
+bananads		Left / right to change, both screens	좌우로 두 화면 조절
+bananads		A live meter of the mic, and a blow for games that ask for one	마이크 입력 레벨과 게임용 바람 불기
+bananads		Left / right to change: it applies at once, and stays for the next game	좌우로 조절: 즉시 적용되며 다음 게임에도 유지
+bananads		Blow on the mic	마이크에 바람 불기
+bananads		No microphone found	마이크를 찾을 수 없습니다
+bananads		Heard!	감지됨!
+bananads		Listening	듣는 중
+bananads		The game hears a blow past the red line (sensitivity: %s).	빨간 선을 넘으면 게임이 바람을 감지합니다 (감도: %s).
+bananads		The microphone's gate is off, so the game hears everything it picks up.	마이크 게이트가 꺼져 있어 모든 입력이 게임에 전달됩니다.
+bananads		A: blow for 3 s, for when the real mic isn't picked up	A: 3초간 바람 불기 (실제 마이크 입력이 감지되지 않을 때)
+bananads		Back	뒤로
+bananads		Select	선택
+bananads		Open	열기
+bananads		OK	확인
+bananads		Blow for 3 s	3초간 바람 불기
+bananads		D-pad or tap	방향키 또는 터치
+bananads		Undo last load	마지막 불러오기 취소
+bananads		Replace slot %d?	슬롯 %d을(를) 덮어쓸까요?
+bananads		The save from %s will be replaced by this one.	%s의 저장 데이터를 덮어씁니다.
+bananads		Cancel	취소
+bananads		Replace	덮어쓰기
+bananads		Quit to the menu?	메뉴로 나갈까요?
+bananads		Your spot is saved. Next time the game picks up right here.	진행 상태가 저장됩니다. 다음 실행 시 이어서 플레이합니다.
+bananads		Anything since your last save will be lost.	마지막 저장 이후의 진행 상황이 사라집니다.
+bananads		Keep playing	계속 플레이
+bananads		Quit	종료
+bananads		Restart the game?	게임을 재시작할까요?
+bananads		Back to the title screen. Anything since your last save will be lost.	타이틀 화면으로 돌아갑니다. 마지막 저장 이후의 진행 상황이 사라집니다.
+bananads		Restart	재시작
+bananads		Saving to slot %d	슬롯 %d에 저장 중
+bananads		Undoing the load	불러오기 취소 중
+bananads		Loading	불러오는 중
+bananads		the undo slot	실행 취소 슬롯
+bananads		the slot	슬롯
+bananads		Saving your spot	진행 상태 저장 중
+bananads		Restarting	재시작 중
+bananads		Achievement unlocked · %u points	도전과제 달성 · %u점
+bananads		All achievements unlocked!	모든 도전과제 달성!
+bananads		Leaderboard submitted	순위표 기록 제출됨
+bananads		RetroAchievements	RetroAchievements
+bananads		Offline: unlocks will be sent later	오프라인: 연결 후 달성 기록을 전송합니다
+bananads		Back online, unlocks sent	온라인 복귀, 달성 기록 전송됨
+bananads		This game isn't known to RetroAchievements	RetroAchievements에 등록되지 않은 게임입니다
+bananads		Couldn't load the game	게임을 불러올 수 없습니다
+bananads		%u of %u achievements unlocked	도전과제 %u / %u 달성
+bananads		No achievements for this game yet	이 게임의 도전과제가 아직 없습니다
+bananads		Logged in as %s · %u points	%s으로 로그인됨 · %u점
+bananads		Logged in as %s	%s으로 로그인됨
+bananads		Login expired: enter your password in Settings	로그인 만료: 설정에서 비밀번호를 입력하세요
+bananads		RetroAchievements login failed	RetroAchievements 로그인 실패
+bananads		Check the account in Settings	설정에서 계정을 확인하세요
+bananads		No password: enter it in Settings	비밀번호 없음: 설정에서 입력하세요
+bananads		None	없음
+bananads		Crisp	선명하게
+bananads		Crisp + DS colours	선명하게 + DS 색상
+bananads		LCD grid	LCD 격자
+bananads		LCD grid + colours	LCD 격자 + 색상
+bananads		LCD grid 2x	LCD 격자 2배
+bananads		FSR	FSR
+bananads		LCD (DS colours)	LCD (DS 색상)
+bananads		LCD 1x	LCD 1배
+bananads		LCD 3x	LCD 3배
+bananads		Fast LCD	고속 LCD
+bananads		DS colours	DS 색상
+bananads		Retro	레트로
+bananads		Bevel	입체 테두리
+bananads		Sharp bilinear	선명한 이중선형
+bananads		Sharp + scanlines	선명하게 + 스캔라인
+bananads		Fast CRT	고속 CRT
+bananads		Integer	정수 배율
+bananads		Integer fill	정수 배율 채우기
+bananads		Dot (MiZai)	도트 (MiZai)
+bananads		Dot (MiZai, RG DS+)	도트 (MiZai, RG DS+)
+bananads		Retro tiles	레트로 타일
+bananads		DraStic LCD	DraStic LCD
+bananads		DraStic LCD + colours	DraStic LCD + 색상
+bananads		DraStic Quilez	DraStic Quilez
+bananads		DraStic sharp	DraStic 선명하게
+bananads		DraStic sharp + colours	DraStic 선명하게 + 색상
+bananads		DraStic fast LCD	DraStic 고속 LCD
+bananads		DraStic fast LCD + colours	DraStic 고속 LCD + 색상
+bananads		Shader	셰이더
+bananads		Edge marking	윤곽선 표시
+bananads		Fog	안개 효과
+bananads		On	켜기
+bananads		Off	끄기
+bananads		Save and quit	저장 후 종료
+bananads		Quit without saving	저장하지 않고 종료
+bananads		Quit without saving?	저장하지 않고 종료할까요?
+bananads		Saved to slot %d	슬롯 %d에 저장됨
+bananads		Loaded slot %d	슬롯 %d 불러옴
+bananads		Couldn't save	저장 실패
+bananads		Couldn't load	불러오기 실패
+bananads		Nothing saved in slot %d	슬롯 %d에 저장 데이터가 없습니다
+bananads		Slot %d couldn't be read	슬롯 %d 읽기 실패
+bananads		Hotkeys	단축키
+bananads		while you play	게임 플레이 중
+bananads		This menu	이 메뉴
+bananads		Save state (slot 1)	상태 저장 (슬롯 1)
+bananads		Load state (slot 1)	상태 불러오기 (슬롯 1)
+bananads		Fast-forward (held)	빨리 감기 (누르는 동안)
+bananads		Fast-forward on / off	빨리 감기 켜기 / 끄기
+bananads		Screenshot	스크린샷
+bananads		Save your spot and quit	진행 상태 저장 후 종료
+superdrastic		Today %s	오늘 %s
+superdrastic		Yesterday %s	어제 %s
+superdrastic		volume %d >/dev/null 2>&1	volume %d >/dev/null 2>&1
+superdrastic		brightness set all %d >/dev/null 2>&1	brightness set all %d >/dev/null 2>&1
+superdrastic		No picture in this save	이 저장 데이터에 미리보기 없음
+superdrastic		Empty slot	빈 슬롯
+superdrastic		Slot %d	슬롯 %d
+superdrastic		A: load this save. You can undo it after.	A: 불러오기 (되돌릴 수 있음)
+superdrastic		Nothing saved here yet	아직 저장 데이터가 없습니다
+superdrastic		A: save here (replaces this save)	A: 덮어쓰기
+superdrastic		A: save here	A: 이곳에 저장
+superdrastic		THIS SESSION	현재 세션
+superdrastic		LAST SAVE %s	최근 저장 %s
+superdrastic		None yet	아직 없음
+superdrastic		LAST SAVE	최근 저장
+superdrastic		LATEST ACHIEVEMENTS	최근 도전과제
+superdrastic		None unlocked yet. Good luck!	아직 달성하지 않았습니다. 힘내세요!
+superdrastic		Resume	계속하기
+superdrastic		Save	저장
+superdrastic		Load	불러오기
+superdrastic		Quick settings	빠른 설정
+superdrastic		DraStic menu	DraStic 메뉴
+superdrastic		Quit game	게임 종료
+superdrastic		Please wait	잠시 기다려 주세요
+superdrastic		One moment...	잠시만요...
+superdrastic		Paused	일시 정지
+superdrastic		or press L3	또는 L3 누르기
+superdrastic		%d slots	슬롯 %d개
+superdrastic		last: slot %d	최근: 슬롯 %d
+superdrastic		no saves yet	저장 데이터 없음
+superdrastic		volume, brightness	음량, 밝기
+superdrastic		cheats, controls	치트, 조작 설정
+superdrastic		keeps your spot	현재 진행 상태 유지
+superdrastic		back to the menu	메뉴로 돌아가기
+superdrastic		Slot %d of %d	슬롯 %d / %d
+superdrastic		Empty	비어 있음
+superdrastic		changes apply at once	변경 즉시 적용
+superdrastic		Volume	음량
+superdrastic		Brightness	밝기
+superdrastic		Microphone	마이크
+superdrastic		Test / blow	테스트 / 바람 불기
+superdrastic		Left / right to change, or tap the bar	좌우로 조절하거나 막대를 터치하세요
+superdrastic		Left / right to change, both screens	좌우로 두 화면 조절
+superdrastic		A live meter of the mic, and a blow for games that ask for one	마이크 입력 레벨과 게임용 바람 불기
+superdrastic		Blow on the mic	마이크에 바람 불기
+superdrastic		No microphone found	마이크를 찾을 수 없습니다
+superdrastic		Heard!	감지됨!
+superdrastic		Listening	듣는 중
+superdrastic		The game hears a blow past the red line (sensitivity: %s).	빨간 선을 넘으면 게임이 바람을 감지합니다 (감도: %s).
+superdrastic		Microphone sensitivity is off in ES, so the game only gets the blow below.	ES에서 마이크 감도가 꺼져 아래의 바람 불기만 게임에 전달됩니다.
+superdrastic		A: blow for 3 s, for when the real mic isn't picked up	A: 3초간 바람 불기 (실제 마이크 입력이 감지되지 않을 때)
+superdrastic		Back	뒤로
+superdrastic		Select	선택
+superdrastic		Open	열기
+superdrastic		OK	확인
+superdrastic		Blow for 3 s	3초간 바람 불기
+superdrastic		D-pad or tap	방향키 또는 터치
+superdrastic		Undo last load	마지막 불러오기 취소
+superdrastic		Replace slot %d?	슬롯 %d을(를) 덮어쓸까요?
+superdrastic		The save from %s will be replaced by this one.	%s의 저장 데이터를 덮어씁니다.
+superdrastic		Cancel	취소
+superdrastic		Replace	덮어쓰기
+superdrastic		Quit to the menu?	메뉴로 나갈까요?
+superdrastic		Your spot is saved. Next time the game picks up right here.	진행 상태가 저장됩니다. 다음 실행 시 이어서 플레이합니다.
+superdrastic		Anything since your last save will be lost.	마지막 저장 이후의 진행 상황이 사라집니다.
+superdrastic		Keep playing	계속 플레이
+superdrastic		Quit	종료
+superdrastic		Saved to slot %d	슬롯 %d에 저장됨
+superdrastic		Couldn't save	저장 실패
+superdrastic		DraStic's Save state control has no button	DraStic의 상태 저장 버튼이 지정되지 않았습니다
+superdrastic		Back to before the load	불러오기 이전으로 돌아가기
+superdrastic		Loaded slot %d	슬롯 %d 불러옴
+superdrastic		Undoing the load	불러오기 취소 중
+superdrastic		Loading	불러오는 중
+superdrastic		Wrong one? Load, then Y undoes it	잘못 불러왔나요? 불러온 후 Y로 취소할 수 있습니다
+superdrastic		Couldn't load	불러오기 실패
+superdrastic		DraStic's Load state control has no button	DraStic의 상태 불러오기 버튼이 지정되지 않았습니다
+superdrastic		Blowing into the mic...	마이크에 바람 부는 중...
+superdrastic		The game hears it for 3 seconds	게임에 3초간 전달됩니다
+superdrastic		Saving your spot	진행 상태 저장 중
+superdrastic		Achievement unlocked · %u points	도전과제 달성 · %u점
+superdrastic		All achievements unlocked!	모든 도전과제 달성!
+superdrastic		Leaderboard submitted	순위표 기록 제출됨
+superdrastic		RetroAchievements	RetroAchievements
+superdrastic		offline: unlocks will be sent later	오프라인: 연결 후 달성 기록을 전송합니다
+superdrastic		back online, unlocks sent	온라인 복귀, 달성 기록 전송됨
+superdrastic		this ROM isn't recognised	인식할 수 없는 ROM입니다
+superdrastic		couldn't load the game	게임 불러오기 실패
+superdrastic		%u of %u unlocked (softcore)	%u / %u 달성 (소프트코어)
+superdrastic		no achievements for this game yet	이 게임의 도전과제가 없습니다
+superdrastic		login expired: re-enter your password in ES	로그인 만료: ES에서 비밀번호를 다시 입력하세요
+superdrastic		RetroAchievements login failed	RetroAchievements 로그인 실패
+superdrastic		check user/password in ES	ES에서 사용자 이름과 비밀번호를 확인하세요
+superdrastic		no password set in ES	ES에 비밀번호가 설정되지 않았습니다
+superdrastic		Resumed where you left off	마지막 진행 위치에서 이어서 시작함
+superdrastic		Quit with the exit hotkey to save your place again	종료 단축키로 나가면 진행 상태가 다시 저장됩니다
+superdrastic		DraStic didn't write the savestate	DraStic 상태 저장 실패
+superdrastic		DraStic didn't read the savestate	DraStic 상태 불러오기 실패
+superdrastic		, resuming this session	, 이 세션 이어서 실행
+superdrastic		, a resume state exists but isn't loaded	, 이어하기 데이터가 있지만 불러오지 않음
+superdrastic		Save and quit	저장 후 종료
+superdrastic		Quit without saving	저장하지 않고 종료
+superdrastic		Quit without saving?	저장하지 않고 종료할까요?
+superdrastic		Hotkeys	단축키
+superdrastic		while you play	게임 플레이 중
+superdrastic		This menu	이 메뉴
+superdrastic		Save state	상태 저장
+superdrastic		Load state	상태 불러오기
+superdrastic		Fast-forward	빨리 감기
+superdrastic		Swap screens	화면 교체
+superdrastic		Save your spot and quit (hold)	진행 상태 저장 후 종료 (길게)
+superdrastic		Quit (hold)	종료 (길게)
+superdrastic		Not set	설정 안 됨
+systems		Nintendo DS	Nintendo DS
+systems		Nintendo	닌텐도
+systems		Game Boy Advance	Game Boy Advance
+systems		Game Boy Color	Game Boy Color
+systems		Game Boy	Game Boy
+systems		Nintendo Entertainment System	패밀리 컴퓨터
+systems		Super Nintendo	Super Nintendo
+systems		Mega Drive	Mega Drive
+systems		Sega	세가
+systems		PlayStation	PlayStation
+systems		Sony	소니
+systems		Nintendo 64	Nintendo 64
+systems		Döda Kvarter	Döda Kvarter
+systems		ROCKNIXDS	ROCKNIXDS
+systems		Poketool	Poketool
+systems		PICO-8	PICO-8
+systems		Lexaloffle	Lexaloffle
+systems		Ports	포트 게임
+systems		PortMaster	PortMaster
+settings		Text on accent	강조 영역 글자 색상
+settings		The text on the selection's colour. Auto picks dark or light, whichever reads better on the accent.	선택 영역의 글자 색상입니다. 자동은 강조색에서 더 읽기 좋은 밝거나 어두운 색을 선택합니다.
+settings		Auto	자동
+settings		Power	전원
+settings		Sleep	절전
+settings		The handheld sleeps, as with a press of the power button; a game running is paused. Press the power button to wake it.	전원 버튼을 누른 것처럼 기기가 절전하고 실행 중인 게임을 일시 정지합니다. 전원 버튼으로 다시 켜세요.
+settings		Delete game...	게임 삭제...
+settings		Delete this game	이 게임 삭제
+settings		Keep its saves and art	저장 데이터와 이미지 유지
+settings		With its saves, states and art	저장 데이터, 상태 저장, 이미지 포함
+settings		A again: the game (saves kept)	A 다시: 게임 삭제 (저장 데이터 유지)
+settings		A again: the game, saves and art	A 다시: 게임, 저장 데이터, 이미지 삭제
+settings		Delete...	삭제...
+settings		The game couldn't be deleted: the card may be read-only.	게임을 삭제할 수 없습니다. 카드가 읽기 전용일 수 있습니다.
+settings		Removes this game's file from the card: %s. Left and right choose whether its saves, save states and box art go too, or stay (they come back if you copy the game again). Nothing else is touched: no other game, no BIOS. A asks first; A again deletes.	카드에서 게임 파일(%s)을 삭제합니다. 좌우로 저장 데이터, 상태 저장, 표지까지 삭제하거나 유지할지 선택하세요(유지하면 게임을 다시 복사할 때 복원됩니다). 다른 게임이나 BIOS는 변경되지 않습니다. A로 확인하고 다시 A로 삭제합니다.
+settings		Shown systems	표시할 게임기
+settings		Which systems are on the home row. Each one: with games (when it has something to start), hidden, or always (with nothing in it too: Ports for PortMaster).	홈 화면에 표시할 게임기를 설정합니다. 게임이 있는 경우, 숨기기 또는 항상 표시(게임이 없는 경우도 포함)를 선택하세요. 포트 게임은 PortMaster에 필요합니다.
+settings		With games	게임이 있는 경우
+settings		Hidden	숨기기
+settings		Always	항상
+settings		With games: on the home row while there is something in it to start. Hidden: never. Always: with nothing in it too (Ports: for PortMaster, which gets ports).	게임이 있는 경우: 실행할 게임이 있으면 홈에 표시합니다. 숨기기: 표시하지 않습니다. 항상: 게임이 없어도 표시합니다(포트 게임은 PortMaster용).
+settings		Hotkeys	단축키
+settings		The buttons that do something everywhere, in the menu and in each emulator.	메뉴와 각 에뮬레이터에서 동작하는 버튼을 설명합니다.
+settings		Volume keys	음량 버튼
+settings		Everywhere, in games too: the speakers, or the headphones while they are in.	게임 중에도 스피커 또는 연결된 헤드폰의 음량을 조절합니다.
+settings		F + volume	F + 음량
+settings		Everywhere, in games too: both screens' backlights together. Each screen's own: Settings > Display & sound.	게임 중에도 두 화면의 백라이트를 함께 조절합니다. 각각의 밝기는 설정 > 화면 및 소리에서 조절합니다.
+settings		Everywhere: a press sleeps (a game is paused where it is), a press wakes. Closing the lid does the same.	어디서나 한 번 누르면 절전(게임 일시 정지), 다시 누르면 절전 해제합니다. 덮개를 닫아도 동일합니다.
+settings		Hold power	전원 길게 누르기
+settings		Everywhere: held for 2 seconds. A game running saves first.	어디서나 2초 동안 길게 누릅니다. 실행 중인 게임은 먼저 저장합니다.
+settings		Menu: START	메뉴: START
+settings		In the menu: Settings. Y there: Sleep, Restart and Shut down.	메뉴에서 설정을 엽니다. 설정에서 Y는 절전, 재시작, 전원 끄기입니다.
+settings		Menu: SELECT	메뉴: SELECT
+settings		In the menu: search every system's games by name.	메뉴에서 모든 게임기의 게임을 이름으로 검색합니다.
+settings		Menu: X	메뉴: X
+settings		Resume, options	이어하기, 옵션
+settings		On the home row: the system's last game. On a game: its page (name, box art, emulator, delete).	홈에서 해당 게임기의 마지막 게임을 이어서 실행합니다. 게임 목록에서는 이름, 표지, 에뮬레이터, 삭제 설정 페이지를 엽니다.
+settings		Menu: L / R	메뉴: L / R
+settings		A page	페이지
+settings		In a game list or a settings list: five at a time. Up and down too.	게임 또는 설정 목록에서 한 번에 다섯 항목씩 이동합니다. 위아래 버튼도 사용할 수 있습니다.
+settings		Its menu	자체 메뉴
+settings		DS games in SuperDrastic: save, load, quick settings (volume, brightness), quit. L3 opens it too.	SuperDrastic DS 게임의 저장, 불러오기, 빠른 설정(음량, 밝기), 종료 메뉴입니다. L3로도 엽니다.
+settings		DS games in SuperDrastic: back to the menu, the spot saved to resume from when Quick resume is on.	SuperDrastic DS 게임에서 메뉴로 돌아갑니다. 빠른 이어하기가 켜져 있으면 진행 상태를 저장합니다.
+settings		Save / load state	상태 저장 / 불러오기
+settings		DS games in SuperDrastic: DraStic's quick save state, and loading it.	SuperDrastic DS 게임에서 DraStic의 빠른 상태 저장 및 불러오기를 실행합니다.
+settings		Fast-forward	빨리 감기
+settings		DS games in SuperDrastic: held, the game runs as fast as it can.	SuperDrastic DS 게임에서 누르는 동안 최대 속도로 실행합니다.
+settings		DS games in BananaDS: save, load, quick settings, achievements, quit.	BananaDS DS 게임의 저장, 불러오기, 빠른 설정, 도전과제, 종료 메뉴입니다.
+settings		Save to slot 1	슬롯 1 저장
+settings		Load slot 1	슬롯 1 불러오기
+settings		DS games in BananaDS.	BananaDS의 DS 게임
+settings		DS games in BananaDS: your spot saved, then back to the menu.	BananaDS DS 게임에서 진행 상태를 저장한 후 메뉴로 돌아갑니다.
+settings		The other systems (RetroArch). Settings > Other systems > RetroArch hotkeys Off leaves this and F + START only.	기타 게임기(RetroArch)에서 사용합니다. 설정 > 기타 게임기 > RetroArch 단축키를 끄면 이 기능과 F + START만 유지됩니다.
+settings		The other systems (RetroArch): back to the menu.	기타 게임기(RetroArch)에서 메뉴로 돌아갑니다.
+settings		The other systems (RetroArch): the current state slot.	기타 게임기(RetroArch)에서 현재 상태 저장 슬롯을 사용합니다.
+settings		The other systems (RetroArch): on, and off again.	기타 게임기(RetroArch)에서 빠르게 실행하거나 다시 정상 속도로 전환합니다.
+settings		Rewind	되감기
+settings		The other systems (RetroArch): held, the game runs backwards.	기타 게임기(RetroArch)에서 누르는 동안 게임을 되감습니다.
+settings		Frame rate	프레임 속도
+settings		The other systems (RetroArch): shown in a corner, or not.	기타 게임기(RetroArch)에서 화면 모서리에 프레임 속도를 표시할지 설정합니다.
+settings		Screen border	화면 테두리
+settings		On: the black around a game's picture filled with a quiet border in the menu's colours (the theme's), the picture at a sharp whole-number size where that fits. The DS, the N64 and a picture that already fills the screen have none.	켜면 게임 화면 주변의 검은 영역에 테마 색상의 차분한 테두리를 표시하고 가능한 경우 선명한 정수 배율을 적용합니다. DS, N64 및 이미 화면을 가득 채우는 게임에는 적용하지 않습니다.
+settings		Beta channel	베타 채널
+settings		Beta channel password	베타 채널 비밀번호
+settings		Checking...	확인 중...
+settings		Turn on	켜기
+settings		Turn off	끄기
+settings		For beta testers: updates from the test builds on bananaos-cfw.dev instead of GitHub's releases. A asks for the beta password (once: it is checked with the site, then kept on the card for the updater only).	베타 테스터용입니다. GitHub 대신 bananaos-cfw.dev의 테스트 빌드를 사용합니다. A로 베타 비밀번호를 입력하며 확인 후 업데이터 전용으로 카드에 저장합니다.
+settings		On: updates come from the beta testers' builds on bananaos-cfw.dev instead of GitHub's releases. A, then A again, turns it off (the password is forgotten), and GitHub is asked again.	켜면 GitHub 대신 bananaos-cfw.dev의 베타 테스트 빌드에서 업데이트합니다. A를 두 번 누르면 끄고 비밀번호를 삭제한 뒤 GitHub를 확인합니다.
+settings		The beta testers' password for BananaOS's test builds. A types the key, B deletes, X capitals, L symbols, Y a space, START checks it with bananaos-cfw.dev. It is kept on the card for the updater only.	BananaOS 테스트 빌드의 베타 비밀번호입니다. A: 입력, B: 삭제, X: 대문자, L: 기호, Y: 공백, START: bananaos-cfw.dev에서 확인. 업데이터 전용으로 카드에 저장됩니다.
+settings		Type the beta password, then START.	베타 비밀번호를 입력하고 START를 누르세요.
+settings		Checking the password with bananaos-cfw.dev...	bananaos-cfw.dev에서 비밀번호 확인 중...
+settings		Beta channel on: Check for updates now asks bananaos-cfw.dev for test builds.	베타 채널 켜짐: 업데이트 확인 시 bananaos-cfw.dev의 테스트 빌드를 확인합니다.
+settings		Wrong password: bananaos-cfw.dev refused it. The beta channel stays off.	비밀번호가 틀렸습니다. bananaos-cfw.dev에서 거부했으며 베타 채널은 꺼져 있습니다.
+settings		Beta channel off: Check for updates asks GitHub again.	베타 채널 꺼짐: 업데이트 확인 시 GitHub를 다시 확인합니다.
+settings		The password couldn't be checked: %s.	비밀번호를 확인할 수 없습니다: %s.
+settings		Asking the beta server (bananaos-cfw.dev) which test build is the newest for this handheld...	베타 서버(bananaos-cfw.dev)에서 이 기기용 최신 테스트 빌드 확인 중...
+settings		The beta server has no test build for this handheld.	베타 서버에 이 기기용 테스트 빌드가 없습니다.
+settings		A asks the beta server (bananaos-cfw.dev, Wi-Fi needed) whether a newer test build is out for this handheld. Nothing is downloaded until you choose Download.	A로 베타 서버(bananaos-cfw.dev, Wi-Fi 필요)의 새 테스트 빌드를 확인합니다. 다운로드를 선택하기 전에는 받지 않습니다.
+settings		Change the menu's language?	메뉴 언어를 변경할까요?
+settings		No, keep it	아니요, 유지
+settings		Yes, change it	예, 변경
+settings		The menu starts again in the new language.	새 언어로 메뉴를 다시 시작합니다.
+settings		OK	확인
+settings		4x runs hot	4배는 발열이 증가합니다
+settings		4x runs the handheld hot and drains the battery much faster. When it gets too hot it slows down to cool off, and games can lag. If that happens, switch back to 2x, then restart and let the handheld cool down.	4배 해상도는 발열과 배터리 소모를 크게 증가시킵니다. 과열 시 냉각을 위해 속도를 낮추므로 게임이 느려질 수 있습니다. 이 경우 2배로 되돌리고 재시작한 후 식혀 주세요.
+settings		Use 4x?	4배를 사용할까요?
+settings		Use 4x	4배 사용
+settings		Keep %s	%s 유지
+settings		This game's 3D resolution	이 게임의 3D 해상도
+settings		Credits	제작진
+settings		Thank you	감사합니다
+settings		The people who made this version of BananaOS: development, translations, testing and thanks. A opens the list.	이 버전의 BananaOS 개발, 번역, 테스트 및 기여자입니다. A로 목록을 엽니다.
+settings		Development	개발
+settings		Translations	번역
+settings		Testing	테스트
+settings		Thanks	감사
+settings		Step {n} of {m}	{n} / {m}단계
+settings		Welcome to	환영합니다
+settings		Welcome	환영합니다
+settings		All set	준비 완료
+settings		Choose a network	네트워크 선택
+settings		Choose another network	다른 네트워크 선택
+settings		Skip for now	지금 건너뛰기
+settings		Test the connection	연결 테스트
+settings		Test again	다시 테스트
+settings		Testing the connection	연결 테스트 중
+settings		Testing {network}...	{network} 테스트 중...
+settings		Type a name	이름 입력
+settings		Change the name	이름 변경
+settings		Log in	로그인
+settings		Log in with another account	다른 계정으로 로그인
+settings		Check the login	로그인 확인
+settings		Check again	다시 확인
+settings		Checking the login	로그인 확인 중
+settings		Try again	다시 시도
+settings		Logged in	로그인됨
+settings		Not logged in	로그인되지 않음
+settings		No answer	응답 없음
+settings		Start fetching box art	게임 표지 가져오기 시작
+settings		Fetch again	다시 가져오기
+settings		translated by	번역
+settings		Connected, address {address}	연결됨, 주소 {address}
+settings		No connection: no address from the network	연결 실패: 네트워크에서 IP 주소를 받지 못했습니다.
+settings		Internet	인터넷
+settings		No internet: the network doesn't reach it	인터넷 연결 없음: 네트워크에서 인터넷에 접속할 수 없습니다.
+settings		Clock set from the internet	인터넷에서 시각 설정 완료
+settings		The clock couldn't be set (time server)	시각을 설정할 수 없습니다 (시간 서버)
+settings		Asking retroachievements.org...	retroachievements.org에 확인 중...
+settings		Saved (not checked here)	저장됨 (확인하지 않음)
+settings		Skipped	건너뜀
+settings		Not fetched	가져오지 않음
+settings		Login failed	로그인 실패
+settings		Fetching in the background	백그라운드에서 가져오는 중
+settings		{network} (no internet)	{network} (인터넷 없음)
+settings		The menu's language, and the settings' and the emulators' menus. The rest of the setup is in the language picked.	메뉴, 설정 및 에뮬레이터 메뉴의 언어입니다. 이후 초기 설정은 선택한 언어로 표시됩니다.
+settings		Your home network: achievements, the clock, box art and updates need it. Pick it from the networks around, type its password, and the connection is tested.	홈 네트워크입니다. 도전과제, 시계, 게임 표지 및 업데이트에 필요합니다. 주변 네트워크를 선택하고 비밀번호를 입력하면 연결을 테스트합니다.
+settings		For the clock on the top screen and the games' own clocks. Left and right change it.	위 화면과 게임 자체 시계에 적용합니다. 좌우로 변경합니다.
+settings		For the clock on the top screen and the games' own clocks. Left and right change it; the time itself came from the internet.	위 화면과 게임 자체 시계에 적용합니다. 좌우로 변경합니다. 시각은 인터넷에서 가져왔습니다.
+settings		Your name on the DS, as a real one asks for it the first time: Mario Kart's records, Pictochat, a game's save. 10 characters at most. Leave it and the emulators use their own.	실제 DS가 최초 시작 시 묻는 이름입니다. Mario Kart 기록, Pictochat, 게임 저장 데이터에 사용하며 최대 10자입니다. 건너뛰면 에뮬레이터 기본 이름을 사용합니다.
+settings		Your retroachievements.org account: DraStic and RetroArch unlock achievements with it. The login is checked with the site. No account? Skip this: it can be added later.	retroachievements.org 계정으로 DraStic과 RetroArch에서 도전과제를 달성합니다. 사이트에서 로그인을 확인합니다. 계정이 없다면 건너뛰고 나중에 추가할 수 있습니다.
+settings		Fetching covers and title screens. It carries on in the background while you finish the setup; the menu shows the art as it comes.	표지와 타이틀 화면을 가져오는 중입니다. 초기 설정을 마치는 동안 백그라운드에서 계속 진행되며 메뉴에 순차적으로 표시됩니다.
+settings		Covers, title screens, genres and years for the games on the card, from libretro's free collections: no account needed. Settings > System > Box art runs it again for new games.	libretro의 무료 컬렉션에서 카드 게임의 표지, 타이틀 화면, 장르, 발매 연도를 가져옵니다(계정 불필요). 설정 > 시스템 > 게임 표지에서 새 게임의 이미지를 가져올 수 있습니다.
+settings		Everything here is in Settings too (START in the menu), and this setup is under System > First-time setup.	모든 항목은 설정(메뉴의 START)에도 있으며 시스템 > 초기 설정에서 다시 진행할 수 있습니다.
+settings		The first boot's setup again, a step at a time: Wi-Fi (with a test of the connection), the time zone, the DS's name, the RetroAchievements login and box art. B on its first step comes back here.	최초 부팅의 Wi-Fi(연결 테스트 포함), 시간대, DS 이름, RetroAchievements 로그인, 게임 표지를 단계별로 설정합니다. 첫 단계에서 B로 돌아옵니다.
+settings		Looking at the connection	연결 확인 중
+settings		Looking at the connection...	연결 확인 중...
+settings		Keep it and go on	유지하고 계속
+settings		Fetch art for new games	새 게임의 표지 가져오기
+settings		{have} of {all} games have art	{have} / {all}개 게임에 표지 있음
+settings		Checking {name}...	{name} 확인 중...
+settings		No answer from the site: no connection, or it is down	사이트 응답 없음: 인터넷 연결이 없거나 사이트에 문제가 있습니다.
+menu		Starting...	시작 중...
+menu		%ldh %02ldm	%ld시간 %02ld분
+menu		Recently played	최근 실행
+menu		Search	검색
+menu		No games match	일치하는 게임 없음
+menu		SELECT searches again	SELECT로 다시 검색
+menu		Charging	충전 중
+menu		Full	가득 참
+menu		Favorite	즐겨찾기
+menu		Last played: {sys.resumeTitle}  ·  X to resume	최근 실행: {sys.resumeTitle}  ·  X로 이어하기
+menu		Plays: {either(game.plays, '0')}	실행 횟수: {either(game.plays, '0')}
+menu		Time: {either(game.time, '0m')}	시간: {either(game.time, '0m')}
+menu		Options	옵션
+menu		--assets {shellQuote} --splash {shellQuote} --banana {shellQuote} --systems {shellQuote} --roms {shellQuote}	--assets {shellQuote} --splash {shellQuote} --banana {shellQuote} --systems {shellQuote} --roms {shellQuote}
+menu		Reading the second SD card	두 번째 SD 카드 읽는 중
+menu		Looking for games	게임 검색 중
+menu		Its games join the list in a moment	잠시 후 게임이 목록에 추가됩니다
+menu		The game list is updated in a moment	잠시 후 게임 목록이 갱신됩니다
+menu		The list is updated on the home screen	홈 화면에서 목록이 갱신됩니다
+settings		Lagos, Algiers, Kinshasa	라고스, 알제, 킨샤사
+settings		Johannesburg, Harare	요하네스버그, 하라레
+settings		Dubai, Baku	두바이, 바쿠
+settings		Karachi, Tashkent, Almaty	카라치, 타슈켄트, 알마티
+settings		India, Sri Lanka	인도, 스리랑카
+settings		Bangkok, Jakarta, Hanoi	방콕, 자카르타, 하노이
+settings		Brisbane, Guam	브리즈번, 괌
+settings		Los Angeles, Tijuana	로스앤젤레스, 티후아나
+settings		Phoenix, Vancouver, Yukon	피닉스, 밴쿠버, 유콘
+settings		Denver	덴버
+settings		Mexico City, Calgary	멕시코시티, 캘거리
+settings		Chicago	시카고
+settings		Buenos Aires, Sao Paulo	부에노스아이레스, 상파울루
+settings		ROCKNIXDS Pixel's two palettes, dark or light for daylight; Carts (experimental): your games as cartridges on a shelf, in a clean typeface; or a theme of your own: a .json in banana/themes on the card (banana/themes/README.txt says how).	ROCKNIXDS Pixel의 두 가지 색상 테마, 카트리지 진열장 또는 사용자 테마를 사용합니다. 사용자 테마는 banana/themes의 .json 파일과 README를 참고하세요.
+settings		The top screen's backlight. F + volume changes both screens anywhere, in games too.	상단 화면의 백라이트 밝기입니다. F + 볼륨 버튼으로 언제든 두 화면의 밝기를 조절할 수 있습니다.
+settings		The bananas and the cartridge while Banana starts, and backwards when it shuts down. Off goes straight to the menu once it is ready, and straight to black.	시작 및 종료 애니메이션입니다. 끄면 시작 시 바로 메뉴를 표시하고 종료 시 바로 화면을 끕니다.
+settings		SuperDrastic: DraStic straight onto both panels, with its own governor. BananaDS: Banana's own emulator (melonDS's core). Both draw 3D with the Gengis Engine at 2x and have their menu on L3; each keeps its own settings below. X on a game in the library picks one for that game alone.	SuperDrastic은 DraStic 기반으로 두 화면과 자체 조절 기능을 지원합니다. BananaDS는 melonDS 코어와 Gengis 2배 해상도, L3 메뉴를 지원합니다. 게임별 변경은 X 버튼을 누르세요.
+settings		Sharp pixels (integer)	선명한 픽셀 (정수 배율)
+settings		Sharp pixels: every DS pixel an exact square, no blur (4x4 on the RG DS Plus, 2x2 in a frame on the RG DS). Crisp: exact pixel-area scaling. Grid and LCD: the DS's screen grid. Colours: the DS's own, duller colours. CRT: a TV's scanlines. FSR: smooth edges, the heaviest. None: smooth scaling, no GPU work. Your own: .frag files in banana/shaders (letters, digits and . _ + - in the name).	Sharp: 픽셀을 정확히 확대합니다(Plus 4x4, DS 2x2). Crisp: 픽셀 영역 기반 보정. Grid/LCD: 화면 격자. Colors DS: DS 색감. CRT: CRT 효과. FSR: 고품질 확대(부하 높음). None: 부드러운 확대, GPU 부하 없음. 사용자 셰이더는 banana/shaders의 .frag 파일로 추가하세요(파일명은 영문, 숫자, ._+- 사용).
+settings		2x draws the DS's 3D at twice its size on these panels. 1x is the DS's own, the lightest. 3x and 4x (experimental): three or four times (4x is the RG DS Plus panels' own size), the sharpest and the heaviest: a busy 3D scene can drop below full speed.	1x는 원본 해상도, 2x는 두 배 해상도입니다. 3x와 4x는 실험적 기능이며 4x는 Plus의 기본 해상도에 해당합니다. 부하가 높은 게임은 느려질 수 있습니다.
+settings		Accurate is melonDS's own. Fast lets the two CPUs run longer between meeting (about 10% faster), but it can break a game: Golden Sun: Dark Dawn loses its 3D world.	Accurate는 melonDS의 정확한 타이밍입니다. Fast는 약 10% 빠르지만 Golden Sun: Dark Dawn 등의 게임에서 문제가 발생할 수 있습니다.
+settings		How loud a word or a blow must be to reach the game. Off: the game hears nothing from the mic, and the in-game menu's Blow still works for a game that wants one.	마이크 입력에 필요한 소리의 크기입니다. 끄더라도 게임 메뉴의 불기 기능은 사용할 수 있습니다.
+settings		The card on the network: \\{address}\banana in Windows' File Explorer, smb://{address}/banana on a Mac (Finder, Go, Connect to Server). {sharing}	네트워크에서 카드에 접속: Windows 파일 탐색기에서 \\{address}\banana, Mac에서는 smb://{address}/banana(Finder > 이동 > 서버에 연결). {sharing}
+settings		A on a package writes it to the other slot and checks it; the running version stays until the restart. Y deletes the package from the card{on}	패키지에서 A를 누르면 다른 슬롯에 기록하고 검증합니다. 재시작 전까지 현재 버전이 유지됩니다. Y를 누르면 카드에서 패키지를 삭제합니다{on}
+settings		Reykjavik, Accra, Dakar	레이캬비크, 아크라, 다카르
+settings		Tehran	테헤란
+settings		Kabul	카불
+settings		Kathmandu	카트만두
+settings		Dhaka	다카
+settings		Yangon	양곤
+settings		Darwin	다윈
+settings		Noumea, Solomon Islands	누메아, 솔로몬 제도
+settings		Fiji	피지
+settings		Tonga, Samoa	통가, 사모아
+settings		Pago Pago	파고파고
+settings		Bogota, Lima, Panama, Winnipeg	보고타, 리마, 파나마, 위니펙
+settings		Havana	아바나
+settings		Caracas, La Paz, Manaus	카라카스, 라파스, 마나우스
+settings		Puerto Rico, Santo Domingo	푸에르토리코, 산토도밍고
+settings		St. John's	세인트존스
+settings		Fernando de Noronha	페르난두 지 노로냐
+settings		Azores	아조레스
+settings		Cape Verde	카보베르데
+settings		Gamma	감마
+settings		Black	검정
+settings		Grey steps	회색 단계
+settings		Colour bars	컬러 바
+settings		White	흰색
+settings		Mid grey	중간 회색
+settings		None (smooth)	없음 (부드럽게)
+settings		{n} (card)	{n} (카드)
+settings		Top brightness	위 화면 밝기
+settings		Bottom brightness	아래 화면 밝기
+settings		The bottom screen's backlight. F + volume changes both screens anywhere, in games too.	하단 화면의 백라이트 밝기입니다. F + 볼륨 버튼으로 언제든 두 화면의 밝기를 조절할 수 있습니다.
+settings		Screen colours	화면 색상
+settings		Power off after sleeping	절전 후 전원 끄기
+settings		Asleep this long (not while charging), the game is saved where you are and the handheld turns itself off, so the battery keeps for weeks. Press power to start it again: it goes straight back into the game.	충전 중이 아닐 때 설정한 시간 동안 절전 상태가 유지되면 게임을 저장하고 전원을 끕니다. 배터리를 오래 보존하며, 전원을 켜면 이어서 플레이할 수 있습니다.
+settings		DS language	DS 언어
+settings		The language the DS itself is set to: a game that has several starts in it. Both emulators.	다국어 DS 게임에서 사용할 언어입니다. 두 에뮬레이터에 모두 적용됩니다.
+settings		English	영어
+settings		Japanese	일본어
+settings		French	프랑스어
+settings		German	독일어
+settings		Italian	이탈리아어
+settings		Spanish	스페인어
+settings		DS name	DS 이름
+settings		The name the DS itself is set to, as on a real one: Mario Kart's records, Pictochat, a game's save. 10 characters at most. Both emulators; empty: Dr DraStic in SuperDrastic, Banana in BananaDS.	DS 본체 이름입니다(최대 10자). 기본값은 Dr DraStic 또는 Banana입니다.
+settings		On: the game hears the real microphone (a blow, a voice; the DS's own games that ask for one). Off: it hears nothing from the mic, and the in-game menu's Blow still works for a game that wants one.	마이크 입력을 켜거나 끕니다. 꺼도 게임 메뉴의 불기 기능은 사용할 수 있습니다.
+settings		Mic sensitivity	마이크 감도
+settings		How far above the room's noise a word or a blow must be to reach the game. Gate off lets the game hear everything the microphone picks up, its own sound from the speaker included.	주변 소음보다 큰 소리만 마이크에 전달합니다. 끄면 스피커 소리를 포함한 모든 소리가 입력됩니다.
+settings		Gate off	게이트 끄기
+settings		Reset BananaDS	BananaDS 초기화
+settings		BananaDS's settings back to Banana's. Saves, save states and each game's clock stay. Press A twice.	BananaDS 설정을 초기화합니다. 저장 데이터, 상태 저장 및 게임 시계는 유지됩니다. A를 두 번 누르세요.
+settings		Threaded 3D	3D 멀티스레딩
+settings		On draws the DS's 3D beside the game, the faster way. Off draws it in step with the game: for a game whose 3D shows on the wrong screen or a frame late with it on (the Dragon Quest games).	스레드 방식 3D 렌더링은 속도를 높입니다. 화면 위치나 표시 지연 문제가 있는 게임(예: Dragon Quest)은 끄세요.
+settings		Reset buttons	버튼 초기화
+settings		DraStic's buttons back to Banana's, for a button setup gone wrong in DraStic's menu: the pad as printed, F or L3 the menu, R2 save, L2 load, R3 fast forward. (HOME always opens the menu.) Press A twice.	DraStic 버튼 설정을 초기화합니다. F 또는 L3: 메뉴, R2: 저장, L2: 불러오기, R3: 빨리 감기, HOME: 메뉴. A를 두 번 누르세요.
+settings		Reset DraStic	DraStic 초기화
+settings		All of DraStic's and SuperDrastic's settings back to Banana's, the buttons too. Saves, save states, cheats and the DS's name and birthday stay. Press A twice.	DraStic 및 SuperDrastic의 모든 설정과 버튼을 초기화합니다. 저장 데이터, 상태 저장, 치트, 이름, 생일은 유지됩니다. A를 두 번 누르세요.
+settings		Softcore: achievements unlock with save states, rewind and cheats still there. Hardcore: those are locked for the game, and the unlocks count as hardcore on retroachievements.org. RetroArch's own menu changes the same setting.	Softcore는 상태 저장, 되감기, 치트를 허용합니다. Hardcore는 해당 기능을 제한합니다. RetroArch의 설정과 동일합니다.
+settings		Softcore	소프트코어
+settings		Hardcore	하드코어
+settings		On: quitting keeps where you are, and the game goes on from there next time (RetroArch's automatic save state; not in Hardcore). Off: a game starts from its title.	RetroArch에서 게임을 종료할 때 자동 저장하고 다음 실행 시 이어서 플레이합니다(Hardcore 제외). 끄면 타이틀부터 시작합니다.
+settings		A look for the systems RetroArch runs: a handheld's LCD grid, a CRT's scanlines, or sharp pixels at any size. RetroArch's own Shaders menu still picks any of libretro's presets.	RetroArch의 LCD, CRT, 선명한 화면 등 셰이더를 선택합니다. RetroArch 자체 메뉴에서도 libretro 프리셋을 선택할 수 있습니다.
+settings		LCD	LCD
+settings		CRT	CRT
+settings		Sharp pixels	선명한 픽셀
+settings		Audio latency	오디오 지연
+settings		RetroArch's audio buffer. Low is the quickest to react and can crackle on a busy game; Safe has the most margin (and the most delay).	오디오 버퍼 크기입니다. 낮을수록 반응이 빠르지만 소리가 끊길 수 있습니다. Safe는 지연이 가장 큽니다.
+settings		Low (32 ms)	낮음 (32 ms)
+settings		Default (64 ms)	기본값 (64 ms)
+settings		Safe (128 ms)	안정적 (128 ms)
+settings		On waits for the panel's refresh before drawing the next frame, so nothing tears. Off lets a core run as fast as it can; the panel can show a half-drawn frame.	수직 동기화는 화면 갱신에 맞춰 출력합니다. 끄면 화면 찢어짐이 발생할 수 있습니다.
+settings		The emulator for GBA games. gpSP: the fastest. mGBA: the most accurate, and the one RetroAchievements accepts for hardcore. Cores downloaded with RetroArch's Core Downloader (its Online Updater) are listed here too.	GBA 코어를 선택합니다. gpSP는 빠르며 mGBA는 정확하고 Hardcore를 지원합니다. 다운로드한 코어도 표시됩니다.
+settings		RetroArch hotkeys	RetroArch 단축키
+settings		F + a button in a game: X the menu, Start quits, L and R load and save a state, Y the frame counter, L2 rewind, R2 fast forward. Off: only F + X and F + Start, the two needed to get out, and none bound in RetroArch's own menu either.	F + X: 메뉴, START: 종료, L/R: 불러오기/저장, Y: FPS, L2: 되감기, R2: 빨리 감기. 끄면 X와 START만 유지되고 RetroArch의 나머지 단축키가 해제됩니다.
+settings		Reset RetroArch	RetroArch 초기화
+settings		RetroArch's settings back to Banana's: for a button bound away in RetroArch's menu (an A that does something else, a hotkey on a face button). Its controls, remaps and overrides go to retroarch/backup-<date> on the card. Saves, states, the RetroAchievements account and these settings stay. Press A twice.	RetroArch 설정을 초기화하고 retroarch/backup-<date>에 백업합니다. 저장 데이터, 상태 저장, 계정 및 이 메뉴의 설정은 유지됩니다. A를 두 번 누르세요.
+settings		Controllers, headphones and speakers. Off (the default) leaves the radio unpowered, which saves battery; Bluetooth devices, below, pairs them. While Bluetooth headphones are connected the sound plays on them.	블루투스를 끄면 무선 기능을 비활성화합니다. 아래에서 기기를 페어링할 수 있으며 헤드폰으로 소리를 들을 수 있습니다.
+settings		Bluetooth devices	Bluetooth 기기
+settings		The devices paired and the ones around: A pairs with one in pairing mode, connects a paired one or disconnects it.	블루투스 기기를 페어링하거나 연결 및 연결 해제합니다.
+settings		Bluetooth audio	Bluetooth 오디오
+settings		Low latency: aptX, or SBC on headphones without it: the sound as close to the picture as Bluetooth gets, for games. Best quality: LDAC, aptX HD or a richer SBC when the headphones have them, a little later (tens of ms) and a little more battery. Headphones connected now reconnect to take the change.	낮은 지연은 aptX/SBC, 음질 우선은 LDAC/aptX HD 또는 고음질 SBC를 사용합니다. 수십 ms의 지연과 배터리 사용량이 증가할 수 있습니다. 헤드폰을 다시 연결하세요.
+settings		Low latency	저지연
+settings		Best quality	최고 음질
+settings		Sharing login	공유 로그인
+settings		Name and password: the card asks for the name and password below (Windows refuses a share with no password). Guest: anyone on the network opens it with none; only on a network you trust.	이름과 비밀번호로 접속하거나 게스트로 공유합니다. Windows는 비밀번호 없는 공유를 제한할 수 있습니다. 신뢰할 수 있는 네트워크에서만 사용하세요.
+settings		Name and password	이름 및 비밀번호
+settings		Guest	게스트
+settings		Sharing name and password	공유 이름 및 비밀번호
+settings		The language of the menu and the settings. Lines not yet translated stay in English.	메뉴와 설정의 표시 언어입니다. 번역되지 않은 문장은 영어로 표시됩니다.
+settings		{name} ({English name}): translated by {translator}.	{name} ({English name}): 번역 {translator}.
+settings		Language	언어
+settings		Box art from	게임 표지 출처
+settings		libretro: libretro's collections. libretro + Twilight: TwilightBoxart (boxart.kirovair.com) for the covers libretro has none of. Twilight first: TwilightBoxart's covers where it has them. TwilightBoxart is asked one game a second.	libretro 또는 Twilight에서 표지 이미지를 가져옵니다. Twilight는 초당 한 게임씩 처리합니다.
+settings		libretro + Twilight	libretro + Twilight
+settings		Twilight first	Twilight 우선
+settings		Second SD card	두 번째 SD 카드
+settings		Games on the card in the second slot (its roms folder, with the same system folders as this card) show up in the library with the others while it's in. exFAT or FAT32.	두 번째 SD 카드의 roms 폴더(시스템별 동일한 폴더 구조)를 사용합니다. exFAT 및 FAT32를 지원합니다.
+settings		Show its games	카드의 게임 표시
+settings		Reset system settings	시스템 설정 초기화
+settings		Puts the menu, display, sound, power and network settings back to their defaults, the time zone too (the language stays). Your games, saves and the emulators' settings are untouched. Press A twice.	시스템 설정과 시간대를 초기화합니다. 언어, 게임, 저장 데이터 및 에뮬레이터 설정은 유지됩니다. A를 두 번 누르세요.
+settings		Reset emulator settings	에뮬레이터 설정 초기화
+settings		Puts the emulator choices back to their defaults: the DS emulator, Quick resume, each system's emulator (core), and RetroArch's shader, audio latency, VSync and hotkeys. Your menu settings, saves and games stay. Press A twice.	에뮬레이터 설정을 기본값으로 되돌립니다. 게임과 저장 데이터는 유지됩니다. A를 두 번 누르세요.
+settings		Search	검색
+settings		SuperDrastic: F	SuperDrastic: F
+settings		SuperDrastic: F + START	SuperDrastic: F + START
+settings		SuperDrastic: R2 / L2	SuperDrastic: R2 / L2
+settings		SuperDrastic: R3	SuperDrastic: R3
+settings		BananaDS: F / L3	BananaDS: F / L3
+settings		BananaDS: F + R	BananaDS: F + R
+settings		BananaDS: F + L	BananaDS: F + L
+settings		BananaDS: F + START	BananaDS: F + START
+settings		RetroArch: F + X	RetroArch: F + X
+settings		RetroArch: F + START	RetroArch: F + START
+settings		RetroArch: F + R / F + L	RetroArch: F + R / F + L
+settings		RetroArch: F + R2	RetroArch: F + R2
+settings		RetroArch: F + L2	RetroArch: F + L2
+settings		RetroArch: F + Y	RetroArch: F + Y
+settings		From the theme	테마 기본값
+settings		This theme sets its own accent colour. Pick Dark, Light or a theme without one to choose it here.	이 테마의 강조색을 사용합니다. 어두운 또는 밝은 모드를 선택할 수 있습니다.
+settings		Name	이름
+settings		The DS's name	DS 이름
+settings		10 characters at most	최대 10자
+settings		DraStic's buttons are Banana's again.	DraStic 버튼을 Banana 기본값으로 되돌렸습니다.
+settings		Back to Banana's settings.	Banana 기본 설정으로 되돌렸습니다.
+settings		Couldn't reset: the card may be read-only.	초기화 실패: 카드가 읽기 전용일 수 있습니다.
+settings		RetroArch is back to Banana's settings. The old ones are in {out} on the card.	RetroArch를 Banana 기본 설정으로 되돌렸습니다. 이전 설정은 카드의 {out}에 저장했습니다.
+settings		RetroArch couldn't be reset.	RetroArch 초기화 실패.
+settings		Emulator settings reset	에뮬레이터 설정 초기화됨
+settings		System settings reset	시스템 설정 초기화됨
+settings		The core choices and RetroArch's options are back to their defaults.	코어 및 RetroArch 옵션을 초기화합니다.
+settings		The menu, display, sound and power settings are back to their defaults.	메뉴, 화면, 소리 및 전원 설정을 초기화합니다.
+settings		Linux {release}.	Linux {release}.
+settings		The two screens rarely show the same white. This corrects one of them towards the other: the same test pattern on both, and red, green, blue, gamma, brightness and black for the one corrected (the handheld has one colour table, so one screen). Now: {c}	두 화면의 흰색이 다르면 RGB, 감마, 밝기 및 검은색을 보정할 수 있습니다. 한 화면에 보정값을 적용합니다. 현재: {c}
+settings		no correction.	보정 없음.
+settings		the top screen corrected.	위 화면 보정됨.
+settings		the bottom screen corrected.	아래 화면 보정됨.
+settings		What a computer asks for when it opens the share: name {name}, password {password}. A changes them (they are kept in banana/accounts.conf, which the share never shows).	공유 이름: {name}, 비밀번호: {password}. 계정 파일은 공유하지 않습니다.
+settings		Anyone on the network can open it with no password (Sharing login): leave it off on networks you don't trust.	비밀번호가 없는 공유는 신뢰할 수 있는 네트워크에서만 사용하세요.
+settings		Name {name}, password {password} (Sharing name and password, below).	이름 {name}, 비밀번호 {password}(아래 공유 이름 및 비밀번호 항목).
+settings		Not set	설정 안 됨
+settings		The pictures didn't come: no connection?	이미지를 받지 못했습니다. 연결을 확인하세요.
+settings		Not fetched: {error}.	가져오지 못함: {error}.
+settings		no connection	연결 없음
+settings		No connection: is Wi-Fi connected?	연결 없음: Wi-Fi를 확인하세요.
+settings		Nothing in libretro's collection for "{words}". Fewer words, or another spelling (B, then A to type again).	libretro 컬렉션에 "{words}" 검색 결과가 없습니다. 단어 수를 줄이거나 철자를 바꾸세요(B를 누른 다음 A로 다시 입력).
+settings		Couldn't write banana/wifi.conf on the card.	카드의 banana/wifi.conf에 기록할 수 없습니다.
+settings		{network} signs in a way the menu can't (a company network, or the old WEP): it can be written in banana/wifi.conf on a computer.	{network}는 메뉴에서 지원하지 않는 인증 방식(기업용 네트워크 또는 구형 WEP)을 사용합니다. 컴퓨터에서 banana/wifi.conf에 직접 설정할 수 있습니다.
+settings		Password for	비밀번호
+settings		{name} forgotten: its password is gone from banana/wifi.conf.	{name} 연결 정보를 삭제했습니다. banana/wifi.conf에서 비밀번호를 제거했습니다.
+settings		A joins the network chosen, with its password typed on the keyboard (or by touch). X searches again, Y forgets a saved network. Passwords are kept in banana/wifi.conf on the card.	A: 비밀번호 입력 및 연결, X: 다시 검색, Y: 저장된 네트워크 삭제.
+settings		Every system's games	모든 게임기의 게임
+settings		No games match	일치하는 게임 없음
+settings		{value} game matches	게임 {value}개 일치
+settings		A types the key, B deletes, X capitals, Y a space, START searches: the games found open as a shelf of their own, first on the shelf. Part of a name is enough; an empty search takes the shelf away.	A: 키 입력, B: 지우기, X: 대문자, Y: 공백, START: 검색. 결과는 진열장에 표시됩니다. 빈 검색어는 검색 진열장을 제거합니다.
+settings		A types the key, B deletes, X capitals, L symbols, Y a space, START joins. Or tap the keys. The password is kept in banana/wifi.conf on the card.	A: 입력, B: 지우기, X: 대문자, L: 기호, Y: 공백, START: 연결.
+settings		A types the key, B deletes, X capitals, L symbols, Y a space, START when it is typed. Kept in both emulators' settings (DraStic's drastic.cfg, BananaDS's bananads.conf).	A: 입력, B: 지우기, X: 대문자, L: 기호, Y: 공백, START: 저장. 두 에뮬레이터의 설정에 적용됩니다.
+settings		A types the key, B deletes, X capitals, L symbols, Y a space, START when it is typed. Kept in banana/game-titles.tsv on the card.	A: 입력, B: 지우기, X: 대문자, L: 기호, Y: 공백, START: 저장. banana/game-titles.tsv에 기록합니다.
+settings		A types the key, B deletes, X capitals, L symbols, Y a space, START looks. A few words of the name are enough: the closest names come first.	A: 입력, B: 지우기, X: 대문자, L: 기호, Y: 공백, START: 표지 검색.
+settings		A types the key, B deletes, X capitals, L symbols, Y a space, START when it is typed. Or tap the keys. Accounts are kept in banana/accounts.conf on the card.	A: 입력, B: 지우기, X: 대문자, L: 기호, Y: 공백, START: 저장.
+settings		failed: the download stopped	실패: 다운로드 중단
+settings		RetroAchievements password for	RetroAchievements 비밀번호
+settings		ScreenScraper password for	ScreenScraper 비밀번호
+settings		A name of letters, digits, dots, dashes or underscores, at most 32.	영문, 숫자, 마침표, 하이픈, 밑줄을 최대 32자까지 사용할 수 있습니다.
+settings		File sharing password for	파일 공유 비밀번호
+settings		The password can't be empty: Sharing login > Guest is for a share with none.	공유 비밀번호는 비워 둘 수 없습니다. 비밀번호 없이 공유하려면 게스트를 선택하세요.
+settings		The DS takes 10 characters at most; this one has {count}.	DS 이름은 최대 10자입니다. 현재 {count}자입니다.
+settings		Looking in libretro's collection...	libretro 컬렉션 검색 중...
+settings		The time zone is still UTC, so the clock shows {time}. Left and right pick yours; Finish again to keep UTC.	시간대가 아직 UTC이므로 시계는 {time}을 표시합니다. 좌우로 시간대를 선택하세요. UTC를 유지하려면 완료를 다시 누르세요.
+settings		Your name on the DS, as a real one asks for it the first time: Mario Kart's records, Pictochat, a game's save. A types it (10 characters at most). Leave it and the emulators use their own.	실제 DS 본체처럼 이름을 설정합니다(최대 10자). 각 에뮬레이터의 기본값을 사용할 수도 있습니다.
+settings		Tap a tile; F + X opens RetroArch's menu, F + Start quits	타일 터치; F + X: RetroArch 메뉴, F + Start: 종료
+settings		F + X opens RetroArch's menu, F + Start quits	F + X: RetroArch 메뉴, F + Start: 종료
+settings		{server}'s address couldn't be looked up: is Wi-Fi connected? (Or the network's DNS isn't answering: try again in a minute)	{server} 주소를 찾을 수 없습니다. Wi-Fi 연결 또는 DNS 서버를 확인하고 잠시 후 다시 시도하세요.
+settings		couldn't connect to {server}: is Wi-Fi connected?	{server} 연결 실패: Wi-Fi를 확인하세요.
+settings		{server} didn't answer in time (a weak Wi-Fi signal?)	{server} 응답 시간 초과 (Wi-Fi 신호가 약한가요?)
+settings		the secure connection to {server} failed: is the clock right? (It says {date})	{server}에 보안 연결하지 못했습니다. 시계가 정확한지 확인하세요(현재 {date}).
+settings		the connection to {server} broke off	{server} 연결이 끊겼습니다
+settings		{server} refused the download (HTTP error)	{server} 다운로드 거부 (HTTP 오류)
+settings		the card can't be written (full?)	카드에 기록할 수 없습니다 (공간 부족?)
+settings		the file isn't there	파일이 없습니다
+settings		{file} is damaged in {file}: download it again. (Its SHA-256 starts {hash}; the release's SHA256SUMS file lists the right one.)	{file}에 포함된 {file}이 손상되었습니다. 다시 다운로드하세요(SHA-256 시작값 {hash}; 릴리스 SHA256SUMS 파일에서 올바른 값을 확인하세요).
+settings		there is no newer version to download: Check for updates first	다운로드할 새 버전이 있는지 먼저 확인하세요.
+settings		that check was for the {board}, this is the {board}	{board}용 확인 결과입니다. 현재 기종은 {board}입니다.
+settings		the release's package has an odd name ({file})	릴리스 패키지 이름이 올바르지 않습니다 ({file})
+settings		not enough space on the card: the update needs {n} MB free (the download, and its unpacked copy while it installs); there are {n} MB	카드 공간이 부족합니다. 업데이트에는 다운로드 및 압축 해제 공간 {n}MB가 필요하지만 현재 {n}MB만 남아 있습니다.
+settings		{error} (fetching SHA256SUMS-{board}.txt)	{error} (SHA256SUMS-{board}.txt 가져오기)
+settings		the release's SHA256SUMS-{board}.txt doesn't list {file}	릴리스의 SHA256SUMS-{board}.txt에 {file}이 없습니다
+settings		{error}. What came ({n} MB) is kept: Download again carries on from there	{error}. 다운로드한 {n}MB를 보존했습니다. 다시 다운로드하면 이어받습니다.
+settings		the download stopped at {n} of {n} MB: Download again carries on from there	다운로드가 {n}/{n}MB에서 중단되었습니다. 다시 다운로드하면 이어받습니다.
+settings		the download is damaged: its SHA-256 doesn't match the release's SHA256SUMS, so it was deleted. Download it again	다운로드 파일의 체크섬이 일치하지 않습니다. 삭제 후 다시 다운로드하세요.
+settings		can't move the download into banana/updates	banana/updates로 다운로드를 옮길 수 없습니다
+settings		Fetching the cover and the title screen...	표지와 타이틀 화면을 가져오는 중...
+settings		Box art for	게임 표지
+settings		{value} (B works once it has answered.)	{value} (응답이 오면 B를 사용할 수 있습니다.)
+settings		libretro's names for the words typed, the closest first. A fetches that game's cover and title screen for this one (over what it had), and every scrape after keeps them. B types other words.	libretro에서 가장 비슷한 게임부터 표시합니다. A: 이미지 가져오기, B: 검색어 다시 입력.
+settings		Looking...	검색 중...
+settings		Use	사용
+settings		{shader} (not on the card)	{shader} (카드에 없음)
+settings		Wi-Fi is off: switch it on in Settings > Network first.	Wi-Fi 꺼짐: 설정 > 네트워크에서 켜세요.
+settings		Box art: the game's name in libretro's collection	표지: libretro 컬렉션의 게임 이름
+settings		This game's name	이 게임의 이름
+settings		This game's sort title	이 게임의 정렬 이름
+settings		As in Settings ({setting})	설정과 동일 ({setting})
+settings		As in Settings: {shader}	설정과 동일: {shader}
+settings		As scraped	가져온 이름
+settings		By its name	이름 기준
+settings		Sort title	정렬 이름
+settings		Fetched	가져옴
+settings		Find it by name	이름으로 찾기
+settings		This game's emulator	이 게임의 에뮬레이터
+settings		This game's shader	이 게임의 셰이더
+settings		This game's 3D	이 게임의 3D
+settings		This game's microphone	이 게임의 마이크
+settings		This game's box art	이 게임의 표지
+settings		SuperDrastic: DraStic onto both panels, the fastest. BananaDS: Banana's own emulator (melonDS's core), the most accurate. The choice is for this game only; the others follow Settings > Nintendo DS > Emulator.	이 게임에서 사용할 에뮬레이터를 선택합니다.
+settings		The picture's shader for this game only, in either emulator; the others follow Settings > Nintendo DS > Shader. None scales smoothly and costs no GPU work.{PLUS_SHADER_NOTE}	이 게임에 사용할 셰이더입니다. None은 부드러운 확대를 사용하며 GPU 부하가 없습니다.{PLUS_SHADER_NOTE}
+settings		SuperDrastic (DraStic) only. On draws the DS's 3D beside the game, the faster way; Off draws it in step with the game, for a game whose 3D shows on the wrong screen or a frame late (the Dragon Quest games). The others follow Settings > Nintendo DS > Threaded 3D.	이 게임의 스레드 방식 3D 렌더링 설정입니다.
+settings		How loud a word or a blow must be to reach this game, in either emulator: High hears a quiet voice, Low only a loud one, Off none. For a game that needs the microphone (Nintendogs) or one it bothers.	마이크 감도를 높음, 낮음 또는 끄기로 설정합니다.
+settings		The name the menu shows for this game. A types it; an empty one goes back to the scraped name. Kept in banana/game-titles.tsv, which scraping the box art again leaves alone.	게임에 표시할 이름입니다. A로 변경하며 비워 두면 기본 이름을 사용합니다. banana/game-titles.tsv에 저장합니다.
+settings		The library's order goes by this instead of the name: Dragon Quest 04, 05 and 09 keep IV, V and IX in their order. A types it; an empty one sorts by the name again.	게임 목록을 정렬할 때 사용할 이름을 지정합니다.
+settings		For a game the box art scrape got wrong or didn't find (a translation, a hack, another name): A types its name as libretro's collection has it, then you pick the right one from what it finds. Wi-Fi needed.	번역판이나 개조 게임의 표지 이미지를 검색합니다. Wi-Fi 연결이 필요합니다.
+settings		This game	이 게임
+settings		Type	종류
+settings		Find	찾기
+settings		Search games	게임 검색
+settings		Pairing with {name}...	{name} 페어링 중...
+settings		Connecting to {name}...	{name} 연결 중...
+settings		Disconnecting {name}...	{name} 연결 해제 중...
+settings		Forgetting {name}...	{name} 등록 해제 중...
+settings		Bluetooth didn't come on: {reason}.	Bluetooth를 켜지 못함: {reason}.
+settings		Paired with {n}.	{n} 페어링 완료.
+settings		Couldn't pair with {n}{reason} Put it in pairing mode again (its manual says how), then A.	{n} 페어링 실패{reason} 기기의 설명서를 참고하여 페어링 모드로 다시 전환하고 A를 누르세요.
+settings		Couldn't connect to {n}{reason} Is it on and near the handheld?	{n} 연결 실패{reason} 기기가 켜져 있고 가까이에 있는지 확인하세요.
+settings		{n} disconnected.	{n} 연결 해제됨.
+settings		Couldn't disconnect {n}{reason}	{n} 연결 해제 실패{reason}
+settings		{n} forgotten: pair with it again to use it.	{n} 등록 해제됨. 다시 페어링해야 합니다.
+settings		Couldn't forget {n}{reason}	{n} 등록 해제 실패{reason}
+settings		Bluetooth is off	Bluetooth 꺼짐
+settings		Nothing connected	연결된 기기 없음
+settings		Bluetooth is switched off. X switches it on and searches.	Bluetooth가 꺼져 있습니다. X로 켜고 검색합니다.
+settings		A pairs with the device chosen (put it in pairing mode first), connects a paired one, or disconnects it. X searches again, Y forgets a paired device. Headphones play the sound while they are connected; controllers work in the games.	A: 블루투스 기기 연결, X: 검색, Y: 연결 정보 삭제.
+settings		Devices	기기
+settings		Paired	페어링됨
+settings		No devices found. X searches again.	기기를 찾을 수 없습니다. X로 다시 검색하세요.
+settings		Pair	페어링
+settings		Disconnect	연결 해제
+settings		Connect	연결
+settings		Headphones	헤드폰
+settings		Controller	컨트롤러
+settings		Keyboard	키보드
+settings		Mouse	마우스
+settings		Back to no correction: A keeps that, B goes back to what was kept.	보정을 적용하지 않습니다. A로 유지하고 B로 이전 설정으로 돌아갑니다.
+settings		The display refused it: {error}. Nothing was kept.	화면 적용 실패: {error}. 변경 사항은 저장되지 않았습니다.
+settings		The card can't be written.	카드에 기록할 수 없습니다.
+settings		No correction	보정 없음
+settings		The top screen corrected	위 화면 보정됨
+settings		The bottom screen corrected	아래 화면 보정됨
+settings		Screen colours  ·  {pattern}  ·  L / R: another pattern	화면 색상  ·  {pattern}  ·  L / R: 패턴 변경
+settings		Make the screen you correct look like the other one. X: no correction.	보정할 화면을 다른 화면과 비슷하게 조절합니다. X: 보정 안 함.
+settings		Correct the top	위 화면 보정
+settings		Correct the bottom	아래 화면 보정
+settings		Keep	유지
+settings		3x (experimental)	3배 (실험적)
+settings		4x (experimental)	4배 (실험적)
+settings		The emulator (RetroArch core) for this system's games: the first is BananaOS's own. Cores downloaded with RetroArch's Core Downloader (its Online Updater) are listed here too.	이 시스템의 에뮬레이터 코어를 선택합니다. 다운로드한 코어도 표시됩니다.
+settings		Home server	홈 서버
+settings		Your games, their box art and your saves from a server at home: Romhost (Homeport's ROM library) or RomM. A opens its page: pairing, Sync now, and what syncs.	Romhost 또는 RomM을 사용하는 홈 서버에 연결합니다.
+settings		SuperDrastic: F + SELECT	SuperDrastic: F + SELECT
+settings		Swap the screens	화면 교체
+settings		DS games in SuperDrastic: the DS's top screen on the bottom panel and its bottom screen on the top one (touch follows it: the RG DS's top touchscreen; on the RG DS Plus no touch while swapped), and back. Kept for each game.	SuperDrastic에서 상하 화면을 바꿉니다. DS는 터치 위치를 함께 전환하며 Plus는 전환 시 터치를 지원하지 않습니다. 게임별 설정입니다.
+settings		BananaDS: F + SELECT	BananaDS: F + SELECT
+settings		DS games in BananaDS: the DS's top screen on the bottom panel and its bottom screen on the top one (touch follows it: the RG DS's top touchscreen; on the RG DS Plus no touch while swapped), and back. Kept for each game.	BananaDS에서 상하 화면을 바꿉니다. DS는 터치 위치를 함께 전환하며 Plus는 전환 시 터치를 지원하지 않습니다. 게임별 설정입니다.
+settings		Server	서버
+settings		Sync now	지금 동기화
+settings		Copies the server's games (with their covers and names) to the card and syncs the saves both ways. It carries on in the background; the handheld doesn't sleep while games download. Files of your own are never replaced or deleted: only the ones a sync put there.	서버의 게임, 표지 및 이름을 내려받고 저장 데이터를 양방향으로 동기화합니다. 백그라운드 작업 중에는 절전하지 않으며 동기화로 관리되는 파일만 변경합니다.
+settings		Download: the server's games for the systems below come to the card (and leave it when they leave the server). Saves only: the games stay as they are and only the saves sync.	게임 전체를 내려받거나 저장 데이터만 동기화합니다.
+settings		Saves only	저장 데이터만
+settings		Games go to	게임 저장 위치
+settings		Where downloaded games go. Second SD card: its roms folder (made if it has none), while it's in and Second SD card shows its games. A game already on a card stays there; with the second card out, its games wait for the next sync.	두 번째 SD 카드의 roms 폴더를 사용합니다. 없으면 생성하며 기존 파일 위치를 유지합니다. 카드가 없으면 삽입할 때까지 기다립니다.
+settings		This card	이 카드
+settings		Save states	상태 저장
+settings		On: save states sync too, not only the games' own saves (RomM; on Romhost its Devices page decides). Quick-resume states never sync.	RomM 또는 Romhost의 Devices를 통해 상태 저장을 동기화합니다. 빠른 이어하기 데이터는 제외합니다.
+settings		Auto sync	자동 동기화
+settings		Leaving a game: its saves go to the server as you leave it (a few seconds, in the background). And on Wi-Fi: also games and saves whenever Wi-Fi connects. Never while a game runs.	게임을 종료하거나 Wi-Fi에 연결할 때 자동 동기화합니다. 게임 실행 중에는 동기화하지 않습니다.
+settings		Leaving a game	게임 종료 시
+settings		And on Wi-Fi	Wi-Fi 연결 시도 포함
+settings		Which systems sync on this handheld. A skipped system's games stay as they are on the card.	동기화할 시스템을 선택합니다. 건너뛴 시스템은 그대로 유지합니다.
+settings		Forget this server	이 서버 등록 해제
+settings		Unpairs the handheld: nothing syncs until it is paired again. The games and saves stay on the card. Press A twice.	A를 두 번 눌러 서버 연결을 해제합니다. 게임 및 저장 데이터는 유지됩니다.
+settings		Home server systems	홈 서버 게임기
+settings		Sync: its games and saves sync with the home server. Skip: they stay as they are on this handheld.	이 시스템을 동기화하거나 건너뜁니다.
+settings		Sync	동기화
+settings		Unpaired. The games and saves stay on the card.	페어링 해제됨. 게임과 저장 데이터는 카드에 남습니다.
+settings		OVERFLOW	초과
+settings		Mario & Luigi - Partners in Time (Europe) (En,Fr,De,Es,It) (Rev 1).nds	Mario & Luigi - Partners in Time (Europe) (En,Fr,De,Es,It) (Rev 1).nds
+settings		Game page > {value}	게임 페이지 > {value}
+settings		wrong password	비밀번호가 틀렸습니다
+settings		no answer	응답 없음
+settings		{n} old packages removed from banana/updates.	banana/updates에서 이전 패키지 {n}개 삭제됨.
+settings		Banana {count}'s package deleted from banana/updates.	Banana {count} 패키지를 banana/updates에서 삭제했습니다.
+settings		Banana {count}'s package couldn't be deleted.	Banana {count} 패키지 삭제 실패.
+settings		Pairing code for	페어링 코드
+settings		No Romhost answered. Server address	Romhost 응답 없음. 서버 주소
+settings		Romhost or RomM	Romhost 또는 RomM
+settings		Asking {name} for a pairing code...	{name}에 페어링 코드 요청 중...
+settings		Nothing answers there as a Romhost or RomM server. Check the address (and :port) and that the handheld is on the same network.	Romhost 또는 RomM을 찾지 못했습니다. 서버 주소와 네트워크 연결을 확인하세요.
+settings		On {hsName}, open {url} (signed in) and approve this handheld (code {code}). Waiting...	{hsName}에서 로그인한 상태로 {url}을 열고 이 기기를 승인하세요(코드 {code}). 기다리는 중...
+settings		Paired with {ln}. Sync now, below, gets the games and saves.	{ln} 페어링 완료. 아래의 지금 동기화로 게임과 저장 데이터를 받으세요.
+settings		Pairing didn't work: {ln}.	페어링 실패: {ln}.
+settings		None right now.	현재 없음.
+settings		Tap: back	터치: 뒤로
+settings		%s %s: the title "%s" is too long for its tab (give "tab")	%s %s: 제목 "%s"이 탭에 비해 깁니다 ("tab" 지정)
+settings		%s %s: a reference page with %zu characters	%s %s: 참조 페이지 %zu자
+settings		On the Plus a shader also heats the chip: a heavy 3D game can drop frames after a few minutes. Give such a game None on its own page (X in the library).	Plus에서 무거운 셰이더는 발열을 높일 수 있습니다. 게임 설정에서 None을 선택하세요.
+settings		VBA Next	VBA Next
+settings		VBA-M	VBA-M
+settings		Meteor	Meteor
+settings		Gambatte	Gambatte
+settings		Gearboy	Gearboy
+settings		TGB Dual	TGB Dual
+settings		NES	NES
+settings		Nestopia UE	Nestopia UE
+settings		Mesen	Mesen
+settings		QuickNES	QuickNES
+settings		Snes9x	Snes9x
+settings		Snes9x 2010	Snes9x 2010
+settings		Snes9x 2005 Plus	Snes9x 2005 Plus
+settings		Snes9x 2005	Snes9x 2005
+settings		Snes9x 2002	Snes9x 2002
+settings		Mesen-S	Mesen-S
+settings		PicoDrive	PicoDrive
+settings		Genesis Plus GX	Genesis Plus GX
+settings		BlastEm	BlastEm
+settings		PCSX ReARMed	PCSX ReARMed
+settings		SwanStation	SwanStation
+settings		Beetle PSX	Beetle PSX
+settings		ParaLLEl N64	ParaLLEl N64
+settings		The picture's shader for this game only, in either emulator; the others follow Settings > Nintendo DS > Shader. None scales smoothly and costs no GPU work.	이 게임에 적용할 셰이더입니다. None은 부드러운 확대를 사용하며 GPU 부하가 없습니다.
+settings		RetroArch {ra}, updated with BananaOS.	RetroArch {ra}, BananaOS와 함께 업데이트됩니다.
+settings		Not paired. A looks for Romhost on the network (Homeport > ROMs > Pair a device shows its code); when none answers, type the address of a Romhost or a RomM server (a name or IP, and :port if it isn't the usual one). For RomM, the handheld then shows an address to open in RomM to approve it.	서버를 검색하여 페어링합니다. 검색되지 않으면 서버 주소와 페어링 코드를 입력하세요.
+settings		Paired with {n}. A pairs again (another server, or after the handheld was removed there).	{n}에 연결했습니다. 다른 서버에 연결하거나 서버에서 기기를 삭제했다면 A로 다시 페어링하세요.
+settings		Last sync: {g} files of games down, {rm} removed; saves {up} up, {dn} down{cf}{er}	최근 동기화: 게임 파일 {g}개 수신, {rm}개 삭제; 저장 데이터 {up}개 전송, {dn}개 수신{cf}{er}
+settings		; {cf} in conflict (on Romhost: decide in Homeport; on RomM the newer won and the other is kept on the card as a .bak)	; 충돌 {cf}건(Romhost: Homeport에서 선택; RomM: 최신 파일을 사용하고 나머지는 카드에 .bak로 보존)
+settings		. {er} didn't work: {reason}.	. {er} 실패: {reason}.
+settings		The last sync didn't work: {syncLine}.	마지막 동기화 실패: {syncLine}.
+settings		Syncing with {homeServer}. It carries on if you leave this screen; the library shows the new games when it's done.	{homeServer}와 동기화 중입니다. 이 화면을 나가도 계속 진행하며 완료 후 라이브러리에 새 게임이 표시됩니다.
+settings		the server	서버
+settings		Pairing	페어링 중
+settings		Not paired	페어링되지 않음
+settings		The home server's address: its name or IP, and :port when it isn't the usual (Romhost 8092, RomM 8080 or 80). A types the key, B deletes, L symbols (the dot and colon), START when it is typed.	홈 서버 주소와 포트를 입력합니다. Romhost: 8092, RomM: 8080 또는 80.
+settings		The code Homeport shows under ROMs > Pair a device (or, for RomM, a client token's pairing code). START when it is typed.	Homeport의 ROMs > Pair a device 메뉴 또는 RomM 클라이언트 토큰으로 기기를 연결합니다.
+settings		no reason given	원인 알 수 없음
+settings		Y again deletes this package from banana/updates on the card (the installed versions aren't touched). Any other button keeps it.	Y를 다시 누르면 카드의 banana/updates에서 패키지를 삭제합니다. 설치된 버전은 유지됩니다.
+settings		X again removes {on} ({ob} MB) not newer than the version running now from banana/updates. Any other button keeps them.	X를 다시 누르면 banana/updates에서 현재 실행 버전보다 새롭지 않은 패키지 {on}개({ob}MB)를 삭제합니다. 다른 버튼을 누르면 유지합니다.
+settings		; X removes every package not newer than this version ({on}{ob} MB).	; X: 현재 버전보다 새롭지 않은 모든 패키지 삭제({on}{ob}MB).
+settings		1 package, {value}	패키지 1개, {value}
+settings		{on} packages,	패키지 {on}개,
+settings		Press Y again: delete	Y 다시: 삭제
+settings		Press X again: remove	X 다시: 제거
+settings		Delete!	삭제!
+settings		Written to the other slot	다른 슬롯에 기록됨
+settings		The update wasn't installed	업데이트 설치 실패
+settings		Writing the new version	새 버전 기록 중
+settings		Checking what was written	기록 결과 검증 중
+settings		Unpacking and checking the package	패키지 압축 해제 및 검증 중
+settings		Update ready	업데이트 준비 완료
+settings		Update failed	업데이트 실패
+settings		Installing update	업데이트 설치 중
+settings		Don't turn the handheld off	게임기 전원을 끄지 마세요
+settings		Don't turn the handheld off. Your games, saves and settings stay; the running version isn't touched until the restart. It takes a minute or two.	전원을 끄지 마세요. 게임과 저장 데이터는 유지되며 현재 슬롯은 변경하지 않습니다.
+settings		A restarts into the new version now. If it ever fails to start, Settings > System > Previous version brings this one back.	A를 눌러 재시작하세요. 문제가 있으면 이전 버전으로 되돌릴 수 있습니다.
+settings		The password couldn't be passed on ({runDir} can't be written).	비밀번호를 전달하지 못했습니다({runDir}에 기록할 수 없음).
+settings		Looking for a home server on the network...	네트워크에서 홈 서버 검색 중...
+settings		Not paired yet: Server, above, pairs the handheld.	페어링되지 않음: 위의 서버 항목에서 페어링하세요.
+settings		Syncing	동기화 중
+settings		Didn't all work	일부 실패
+settings		Done, conflicts	완료 (충돌 있음)
+settings		Pair again	다시 페어링
+settings		the update channel changed since the check: Check for updates again	업데이트 채널이 변경되었습니다. 다시 확인하세요.
+settings		In use	사용 중
+settings		A uses it	A로 사용
+settings		Drawing...	그리는 중...
+settings		No picture	이미지 없음
+settings		Themes	테마
+settings		BananaDS only. The size the DS's 3D is drawn at for this game: 1x the DS's own, 2x twice, 3x and 4x (experimental) three and four times, the sharpest and the heaviest (a busy 3D scene can drop below full speed). The others follow Settings > Nintendo DS > 3D resolution.	이 게임에 적용할 BananaDS의 3D 해상도입니다. 1x, 2x, 3x, 4x 중 선택합니다.
+settings		HP	HP
+settings		no data	데이터 없음
+settings		Map	지도
+settings		Bag	가방
+settings		Dex	도감
+settings		Guide	가이드
+settings		Reading the save...	저장 데이터 읽는 중...
+settings		Somewhere unnamed	이름 없는 장소
+settings		Unknown place	알 수 없는 장소
+settings		Map %d.%d  ·  x %d, y %d	지도 %d.%d  ·  x %d, y %d
+settings		This game's region map wasn't found in its ROM.	ROM에서 이 게임의 지역 지도를 찾을 수 없습니다.
+settings		Tapped: {nm}	터치: {nm}
+settings		(no name)	(이름 없음)
+settings		Not on the region map here	지역 지도에 없는 장소
+settings		Tap the map: a place's name	지도를 터치하면 장소 이름 표시
+settings		Tap a square: its name	칸을 터치하면 이름 표시
+settings		Items	도구
+settings		Key items	중요한 물건
+settings		Balls	몬스터볼
+settings		TMs & HMs	기술머신 및 비전머신
+settings		Berries	나무열매
+settings		Nothing here. (A CFRU hack may keep its bag elsewhere: what this shows is FireRed's bag.)	CFRU 개조 게임은 다른 위치에 가방 데이터를 저장할 수 있습니다.
+settings		Nothing in this pocket.	이 주머니는 비어 있습니다.
+settings		Money {money}	소지금 {money}
+settings		Seen	발견
+settings		Caught	포획
+settings		All species (this game keeps its own Pokédex)	모든 종 (게임 자체 도감 기준)
+settings		Pokédex	포켓몬 도감
+settings		Nothing seen yet.	아직 발견한 포켓몬이 없습니다.
+settings		Tap one for its entry	터치하여 도감 보기
+settings		No entry in this game.	이 게임에 도감 항목 없음.
+settings		%s Pokémon  ·  %d.%d m  ·  %d.%d kg	%s 포켓몬  ·  %d.%d m  ·  %d.%d kg
+settings		Seen, not caught yet: the entry opens once one is caught.	발견했지만 미포획: 포획하면 도감이 열립니다.
+settings		Tap to go back	터치하여 뒤로
+settings		Next: {who}, gym {next} of 8	다음: {who}, 체육관 {next} / 8
+settings		All eight badges: on to the league.	배지 8개 획득: 포켓몬 리그로.
+settings		Champion! The story is done; the post-game is yours.	챔피언! 스토리 완료. 이제 자유롭게 즐기세요.
+settings		Next: {goals}, {goals} ({lang})	다음: {goals}, {goals} ({lang})
+settings		Next: the Pokémon League. First, {who} ({lang})	다음: 포켓몬 리그. 첫 상대 {who} ({lang})
+settings		Badges	배지
+settings		No goal read from the save.	저장 데이터에서 목표를 읽지 못했습니다.
+settings		Their team	상대 파티
+settings		Against {lang}	{lang} 상대
+settings		hits {bestQ}	{bestQ} 피해
+settings		Rock Smash	바위깨기
+settings		Fishing	낚시
+settings		Wild Pokémon here	이곳의 야생 포켓몬
+settings		No wild Pokémon on this map.	이 지도에 야생 포켓몬이 없습니다.
+settings		Accent: not caught yet	강조색: 미포획
+settings		Reference	참조
+settings		Nothing here right now: this page fills in when the game gets to it.	게임을 진행하여 해당 위치에 도달하면 이 페이지가 표시됩니다.
+settings		Status	상태
+settings		Detail	상세
+settings		Collect	수집
+settings		Progress	진행
+settings		ROXANNE	원규
+settings		Rustboro City gym	금탄시티 체육관
+settings		BRAWLY	철구
+settings		Dewford Town gym	무로마을 체육관
+settings		WATTSON	암페어
+settings		Mauville City gym	보라시티 체육관
+settings		FLANNERY	민지
+settings		Lavaridge Town gym	용암마을 체육관
+settings		NORMAN	종길
+settings		Petalburg City gym	등화시티 체육관
+settings		WINONA	은송
+settings		Fortree City gym	검방울시티 체육관
+settings		Tate & Liza	풍 & 란
+settings		Mossdeep City gym	이끼시티 체육관
+settings		WALLACE	윤진
+settings		Sootopolis City gym	루네시티 체육관
+settings		SIDNEY	혁진
+settings		the Pokémon League	포켓몬 리그
+settings		PHOEBE	회연
+settings		GLACIA	미혜
+settings		DRAKE	권수
+settings		STEVEN	성호
+settings		Steven, the Champion	챔피언 성호
+settings		JUAN	아단
+settings		Wallace, the Champion	챔피언 윤진
+settings		BROCK	웅
+settings		Pewter City gym	회색시티 체육관
+settings		MISTY	이슬
+settings		Cerulean City gym	블루시티 체육관
+settings		LT. SURGE	마티스
+settings		Lt. Surge	마티스
+settings		Vermilion City gym	갈색시티 체육관
+settings		ERIKA	민화
+settings		Celadon City gym	무지개시티 체육관
+settings		KOGA	독수
+settings		Fuchsia City gym	연분홍시티 체육관
+settings		SABRINA	초련
+settings		Saffron City gym	노랑시티 체육관
+settings		BLAINE	강연
+settings		Cinnabar Island gym	홍련섬 체육관
+settings		GIOVANNI	비주기
+settings		Viridian City gym	상록시티 체육관
+settings		LORELEI	칸나
+settings		BRUNO	시바
+settings		AGATHA	국화
+settings		LANCE	목호
+settings		SEED	씨앗
+settings		Seed	씨앗
+settings		UNKNOWN	알 수 없음
+settings		Unknown	알 수 없음
+settings	Pokémon types	Fairy	페어리
+settings	Pokémon types	Roxanne	원규
+settings	Pokémon types	Brawly	철구
+settings	Pokémon types	Wattson	암페어
+settings	Pokémon types	Flannery	민지
+settings	Pokémon types	Norman	종길
+settings	Pokémon types	Winona	은송
+settings	Pokémon types	Wallace	윤진
+settings	Pokémon types	Sidney	혁진
+settings	Pokémon types	Phoebe	회연
+settings	Pokémon types	Glacia	미혜
+settings	Pokémon types	Drake	권수
+settings	Pokémon types	Juan	아단
+settings	Pokémon types	Brock	웅
+settings	Pokémon types	Misty	이슬
+settings	Pokémon types	Erika	민화
+settings	Pokémon types	Koga	독수
+settings	Pokémon types	Sabrina	초련
+settings	Pokémon types	Blaine	강연
+settings	Pokémon types	Giovanni	비주기
+settings	Pokémon types	Lorelei	칸나
+settings	Pokémon types	Bruno	시바
+settings	Pokémon types	Agatha	국화
+settings	Pokémon types	Lance	목호
+bananads		or press F / L3	또는 F / L3 누르기
+bananads		The game hears a word or a blow past the red line (sensitivity: %s).	소리 또는 바람이 빨간 선을 넘으면 게임에 전달됩니다(감도: %s).
+bananads		%ldh %02ldm	%ld시간 %02ld분
+bananads		BUTTONS	버튼
+bananads		LAST	최근
+bananads		Cheats	치트
+bananads		%d of %d on	%d / %d 활성화
+bananads		None found	발견되지 않음
+bananads		Action Replay codes for this game: A to see them	이 게임의 Action Replay 코드: A로 보기
+bananads		No cheats for this game yet.	아직 이 게임의 치트가 없습니다.
+bananads		In RetroArch: Online Updater > Update Cheats	RetroArch: 온라인 업데이터 > 치트 업데이트
+bananads		(BananaDS finds the game's file there),	(BananaDS가 해당 게임 파일을 찾습니다),
+bananads		or put a melonDS .mch file in	또는 melonDS .mch 파일을 넣으세요:
+bananads		Up / down to pick, L / R a page; some games need a restart for a code to work	상하: 치트 선택, L/R: 페이지 이동. 일부 치트는 게임 재시작이 필요합니다.
+bananads		Starting...	시작 중...
+bananads		Turn off	끄기
+bananads		Turn on	켜기
+bananads		>> Max	>> 최대
+bananads		3D effects	3D 효과
+bananads		FPS counter	FPS 표시
+bananads		Fast-forward	빨리 감기
+bananads		Edge + fog	윤곽선 + 안개
+bananads		Edge only	윤곽선만
+bananads		Fog only	안개만
+bananads		Max	최대
+bananads		FXAA	FXAA
+bananads		Code {n}	코드 {n}
+bananads		Screenshot saved	스크린샷 저장됨
+bananads		Screenshot not saved	스크린샷 저장 실패
+bananads		the card may be full	카드 공간이 부족할 수 있습니다
+bananads		, and run-ahead: 1 frame	, 선행 실행: 1프레임
+bananads		, and run-ahead: 2 frames	, 선행 실행: 2프레임
+bananads		BananaDS	BananaDS
+bananads		Swap the screens	화면 교체
+bananads		the touchscreen	터치스크린
+bananads		the top panel's touchscreen	위 화면 터치스크린
+bananads		Screens swapped	화면 교체됨
+bananads		Screens back	화면 원위치
+bananads		F + SELECT puts them back	F + SELECT로 원위치
+bananads		F + SELECT swaps them again	F + SELECT로 다시 교체
+bananads		DSi eMMC CID/CPU	DSi eMMC CID/CPU
+bananads		dsi_nand.bin can't be read	dsi_nand.bin 읽기 실패
+bananads		it needs its nocash footer	nocash 푸터가 필요합니다
+bananads		DSi game: needs a BIOS file	DSi 게임: BIOS 파일 필요
+bananads		put bios7.bin in {dir}	{dir}에 bios7.bin을 넣으세요
+bananads		This .cia is encrypted	암호화된 .cia 파일
+bananads		decrypt it on a 3DS (or a PC tool) first	먼저 3DS 또는 PC 도구에서 복호화하세요
+superdrastic		%ldh %02ldm	%ld시간 %02ld분
+superdrastic		LAST	최근
+superdrastic		Starting...	시작 중...
+superdrastic		Microphone sensitivity is off in Settings, so the game only gets the blow below.	마이크 감도를 꺼도 불기 기능은 사용할 수 있습니다.
+superdrastic		Battery %d%%%s	배터리 %d%%%s
+superdrastic		, charging	, 충전 중
+superdrastic		%sF + SELECT	%sF + SELECT
+superdrastic		Screens swapped	화면 교체됨
+superdrastic		Screens back	화면 원위치
+superdrastic		F + SELECT puts them back	F + SELECT로 원위치
+superdrastic		F + SELECT swaps them again	F + SELECT로 다시 교체
+superdrastic		LAST SAVE  %s	최근 저장  %s
+settings		Accept	수락
+settings		Decline	거절
+settings		Location	위치
+settings		Usual places	기본 위치
+settings		Receive	받기
+settings		Quick save	빠른 저장
+settings		Send files	파일 보내기
+settings		Sending	전송 중
+settings		Received files	받은 파일
+settings		About Bshare	Bshare 정보
+settings		This folder	이 폴더
+settings		Phones and computers with LocalSend can send files to this handheld.	휴대전화 또는 PC의 LocalSend에서 이 기기로 파일을 보낼 수 있습니다.
+settings		Not seen by other devices.	다른 기기에 표시되지 않습니다.
+settings		Pick files or folders on the cards, then send them to a phone or computer with LocalSend open.	파일이나 폴더를 선택하여 전송하세요.
+settings		Games go straight into their system's folder. Everything else goes into banana/received on the card.	게임은 해당 시스템의 폴더에, 기타 파일은 banana/received에 저장합니다.
+settings		Bshare works with LocalSend, the free and open-source app by Tien Do Nam and its contributors (localsend.org). It is Banana's own small version of LocalSend's open protocol: get LocalSend on your phone or computer, on the same Wi-Fi.	Bshare는 Tien Do Nam과 기여자들의 LocalSend 프로젝트를 기반으로 합니다. 같은 Wi-Fi에 연결하여 LocalSend를 사용하세요.
+settings		A opens a folder. Y marks a file or a folder. START sends what is marked.	A: 폴더 열기, Y: 선택, START: 전송.
+settings		Phones and computers with LocalSend open, on the same Wi-Fi. They ask there before taking the files.	휴대전화 또는 PC가 같은 Wi-Fi에 연결되어 있어야 합니다. 수신 기기에서 승인하세요.
+settings		Looking... Open LocalSend on the other device.	검색 중... 다른 기기에서 LocalSend를 여세요.
+settings		An empty folder.	빈 폴더.
+settings		Nothing is saved, and the other side is told.	저장되지 않으며 상대방에게 알립니다.
+settings		Games go into their system's folder, everything else into banana/received.	게임은 시스템별 폴더에, 나머지는 received 폴더에 저장합니다.
+settings		A picks a folder on the cards for all of them.	A로 모든 파일을 저장할 카드 폴더를 선택합니다.
+settings		How phones and computers see this handheld in LocalSend. A changes it.	LocalSend에서 표시할 기기 이름입니다. A로 변경하세요.
+menu		Open Bshare to accept.	Bshare를 열어 수락하세요.
+menu		In banana/received.	banana/received 폴더에 있습니다.
+menu		Games went into their system's folder.	게임을 해당 게임기 폴더에 저장했습니다.
+menu		Nothing was sent.	보낸 파일이 없습니다.
+menu		{value} game	게임 {value}개
+menu		{value} games	게임 {value}개
+menu		Files	파일
+menu		Banana	Banana
+menu		Battery	배터리
+menu		Settings	설정
+menu		Copy {extension}files to roms/{folder}	{extension}파일을 roms/{folder}에 복사하세요
+menu		{from} wants to send {n} files	{from}에서 파일 {n}개를 보내려고 합니다
+menu		{value} file	파일 {value}개
+menu		{value} files	파일 {value}개
+menu		Received {n} files from {who}	{who}에게서 파일 {n}개를 받음
+menu		Sent {n} files to {who}	{who}에게 파일 {n}개를 보냄
+menu		{c} said no	{c}에서 거절함
+menu		left packed	압축 상태 유지
+menu		Unpacked	압축 해제됨
+menu		Downloaded	다운로드 완료
+menu		{jobs} jobs done	작업 {jobs}개 완료
+menu		: not all of it	: 일부 미완료
+menu		Nothing new	새 항목 없음
+menu		{what}. In Files.	{what}. 파일에서 확인.
+menu		Welcome to	환영합니다
+menu		Welcome	환영합니다
+menu		Starting {game.title}	{game.title} 시작 중
+menu		ISSUE #{sys.index + 1}	제{sys.index + 1}호
+menu		GAME INSIDE!	게임 수록!
+menu		GAMES INSIDE!	게임 수록!
+menu		PREVIOUSLY…	지난 이야기…
+menu		A NEW STORY!	새로운 이야기!
+menu		NO GAME PLAYED YET	플레이한 게임 없음
+menu		CHAPTER {cursor + 1} OF {count}	제{cursor + 1}장 / {count}
+menu		MEANWHILE… 	한편… 
+menu		 GAMES WAIT!	 게임 대기 중!
+menu		a banana comic	Banana 만화
+menu		PLAYED 	플레이 
+menu		PLAYED ONCE!	한 번 플레이!
+menu		NEVER PLAYED?!	아직 플레이하지 않았다고?!
+menu		TIME	시간
+menu		LAST	최근
+menu		PLAYS	실행 횟수
+menu		♥ FAVE!	♥ 즐겨찾기!
+menu		{upper(sys.name)} · {count} ISSUES	{upper(sys.name)} · {count}호
+menu		TO BE	다음에
+menu		CONTINUED…	계속…
+menu		HERE WE GO!	시작!
+menu		IN THIS ISSUE:	이번 호:
+menu		BANANA COMICS	BANANA 만화
+menu		SPECIMEN {pad(cursor + 1, 2)} / {pad(count, 2)}	표본 {pad(cursor + 1, 2)} / {pad(count, 2)}
+menu		Open water	넓은 바다
+menu		LAST DIVE	마지막 잠수
+menu		Dive back in	다시 잠수
+menu		UNCHARTED	미탐험
+menu		No dives here yet. Press A to explore.	아직 잠수한 적이 없습니다. A로 탐험하세요.
+menu		LOG ENTRY {pad(game.index + 1, 3)}	기록 {pad(game.index + 1, 3)}
+menu		Last dive: 	마지막 잠수: 
+menu		Never explored. Press A to dive.	아직 탐험하지 않았습니다. A로 잠수하세요.
+menu		Shell {game.index + 1} of {count} on this reef	암초의 조개 {game.index + 1} / {count}
+menu		TREASURED	보물
+menu		DIVING IN	잠수 중
+menu		CHG 	충전 
+menu		TANK 	산소통 
+menu		THE HOUSE PRESENTS	하우스 제공
+menu		The house	하우스
+menu		CARDS IN THE DECK	덱의 카드
+menu		HANDS PLAYED	플레이한 패
+menu		TIME AT THE TABLE	플레이 시간
+menu		LAST HAND	마지막 패
+menu		YOUR HAND	내 패
+menu		card {cursor + 1} of {count}	카드 {cursor + 1} / {count}
+menu		{upper(sys.name)}  ·  HAND {game.index + 1}	{upper(sys.name)}  ·  패 {game.index + 1}
+menu		No bets yet	아직 베팅하지 않음
+menu		HAND PLAYED	플레이한 패
+menu		AT THE TABLE	테이블 플레이
+menu		♥  HOUSE FAVOURITE	♥  하우스 즐겨찾기
+menu		DEALER'S LEDGER	딜러 장부
+menu		{sys.name} · {count} hands	{sys.name} · {count}개 패
+menu		No.	번호
+menu		GAME	게임
+menu		HANDS	플레이 횟수
+menu		NOW DEALING	카드 배분 중
+menu		PLACE YOUR BETS	베팅하세요
+menu		GOOD LUCK	행운을 빕니다
+menu		♥  FELT TABLE	♥  펠트 테이블
+menu		 GAMES  /  	 게임  /  
+menu		PRESS A TO START	A로 시작
+menu		FAV	즐겨찾기
+menu		PLAYER 1	플레이어 1
+menu		FAVORITE	즐겨찾기
+menu		HIGH SCORES	최고 점수
+menu		RANK	순위
+menu		NAME	이름
+menu		TH	위
+menu		ST	위
+menu		ND	위
+menu		RD	위
+menu		1UP	1UP
+menu		CREDIT 	크레딧 
+menu		GET READY	준비
+menu		INSERT COIN	동전을 넣으세요
+menu		1 COIN  1 PLAY	동전 1개  1회 플레이
+menu		CREDIT 00	크레딧 00
+menu		CREDIT 01	크레딧 01
+menu		LOADING	불러오는 중
+menu		EX LIBRIS	장서
+menu		{sys.played} read  ·  {either(sys.time, 'no time')} spent	{sys.played}권 읽음  ·  {either(sys.time, 'no time')} 소요
+menu		shelf {cursor + 1} of {count}	책장 {cursor + 1} / {count}
+menu		BOOKMARKED	책갈피
+menu		vol. {item.games}	{item.games}권
+menu		Last out: {either(game.last, 'never')}	최근 대출: {either(game.last, 'never')}
+menu		Time with it: {either(game.time, 'none yet')}	읽은 시간: {either(game.time, 'none yet')}
+menu		Marks: none yet	표시: 아직 없음
+menu		no plate	삽화 없음
+menu		plate {pad(game.index + 1, 3, '0')}	삽화 {pad(game.index + 1, 3, '0')}
+menu		LAST OUT  {upper(either(game.last, 'never'))}	최근 대출  {upper(either(game.last, 'never'))}
+menu		FAVOURITE	즐겨찾기
+menu		CARD {game.index + 1} OF {games.count}	카드 {game.index + 1} / {games.count}
+menu		Borrowed {num(game.plays) + 1} times	대출 {num(game.plays) + 1}회
+menu		CHECKED OUT	대출됨
+menu		Opening	여는 중
+menu		page {round(312 * clamp(lp / 0.8, 0, 1))} of 312	{round(312 * clamp(lp / 0.8, 0, 1))} / 312쪽
+menu		EX LIBRIS  ·  {upper(either(brand, 'BananaOS'))}	장서  ·  {upper(either(brand, 'BananaOS'))}
+menu		PAYLOAD	탑재물
+menu		SORTIES	출격 횟수
+menu		FLIGHT TIME	비행 시간
+menu		SECTOR	구역
+menu		* MARKED	* 표시됨
+menu		UNKNOWN	알 수 없음
+menu		RESUME > {upper(sys.resumeTitle)}	이어하기 > {upper(sys.resumeTitle)}
+menu		DOCKING BAYS	격납고
+menu		BAY {pad(cursor + 1, 2)} / {pad(count, 2)}	격납고 {pad(cursor + 1, 2)} / {pad(count, 2)}
+menu		BAY {pad(i + 1, 2)}	격납고 {pad(i + 1, 2)}
+menu		{pad(item.games, 3)} TGT	목표 {pad(item.games, 3)}개
+menu		{upper(sys.name)}  //  {upper(plural(sys.games, 'target'))}  //  {either(sys.time, '0m')} LOGGED	{upper(sys.name)}  //  {upper(plural(sys.games, 'target'))}  //  {either(sys.time, '0m')} 기록
+menu		TGT-{pad(cursor + 1, 3)}	TGT-{pad(cursor + 1, 3)}
+menu		MISSION FILE	임무 파일
+menu		LAST CONTACT	최근 접촉
+menu		STATUS	상태
+menu		PRIORITY	우선순위
+menu		STANDBY	대기
+menu		OBJECTIVES	목표
+menu		TELEMETRY	원격 측정
+menu		TRACKING {pad(cursor + 1, 3)} / {pad(count, 3)}	추적 {pad(cursor + 1, 3)} / {pad(count, 3)}
+menu		MISSION LOG // {upper(sys.name)}	임무 기록 // {upper(sys.name)}
+menu		{pad(count, 3)} ENTRIES	항목 {pad(count, 3)}개
+menu		NO TARGETS IN RANGE	범위 내 목표 없음
+menu		ACQUIRING LOCK	목표 조준 중
+menu		LOCK ACQUIRED	목표 조준 완료
+menu		IGNITION SEQUENCE	점화 절차
+menu		THRUST	추진
+menu		{upper(sys.name)}  //  TGT-{pad(game.index + 1, 3)}	{upper(sys.name)}  //  TGT-{pad(game.index + 1, 3)}
+menu		 DECK	 갑판
+menu		LINK OK	연결 정상
+menu		NO LINK	연결 없음
+menu		 in here	 이곳에
+menu		• played for 	• 플레이 시간 
+menu		no time yet	아직 기록 없음
+menu		• by 	• 제작 
+menu		→ carry on: 	→ 이어하기: 
+menu		→ nothing started yet	→ 아직 시작한 게임 없음
+menu		★ starred	★ 즐겨찾기
+menu		page {cursor + 1}	{cursor + 1}쪽
+menu		My systems	내 게임기
+menu		• played 	• 플레이 
+menu		• total: 	• 전체: 
+menu		not yet	아직 없음
+menu		• last: 	• 최근: 
+menu		★ a favourite!	★ 즐겨찾기!
+menu		☆ not starred yet	☆ 즐겨찾기 아님
+menu		To play: {sys.name}	플레이: {sys.name}
+menu		Date	날짜
+menu		now playing	플레이 중
+menu		have fun!	즐겁게 플레이하세요!
+menu		see you later!	다음에 만나요!
+menu		[ /sys/info ]	[ /sys/info ]
+menu		maker ........	제작사 ........
+menu		games ........	게임 ........
+menu		played ........	플레이 ........
+menu		uptime ........	가동 시간 ........
+menu		% played	% 플레이함
+menu		> last session: {sys.resumeTitle}	> 마지막 세션: {sys.resumeTitle}
+menu		> no saved session	> 저장된 세션 없음
+menu		  press [X] to resume it	  [X]로 이어하기
+menu		{systems.count} filesystems mounted on /roms   |   {either(brand, 'BananaOS')}	{systems.count}개 파일 시스템이 /roms에 연결됨   |   {either(brand, 'BananaOS')}
+menu		Last login: {date} on tty1. Type 'help' for help.	최근 로그인: {date}, tty1. 도움말은 'help' 입력.
+menu		root@banana:~$ ls -l /roms	root@banana:~$ ls -l /roms
+menu		total {systems.count}	전체 {systems.count}
+menu		root@banana:~/roms/{lower(game.systemId)}$ stat \"{game.title}\"	root@banana:~/roms/{lower(game.systemId)}$ stat "{game.title}"
+menu		[ NO SIGNAL ]	[ 신호 없음 ]
+menu		ach   (none recorded)	도전과제   (기록 없음)
+menu		File: {game.rom}	파일: {game.rom}
+menu		inode {game.index + 1} of {games.count} in {game.systemName}	inode {game.index + 1} / {games.count} ({game.systemName})
+menu		$ ls -l ~/roms/{lower(sys.id)}	$ ls -l ~/roms/{lower(sys.id)}
+menu		MODE	모드
+menu		root@banana:~$ exec \"{game.rom}\"	root@banana:~$ exec "{game.rom}"
+menu		[  OK  ]	[ 확인 ]
+menu		Mounting /roms/	/roms/ 마운트 중
+menu		Loading 	불러오는 중 
+menu		Reading ROM header	ROM 헤더 읽는 중
+menu		Verifying checksum	체크섬 검증 중
+menu		Restoring save RAM	저장 RAM 복원 중
+menu		Mapping input devices	입력 장치 매핑 중
+menu		Allocating video memory	영상 메모리 할당 중
+menu		Syncing audio clock	오디오 클럭 동기화 중
+menu		Releasing the console	콘솔 자원 해제 중
+menu		Handing over. Good luck.	제어권 전환. 행운을 빕니다.
+menu		[ loading image ]	[ 이미지 로딩 ]
+menu		do not power off the console	기기 전원을 끄지 마세요
+menu		BANANA tty1	BANANA tty1
+menu		AC	AC
+menu		System	시스템
+menu		Continue (X)	계속 (X)
+menu		Starred	즐겨찾기
+menu		Achievements	도전과제
+menu		Index	색인
+menu		Nothing here yet.	아직 항목이 없습니다.
+menu		No. {pad(game.index + 1, 3)}	번호 {pad(game.index + 1, 3)}
+menu		Wi-Fi	Wi-Fi
+menu		Offline	오프라인
+menu		NOW SPINNING	회전 중
+menu		Various artists	여러 아티스트
+menu		NOW PLAYING	재생 중
+menu		Resume where you left off	마지막 위치에서 이어하기
+menu		THE DECK IS QUIET	턴테이블 정지
+menu		Pick a record and press A to put it on.	레코드를 선택하고 A로 재생하세요.
+menu		THE CRATE	레코드 상자
+menu		LP	LP
+menu		SIDE {side}	면 {side}
+menu		IN THE COLLECTION	컬렉션
+menu		SIDE PROGRESS	재생 진행
+menu		TRACK {game.index + 1} OF {count}	트랙 {game.index + 1} / {count}
+menu		  ·  TRACKLIST	  ·  트랙 목록
+menu		NEEDLE DOWN	바늘 내림
+menu		CUEING UP	재생 준비 중
+menu		SIDE {side}  ·  {upper(sys.name)}	면 {side}  ·  {upper(sys.name)}
+menu		DROPPING THE NEEDLE	바늘 내리는 중
+menu		33⅓ RPM	33⅓ RPM
+menu		Platter at speed. Enjoy the record.	턴테이블 준비 완료. 음악을 즐기세요.
+menu		ON AIR	재생 중
+menu		{from} wants to send 1 file	{from}에서 파일 1개를 보내려고 합니다
+menu		Received 1 file from {who}	{who}에게서 파일 1개를 받음
+menu		Sent 1 file to {who}	{who}에게 파일 1개를 보냄
+settings		This game's timing	이 게임의 타이밍
+settings		BananaDS only. Fast lets the DS's two CPUs run longer between meeting for this game (up to about 10% faster in HeartGold and hacks of it like Origin HeartGold), Accurate is melonDS's own. Fast can break a game (Golden Sun: Dark Dawn loses its 3D world): if this one goes wrong, set it back. The others follow Settings > Nintendo DS > Timing.	BananaDS 타이밍입니다. Fast는 하트골드 및 개조판에서 최대 10% 빠릅니다. Accurate는 정확도를 우선합니다. Fast에서 Golden Sun 등의 문제가 생기면 Accurate로 변경하세요.
+settings		Fast, DSi CPU	고속, DSi CPU
+settings		BananaDS only. Fast lets the DS's two CPUs run longer between meeting for this game (up to about 10% faster in HeartGold and hacks of it like Origin HeartGold), Accurate is melonDS's own. Fast can break a game (Golden Sun: Dark Dawn loses its 3D world): if this one goes wrong, set it back. Fast, DSi CPU also runs the game's main CPU at the DSi's 133 MHz: a game that slows down by itself on a DS (Origin HeartGold's busy towns) keeps its speed, for more of the handheld's power. The others follow Settings > Nintendo DS > Timing.	BananaDS 타이밍과 CPU 속도입니다. Fast는 하트골드 및 개조판에서 최대 10% 빠르며 DSi CPU는 133MHz로 실행하여 DS 게임의 끊김을 줄이지만 전력 사용량이 증가합니다. Golden Sun 등의 문제가 생기면 Accurate로 변경하세요.
+settings		FXAA	FXAA
+settings		Bluetooth	Bluetooth
+settings		On {hsName}, open {url} (signed in) and enter {code}, then approve this handheld. Waiting...	{hsName}에서 로그인한 상태로 {url}을 열고 {code}를 입력한 다음 이 기기를 승인하세요. 기다리는 중...
+settings		Not paired. A looks for Romhost on the network (Homeport > ROMs > Pair a device shows its code); when none answers, type the address of a Romhost or a RomM server (a name or IP, and :port if it isn't the usual one). RomM then shows a code to enter on its Pair device page.	페어링된 서버가 없습니다. Romhost를 검색하거나 서버 주소를 직접 입력하세요. RomM에서는 페어링 코드 페이지를 엽니다.
+systems		Store	스토어
+systems		Apps	앱
+systems		Commodore 64	Commodore 64
+systems		Commodore	Commodore
+systems		ZX Spectrum	ZX Spectrum
+systems		Sinclair	Sinclair
+systems		Bshare	Bshare
+systems		Banana	Banana
+systems		Files	파일
+settings		START	START
+settings		SELECT	SELECT
+settings		SHIFT	SHIFT
+settings		Downloading {percent}%	다운로드 중 {percent}%
+settings		Game Boy Advance	Game Boy Advance
+settings		BananaGBA	BananaGBA
+settings		Game Boy Color	Game Boy Color
+settings		Game Boy	Game Boy
+settings		BananaNES	BananaNES
+settings		Super Nintendo	Super Nintendo
+settings		BananaSNES	BananaSNES
+settings		Mega Drive	Mega Drive
+settings		Commodore 64	Commodore 64
+settings		VICE x64sc	VICE x64sc
+settings		VICE x64	VICE x64
+settings		ZX Spectrum	ZX Spectrum
+settings		Fuse	Fuse
+settings		PlayStation	PlayStation
+settings		Nintendo 64	Nintendo 64
+settings		{label} buttons	{label} 버튼
+settings		{value} (The RG DS Plus has no R3.)	{value} (RG DS Plus에는 R3가 없습니다.)
+settings		Menu look	메뉴 스타일
+settings		The menu's smaller looks: the top screen's motion, battery and clock, the boot animation, and what the DS cartridges show.	상단 화면의 움직임, 배터리, 시계, 부팅 애니메이션, DS 카트리지 표시를 설정합니다.
+settings		DS cartridges	DS 카트리지
+settings		What the Nintendo DS cartridges on the bottom screen show. Box art: the covers fetched by Box art (a game without one shows its own icon). Game icon: every game's own icon from the cartridge, as the DSi menu shows it. The top screen keeps the box art.	하단 화면의 DS 카트리지에 표지 또는 게임 아이콘을 표시합니다. 표지가 없으면 자체 아이콘을 사용합니다. 상단 화면은 표지를 유지합니다.
+settings		Game icon	게임 아이콘
+settings		SuperDrastic: DraStic straight onto both panels, with its own governor. BananaDS: Banana's own emulator (melonDS's core). Both draw 3D with the Gengis Engine at 2x and have their menu on F; each keeps its own settings on its page below. X on a game in the library picks one for that game alone.	SuperDrastic은 DraStic 기반으로 두 화면과 자체 조절 기능을 지원합니다. BananaDS는 melonDS 기반입니다. 두 에뮬레이터는 Gengis Engine의 2배 해상도와 F 메뉴를 지원합니다. X를 눌러 게임별로 선택할 수 있습니다.
+settings		Buttons	버튼
+settings		What L2, R2, L3 and R3 do in a DS game, the same in both emulators: swap the screens, fast-forward, blow on the mic, save or load a state, the menu, one of the DS's buttons, or nothing. F + R saves and F + L loads a state in both.	DS 게임에서 L2, R2, L3, R3의 기능을 설정합니다. 화면 교체, 빨리 감기, 마이크 불기, 상태 저장/불러오기, 메뉴, DS 버튼 또는 없음 중 선택합니다. F + R은 저장, F + L은 불러오기입니다.
+settings		SuperDrastic's own settings: its shader, 3D, CPU clock, frame pacing, microphone and low latency, its hotkeys, and its resets.	SuperDrastic의 셰이더, 3D, CPU 클럭, 프레임 조절, 마이크, 낮은 지연, 단축키 및 초기화 설정입니다.
+settings		BananaDS's own settings: its shader, 3D, edge marking and fog, frame pacing, CPU clock, timing, microphone and low latency, its hotkeys, and its reset.	BananaDS의 셰이더, 3D, 테두리 및 안개, 프레임 조절, CPU 클럭, 타이밍, 마이크, 낮은 지연, 단축키 및 초기화 설정입니다.
+settings		Experimental. On: no frame queue, each frame started as late as the panels allow: a press shows about two refreshes (35-40 ms) sooner, with the same sound.	실험적 기능입니다. 켜면 프레임 대기열 없이 출력 직전에 프레임을 실행하여 입력 반응을 약 두 프레임(35~40ms) 앞당깁니다. 소리는 동일합니다.
+settings		NDS Pokémon companion (alpha)	NDS 포켓몬 도우미 (알파)
+settings		An early version. In Pokémon Diamond, Pearl, Platinum, HeartGold, SoulSilver, Black, White, Black 2 and White 2, a small icon in the touch screen's corner opens a companion: your battle, party, team score, what to catch here, a guide and the Pokédex. The game keeps running and keeps its buttons. BananaDS only.	초기 버전입니다. 포켓몬스터 DP, Pt, 하트골드, 소울실버, 블랙, 화이트, 블랙 2, 화이트 2에서 터치 화면 모서리 아이콘으로 배틀, 파티, 팀 평가, 출현 포켓몬, 공략 및 도감을 확인할 수 있습니다. 게임과 버튼 입력은 계속 작동합니다. BananaDS 전용입니다.
+settings		Challenge mode	챌린지 모드
+settings		For a Nuzlocke-style run: the companion keeps your first encounter on each route and the Pokémon you lost. Needs the NDS Pokémon companion on.	너즐록 방식으로 플레이할 때 각 도로에서 처음 만난 포켓몬과 잃은 포켓몬을 기록합니다. NDS 포켓몬 도우미를 켜야 합니다.
+settings		The buttons that do something in a DS game in BananaDS: its menu, quitting, swapping the screens, save states, and L2, R2, L3 and R3 as Buttons has them.	BananaDS의 메뉴, 종료, 화면 교체, 상태 저장과 Nintendo DS > 버튼에서 설정한 L2, R2, L3, R3 단축키입니다.
+settings		Experimental. On: no frame queue: each frame goes to the panels at the next refresh it can make, so a press shows about a refresh and a half (20-25 ms) sooner, the sound a little sooner too. Uneven frames (2x, heavy scenes) can show as small stutters the queue would hide, more on the RG DS Plus.	실험적 기능입니다. 켜면 프레임 대기열 없이 다음 화면 갱신에 출력하여 입력 반응을 약 20~25ms 앞당깁니다. 소리도 조금 빨라집니다. 프레임이 불규칙한 장면에서는 작은 끊김이 발생할 수 있으며 Plus에서 더 두드러질 수 있습니다.
+settings		The buttons that do something in a DS game in SuperDrastic: its menu, quitting, swapping the screens, save states, and L2, R2, L3 and R3 as Buttons has them.	SuperDrastic의 메뉴, 종료, 화면 교체, 상태 저장과 Nintendo DS > 버튼에서 설정한 L2, R2, L3, R3 단축키입니다.
+settings		DraStic's buttons back to Banana's, for a button setup gone wrong in DraStic's menu: the pad as printed, F the menu, and L2, R2, L3 and R3 as Nintendo DS > Buttons has them. (HOME always opens the menu.) Press A twice.	DraStic의 버튼을 Banana 기본값으로 되돌립니다. 방향키는 표시대로, F는 메뉴, L2/R2/L3/R3는 Nintendo DS > 버튼 설정대로 작동합니다. HOME은 항상 메뉴를 엽니다. A를 두 번 누르세요.
+settings		Frontend	프론트엔드
+settings		What runs the systems other than the DS, N64 and PlayStation. BananaFront: BananaOS's own, lighter on the battery and quicker to start, with the same saves, states and settings as RetroArch. Auto: BananaFront for the systems tested on it, RetroArch for the rest. RetroArch: always RetroArch (its own menu, its Core Downloader).	DS, N64, PlayStation 이외의 시스템에 사용할 실행기입니다. BananaFront는 가볍고 빠르며 RetroArch와 동일한 저장 데이터 및 설정을 사용합니다. Auto는 검증된 시스템에 BananaFront를 사용합니다. RetroArch는 항상 자체 메뉴와 코어 다운로드 기능을 사용합니다.
+settings		BananaFront	BananaFront
+settings		RetroArch	RetroArch
+settings		The other screen while a game plays: the game panel (achievements and tiles to save, load, open RetroArch's menu, fast forward and quit), when it dims or turns off, and the Pokémon and game companions.	게임 실행 중 다른 화면에 게임 패널(도전 과제, 저장/불러오기, RetroArch 메뉴, 빨리 감기, 종료)을 표시합니다. 화면 밝기와 포켓몬 및 게임 도우미도 설정합니다.
+settings		Picture & sound	화면 및 소리
+settings		How RetroArch's games look and sound: a shader, a screen border, VSync and the audio latency.	RetroArch 게임의 셰이더, 화면 테두리, 수직 동기화 및 오디오 지연 설정입니다.
+settings		While a game plays on one screen, the other shows its RetroAchievements and tiles to save, load, open RetroArch's menu, fast forward and quit (by touch when they are on the bottom screen). Off: the other screen stays dark. A Commodore 64 or ZX Spectrum game's tiles also have Keys: the panel becomes a touch keyboard (a virtual USB keyboard the emulator reads), which needs the panel on the bottom screen — put the game on the top.	게임이 한 화면에서 실행되는 동안 다른 화면에 도전 과제와 저장, 불러오기, 메뉴, 빨리 감기, 종료 버튼을 표시합니다. 하단 패널에서는 터치를 지원합니다. 끄면 다른 화면은 어둡게 유지됩니다. Commodore 64 및 ZX Spectrum의 Keys 버튼은 하단 터치 패널을 가상 USB 키보드로 전환하므로 게임은 상단에 배치하세요.
+settings		Detailed Pokémon pages	포켓몬 상세 페이지
+settings		On: the Pokémon companion shows the same pages as the DS one: battle, party, team score, what to catch here, a guide, the map, the Pokédex and a journey log. In Ruby, Sapphire, Emerald, FireRed and LeafGreen and the ROM hacks Glazed, Gaia, Heart & Soul, Lazarus, Seaglass and SoulGold. Off: the simpler party and battle views. Needs the Pokémon companion on.	포켓몬 도우미에 DS와 동일한 배틀, 파티, 팀 평가, 출현 포켓몬, 공략, 지도, 도감 및 여행 기록을 표시합니다. 루비, 사파이어, 에메랄드, 파이어레드, 리프그린 및 Glazed, Gaia, Heart & Soul, Lazarus, Seaglass, SoulGold를 지원합니다. 끄면 간단한 파티 및 배틀 화면을 사용합니다. 포켓몬 도우미가 켜져 있어야 합니다.
+settings		For a Nuzlocke-style run: the companion keeps your first encounter in each area and the Pokémon you lost, as the DS one does (Here and Log pages). Needs Detailed Pokémon pages on.	너즐록 플레이의 첫 만남과 잃은 포켓몬을 지역별로 기록합니다. 상세 포켓몬 페이지를 켜야 합니다.
+settings		Emulators	에뮬레이터
+settings		Each system's emulator (RetroArch core), for the systems that have more than one: the first is BananaOS's own. Cores downloaded with RetroArch's Core Downloader (its Online Updater) are listed too.	여러 코어를 지원하는 시스템에서 사용할 에뮬레이터입니다. 첫 번째 코어는 BananaOS 기본값이며 다운로드한 코어도 표시됩니다.
+settings		Each system's own buttons: what L2, R2, L3 and R3 do alone in its games (the game's own button, or fast-forward, save or load a state, RetroArch's menu, pause, a screenshot, nothing), and A/B and X/Y swapped or not. F + R saves and F + L loads a state, as on the DS.	시스템별 L2, R2, L3, R3 기능과 A/B, X/Y 교체를 설정합니다. 게임 버튼, 빨리 감기, 상태 저장/불러오기, 메뉴, 일시 정지, 스크린샷 또는 없음을 선택합니다. F + R은 저장, F + L은 불러오기입니다.
+settings		Controllers, headphones and speakers: Bluetooth on or off, the devices paired and around, and how the sound plays on headphones.	블루투스 켜기/끄기, 주변 기기 및 페어링, 컨트롤러, 헤드폰, 스피커와 오디오 설정입니다.
+settings		The card on your network: file sharing on or off, its login and name and password, and SSH.	네트워크 파일 공유, 로그인 정보 및 SSH를 설정합니다.
+settings		Updates	업데이트
+settings		A new version of Banana: checking for it, downloading and installing it, test versions, a daily check, and going back to the version before.	Banana 새 버전 확인, 다운로드, 설치, 테스트 버전, 매일 확인 및 이전 버전 복원 기능입니다.
+settings		Covers, title screens, genres and years for your games: fetching them, and where they come from.	게임 표지, 타이틀 화면, 장르, 출시 연도 정보를 가져올 출처와 다운로드 설정입니다.
+settings		The buttons that do something everywhere and in the menu. Each DS emulator's own: Nintendo DS > SuperDrastic > Hotkeys and BananaDS > Hotkeys.	시스템과 메뉴의 공통 단축키입니다. DS 에뮬레이터별 단축키는 Nintendo DS > SuperDrastic 또는 BananaDS > 단축키에 있습니다.
+settings		Developer options	개발자 옵션
+settings		Tools for finding what went wrong: a recording of everything the handheld does, on the card.	문제의 원인을 찾기 위해 기기의 동작을 카드에 기록하는 도구입니다.
+settings		Flight recorder	진단 기록
+settings		Records what the handheld does: buttons, touches, the lid, the screens, sleep, the battery and Wi-Fi, in banana/logs/sessions on the card, even after a restart. Hold Select for 2 seconds to mark a moment (the light blinks twice).	버튼, 터치, 덮개, 화면, 절전, 배터리 및 Wi-Fi 동작을 banana/logs/sessions에 기록합니다. 재시작 후에도 유지됩니다. SELECT를 2초간 누르면 시점을 표시하고 LED가 두 번 깜박입니다.
+settings		Hide developer options	개발자 옵션 숨기기
+settings		Takes the Developer options row away again (A seven times on System > About brings it back). Press A twice.	개발자 옵션 항목을 숨깁니다. 시스템 > 정보에서 A를 일곱 번 누르면 다시 표시됩니다. A를 두 번 누르세요.
+settings		In a DS game, in both emulators, as Nintendo DS > Buttons has it now; that page gives it another job.	두 DS 에뮬레이터에서 Nintendo DS > 버튼 설정에 따른 기능을 실행합니다. 해당 메뉴에서 변경할 수 있습니다.
+settings		SuperDrastic hotkeys	SuperDrastic 단축키
+settings		In SuperDrastic: save, load, quick settings (volume, brightness), quit.	SuperDrastic에서 저장, 불러오기, 빠른 설정(볼륨, 밝기), 종료 메뉴를 엽니다.
+settings		In SuperDrastic: back to the menu, the spot saved to resume from when Quick resume is on.	SuperDrastic에서 메뉴로 돌아갑니다. 빠른 이어하기가 켜져 있으면 현재 위치를 저장합니다.
+settings		In SuperDrastic: the DS's top screen on the bottom panel and its bottom screen on the top one (touch follows it: the RG DS's top touchscreen; on the RG DS Plus no touch while swapped), and back. Kept for each game.	SuperDrastic의 상하 화면을 교체하고 원래대로 되돌립니다. RG DS는 터치 위치도 전환되며 Plus는 화면 전환 중 터치가 작동하지 않습니다. 게임별 설정입니다.
+settings		Save state	상태 저장
+settings		In SuperDrastic: DraStic's quick save state.	SuperDrastic: DraStic 빠른 상태 저장.
+settings		Load state	상태 불러오기
+settings		In SuperDrastic: loads it back.	SuperDrastic: 저장 상태 불러오기.
+settings		BananaDS hotkeys	BananaDS 단축키
+settings		In BananaDS: save, load, quick settings, achievements, quit.	BananaDS: 저장, 불러오기, 빠른 설정, 도전과제, 종료.
+settings		In BananaDS: your spot saved, then back to the menu.	BananaDS: 진행 상태를 저장하고 메뉴로 돌아갑니다.
+settings		In BananaDS: the DS's top screen on the bottom panel and its bottom screen on the top one (touch follows it: the RG DS's top touchscreen; on the RG DS Plus no touch while swapped), and back. Kept for each game.	BananaDS의 상하 화면을 교체하고 원래대로 되돌립니다. RG DS는 터치 위치도 전환되며 Plus는 화면 전환 중 터치가 작동하지 않습니다. 게임별 설정입니다.
+settings		In BananaDS: to slot 1.	BananaDS: 슬롯 1에 저장.
+settings		In BananaDS: slot 1, loaded back.	BananaDS: 슬롯 1 불러오기.
+settings		DS buttons	DS 버튼
+settings		Swap screens	화면 교체
+settings		Blow on the mic	마이크에 바람 불기
+settings		DS A	DS A
+settings		DS B	DS B
+settings		DS X	DS X
+settings		DS Y	DS Y
+settings		DS L	DS L
+settings		DS R	DS R
+settings		DS START	DS START
+settings		DS SELECT	DS SELECT
+settings		Nothing	없음
+settings		In a DS game, in both emulators. Swap screens: as F + SELECT. Fast-forward: on, and off again. Blow on the mic: the game hears a blow while it is held, the microphone on or off. Save and load state: as F + R and F + L. F + a button and HOME keep their own (the Hotkeys page).	두 DS 에뮬레이터에 적용됩니다. 화면 교체: F + SELECT와 동일. 빨리 감기: 켜기/끄기. 마이크 불기: 누르는 동안 게임에 바람을 전달. 상태 저장/불러오기: F + R 및 F + L과 동일. F 조합과 HOME은 기존 단축키를 유지합니다.
+settings		Swap A/B and X/Y	A/B 및 X/Y 교체
+settings		On: the A button presses the DS's B and B its A, X its Y and Y its X, in both emulators: for hands used to the other layout. L2, R2, L3 and R3 keep their jobs; F + a button and the emulators' menus are as printed.	두 에뮬레이터에서 A/B 및 X/Y 버튼의 위치를 바꿉니다. L2, R2, L3, R3와 F 조합 및 에뮬레이터 메뉴 버튼은 그대로 유지됩니다.
+settings		L2, R2, L3 and R3 back to Banana's: L2 swaps the screens, R2 fast-forwards, L3 blows on the mic, R3 does nothing; A, B, X and Y as printed. Press A twice.	Banana 기본값으로 되돌립니다. L2: 화면 교체, R2: 빨리 감기, L3: 마이크 불기, R3: 없음. A/B/X/Y는 표시대로 작동합니다. A를 두 번 누르세요.
+settings		Other systems buttons	기타 게임기 버튼
+settings		This system's buttons: what L2, R2, L3 and R3 do alone in its games, and A/B and X/Y swapped or not.	이 시스템의 L2, R2, L3, R3 기능 및 A/B, X/Y 교체를 설정합니다.
+settings		Game's own	게임 기본값
+settings		Pause	일시 정지
+settings		Screenshot	스크린샷
+settings		Alone, in this system's games. Game's own: the game's button. Fast-forward: on, and off again (as F + R2). Save and load state: the current slot (as F + R and F + L). Menu: RetroArch's (as F + X). With F held, the button is RetroArch's hotkey.	이 시스템의 게임에서 단독 버튼을 설정합니다. 게임 자체 버튼, 빨리 감기(F + R2), 상태 저장/불러오기(F + R/L), RetroArch 메뉴(F + X) 중 선택합니다. F와 함께 누르면 기존 단축키가 작동합니다.
+settings		On: A and B swap places, and X and Y, in this system's games and in RetroArch's own menu while one runs: for hands used to the other layout. F + a button stays as printed.	이 시스템의 게임과 RetroArch 메뉴에서 A/B 및 X/Y 위치를 바꿉니다. F 조합은 표시대로 유지됩니다.
+settings		The handheld sleeps, as with a press of the power button; a game running is paused. Press the power button to wake it. Press A twice.	전원 버튼을 누른 것처럼 절전 모드로 전환하고 실행 중인 게임을 일시 정지합니다. 전원 버튼으로 복귀합니다. A를 두 번 누르세요.
+settings		Games	게임
+settings		Systems	게임기
+settings		Games to sync	동기화할 게임
+settings		All: every game of the systems above comes to the card. Chosen: only the games ticked in Choose games (a game unticked later stays on the card until you delete it).	전체: 위 시스템의 모든 게임을 카드에 내려받습니다. 선택: 선택한 게임만 내려받습니다. 이후 선택을 해제한 게임은 직접 삭제할 때까지 카드에 남습니다.
+settings		All	전체
+settings		Chosen	선택한 게임
+settings		Choose games	게임 선택
+settings		The server's games, a system at a time: A ticks a game to sync, X ticks or unticks all of the system's. With Games to sync on Chosen, only the ticked ones come to the card.	시스템별 서버 게임을 표시합니다. A로 게임을 선택하고 X로 해당 시스템 전체를 선택/해제합니다. 동기화 대상이 선택으로 설정되어 있으면 선택한 게임만 내려받습니다.
+settings		Check certificate	인증서 확인
+settings		On: an https server's certificate is checked, as a browser does. Off: for a server with a certificate of its own making (a name on the LAN, no CA for it). Leave it On on a network you don't trust.	켜면 브라우저처럼 HTTPS 서버 인증서를 검증합니다. 끄면 자체 서명 인증서를 사용하는 내부 서버에도 연결할 수 있습니다. 신뢰하지 않는 네트워크에서는 켜 두세요.
+settings		Banana {version}{slot} on the {model}.	{model}의 Banana {version}{slot}.
+settings		(slot {slot})	(슬롯 {slot})
+settings		Battery {battery}%.	배터리 {battery}%.
+settings		Card: {space}.	카드: {space}.
+settings		Developer options are on	개발자 옵션 활성화됨
+settings		They're at the end of System now.	시스템 설정 맨 아래에 있습니다.
+settings		{aboutTaps} more	{aboutTaps}회 더
+settings		for the developer options	개발자 옵션 활성화
+settings		Developer options hidden	개발자 옵션 숨김
+settings		A seven times on System > About brings them back.	시스템 > 정보에서 A를 7번 누르면 다시 표시됩니다.
+settings		L2, R2, L3 and R3 are Banana's again.	L2, R2, L3, R3을 Banana 기본값으로 되돌렸습니다.
+settings		Wi-Fi: {wifiInfo}. Network, below, joins one; networks can also be written in banana/wifi.conf on a computer (see banana/README.txt).	Wi-Fi: {wifiInfo}. 아래 네트워크에서 연결하거나 컴퓨터의 banana/wifi.conf에 직접 설정할 수 있습니다(banana/README.txt 참고).
+settings		The card on the network: \\{address}\banana in Windows' File Explorer, smb://{address}/banana on a Mac (Finder, Go, Connect to Server). {getConfValue}	네트워크에서 카드에 접속: Windows 파일 탐색기에서 \\{address}\banana, Mac에서는 smb://{address}/banana(Finder > 이동 > 서버에 연결). {getConfValue}
+settings		Stop	중지
+settings		Connected to {network}{wstat}	{network}에 연결됨{wstat}
+settings		{value} network	네트워크 {value}개
+settings		{value} networks	네트워크 {value}개
+settings		Connected to {n}.	{n}에 연결됨.
+settings		Pairing with {value}	{value} 페어링 중
+settings		Connecting to {value}	{value} 연결 중
+settings		Disconnecting {value}	{value} 연결 해제 중
+settings		Forgetting {value}	{value} 등록 해제 중
+settings		{value} device	기기 {value}개
+settings		{value} devices	기기 {value}개
+settings		{value} character	{value}자
+settings		{value} characters	{value}자
+settings		{value} games match	게임 {value}개 일치
+settings		No games	게임 없음
+settings		{value} game	게임 {value}개
+settings		{value} games	게임 {value}개
+settings		The password couldn't be checked: {out}.	비밀번호 확인 실패: {out}.
+settings		Beta channel on again, with the password kept.	저장된 비밀번호로 베타 채널을 다시 켰습니다.
+settings		Beta channel off: Check for updates asks GitHub again. The password is kept: A turns the channel on again.	베타 채널을 껐습니다. GitHub에서 다시 업데이트를 확인합니다. 비밀번호는 유지되며 A로 다시 켤 수 있습니다.
+settings		{percent}% · {done} of {total} MB	{percent}% · {done} / {total} MB
+settings		Resume: {have} of {total} MB	이어받기: {have} / {total} MB
+settings		{total} MB	{total} MB
+settings		{value} name	이름 {value}개
+settings		{value} names	이름 {value}개
+settings		Beta password forgotten: A asks for it again.	베타 비밀번호 삭제됨: A로 다시 입력하세요.
+settings		Running {version}{slot}	실행 중: {version}{slot}
+settings		, slot {slot}	, 슬롯 {slot}
+settings		The update wasn't applied: {status}. This version is untouched.	업데이트 적용 실패: {status}. 현재 버전은 변경되지 않았습니다.
+settings		The check failed: {error}.	확인 실패: {error}.
+settings		A downloads it ({total} MB) to banana/updates on the card and checks it; nothing is installed until you choose Install. X checks again.	A를 누르면 카드의 banana/updates에 {total}MB를 내려받고 검증합니다. 설치를 선택하기 전에는 적용하지 않습니다. X로 다시 확인합니다.
+settings		GitHub has no release for this handheld. With Settings > System > Updates > Test versions left out, only stable versions count, and there are none yet.	이 기기용 GitHub 릴리스가 없습니다. 시스템 > 업데이트에서 테스트 버전을 제외한 경우 정식 버전만 표시됩니다.
+settings		Two channels: GitHub's releases, or the beta testers' builds on bananaos-cfw.dev. On: the beta builds. A, then A again, turns it off (GitHub again); the password is kept for turning it back on. X twice forgets the password.	GitHub 릴리스 또는 bananaos-cfw.dev의 베타 빌드를 선택합니다. 켜면 베타 빌드를 확인합니다. A를 두 번 누르면 GitHub로 복귀하며 비밀번호를 유지합니다. X를 두 번 누르면 비밀번호를 삭제합니다.
+settings		Two channels: GitHub's releases (now), or the beta testers' builds on bananaos-cfw.dev. A turns the beta channel on again with the password kept on the card; X twice forgets the password.	현재 GitHub 릴리스를 사용합니다. A를 누르면 저장된 비밀번호로 beta 테스트 채널을 다시 켭니다. X를 두 번 누르면 비밀번호를 삭제합니다.
+settings		Two channels: GitHub's releases (now), or the beta testers' builds on bananaos-cfw.dev. A asks for the beta password (once: it is checked with the site, then kept on the card for the updater only).	현재 GitHub 릴리스를 사용합니다. A를 누르면 베타 비밀번호를 입력하며 서버 확인 후 업데이트에만 사용할 수 있도록 카드에 저장합니다.
+settings		{value} package	패키지 {value}개
+settings		Press X again: forget	X 다시: 등록 해제
+settings		Off (password kept)	꺼짐 (비밀번호 유지)
+settings		for the {board}	{board}용
+settings		BananaOS {ver}	BananaOS {ver}
+settings		Stopping the sync. What came already stays on the card; Sync now carries on from there.	동기화를 중지합니다. 받은 파일은 카드에 남으며 다시 동기화하면 이어서 진행합니다.
+settings		The sync couldn't be stopped (it may be ending by itself).	동기화를 중지할 수 없습니다 (이미 종료 중일 수 있음).
+settings		The server doesn't know this handheld any more: pair it again.	서버가 이 기기를 인식하지 못합니다. 다시 페어링하세요.
+settings		The server's list can't be read: {ln}.	서버 목록 읽기 실패: {ln}.
+settings		The server has no games for this handheld's systems.	서버에 이 기기용 게임이 없습니다.
+settings		{on} chosen. With Games to sync on Chosen, Sync now brings only those.	{on}개 선택. 동기화할 게임을 선택한 게임으로 설정하면 선택 항목만 가져옵니다.
+settings		%.1f GB	%.1f GB
+settings		{chosenN} chosen, {chosenBytes}	{chosenN}개 선택, {chosenBytes}
+settings		Asking the server for its games...	서버의 게임 목록 요청 중...
+settings		A opens a system. X ticks all of its games, or unticks them when all are ticked. B saves and goes back.	A로 시스템을 엽니다. X로 모든 게임을 선택하거나 전체 선택 상태에서 해제합니다. B로 저장하고 돌아갑니다.
+settings		A ticks or unticks a game. X: all of this system's, or none. L and R jump a page. Games already on the card say so. B goes back to the systems.	A: 게임 선택/해제, X: 시스템 전체 선택/해제, L/R: 페이지 이동, B: 시스템 목록으로 돌아가기. 카드에 있는 게임은 별도로 표시됩니다.
+settings		{value} · on the card	{value} · 카드에 있음
+settings		{value} · chosen	{value} · 선택됨
+settings		Loading...	불러오는 중...
+settings		{ch} of {all}{b}	{ch} / {all}{b}
+settings		Sync · on card	동기화 · 카드에 있음
+settings		On card	카드에 있음
+settings		All / none	전체 / 없음
+settings		Tick	체크
+settings		A restarts into the new version now. If it ever fails to start, Settings > System > Updates > Previous version brings this one back.	A로 새 버전을 재시작합니다. 시작에 실패하면 설정 > 시스템 > 업데이트 > 이전 버전에서 복원할 수 있습니다.
+settings		{status}. This version is untouched.	{status}. 현재 버전은 변경되지 않았습니다.
+settings		The picture's shader for this game only, in either emulator; the others follow the Shader on the emulator's page in Settings > Nintendo DS. None scales smoothly and costs no GPU work.	두 에뮬레이터에서 이 게임에만 적용할 셰이더입니다. 다른 게임은 Nintendo DS의 에뮬레이터별 설정을 따릅니다. None은 부드러운 확대를 사용하며 GPU 부하가 없습니다.
+settings		SuperDrastic (DraStic) only. On draws the DS's 3D beside the game, the faster way; Off draws it in step with the game, for a game whose 3D shows on the wrong screen or a frame late (the Dragon Quest games). The others follow Settings > Nintendo DS > SuperDrastic > Threaded 3D.	SuperDrastic 전용 설정입니다. 켜면 3D를 별도로 그려 속도를 높입니다. 화면 위치나 표시 지연 문제가 있는 게임(Dragon Quest 등)은 끄세요. 다른 게임은 SuperDrastic의 스레드 방식 3D 설정을 따릅니다.
+settings		The size the DS's 3D is drawn at for this game, in either emulator: 1x the DS's own, 2x twice, 3x and 4x (experimental) three and four times, the sharpest and the heaviest (a busy 3D scene can drop below full speed). SuperDrastic draws 3x and 4x at 2x, its most. The others follow each emulator's 3D resolution (Settings > Nintendo DS > BananaDS or SuperDrastic).	두 에뮬레이터에서 사용할 게임별 3D 해상도입니다. 1x는 DS 원본, 2x는 두 배, 3x와 4x는 실험적 기능입니다. 높은 해상도는 무거운 장면에서 느려질 수 있습니다. SuperDrastic은 최대 2x를 지원합니다.
+settings		BananaDS only. Fast lets the DS's two CPUs run longer between meeting for this game (up to about 10% faster in HeartGold and hacks of it like Origin HeartGold), Accurate is melonDS's own. Fast can break a game (Golden Sun: Dark Dawn loses its 3D world): if this one goes wrong, set it back. Fast, DSi CPU also runs the game's main CPU at the DSi's 133 MHz: a game that slows down by itself on a DS (Origin HeartGold's busy towns) keeps its speed, for more of the handheld's power. The others follow Settings > Nintendo DS > BananaDS > Timing.	BananaDS 전용입니다. Fast는 하트골드 및 개조판에서 최대 10% 빠르며 Accurate는 melonDS 기본값입니다. Golden Sun 등에서 문제가 발생하면 Accurate로 변경하세요. DSi CPU 모드는 133MHz로 실행하여 끊김을 줄이는 대신 전력 사용량이 증가합니다. 다른 게임은 BananaDS의 타이밍 설정을 따릅니다.
+settings		Removes this game's file from the card: {file}. Left and right choose whether its saves, save states and box art go too, or stay (they come back if you copy the game again). Nothing else is touched: no other game, no BIOS. A asks first; A again deletes.	카드의 게임 파일 {file}을 삭제합니다. 좌우로 저장 데이터, 상태 저장, 표지의 삭제 여부를 선택합니다. 다른 게임과 BIOS는 건드리지 않습니다. A를 두 번 눌러 삭제하세요.
+settings		A Wi-Fi password has 8 to 63 characters; this one has {pw}.	Wi-Fi 비밀번호는 8~63자입니다. 현재 {pw}자입니다.
+settings		Asking {done}...	{done}에 요청 중...
+settings		Checking the account {user}...	{user} 계정 확인 중...
+settings		Logged in as {name}{score}	{name}으로 로그인됨{score}
+settings		· {score} points	· {score}점
+settings		The server said no ({status})	서버에서 거부함 ({status})
+settings		Testing {tSsid}...	{tSsid} 테스트 중...
+settings		For the clock on the top screen and the games' own clocks. Left and right change it{tTime}	상단 화면의 시계와 게임 내 시계에 적용할 시간대입니다. 좌우로 변경하세요{tTime}
+settings		; the time itself came from the internet.	; 인터넷에서 시각을 설정했습니다.
+settings		Checking {ra}...	{ra} 확인 중...
+settings		{value} (no internet)	{value} (인터넷 없음)
+settings		Connected, address {tIp}	연결됨, 주소 {tIp}
+settings		{done} of {b} found	{done} / {b}개 발견
+settings		Keys	키
+settings		Tap	터치
+settings		RUN	RUN
+settings		CLR	CLR
+settings		RET	RET
+settings		SPACE	SPACE
+settings		DEL	DEL
+settings		ESC	ESC
+settings		TAB	TAB
+settings		CAPS	CAPS
+settings		END	END
+settings		INS	INS
+settings		CTRL	CTRL
+settings		Tap it again to load	다시 터치하여 불러오기
+settings		Tap a slot twice to load it	슬롯을 두 번 터치하여 불러오기
+settings		Empty	비어 있음
+settings		Tap a key: the game hears it on the other screen	키를 터치하면 다른 화면의 게임에 입력됩니다
+settings		DONE	완료
+settings		The game keeps running on the other screen. Done brings the tiles back.	게임은 다른 화면에서 계속 실행됩니다. 완료를 누르면 버튼 패널로 돌아갑니다.
+settings		Tap: save states	터치: 상태 저장
+settings		Waiting for the emulator...	에뮬레이터 대기 중...
+settings		Game	게임
+settings		This release of the game isn't one the companion knows.	이 게임 버전은 도우미가 지원하지 않습니다.
+settings		RetroArch can't read the game's memory with this emulator: {error}	RetroArch가 이 에뮬레이터의 게임 메모리를 읽을 수 없습니다: {error}
+settings		Learns	습득 기술
+settings		Lv {nlv}	Lv {nlv}
+settings		Moves	기술
+settings		Stats	능력치
+settings		Nothing to see until it hatches.	부화하기 전에는 표시할 내용이 없습니다.
+settings		Nature	성격
+settings		Ability	특성
+settings		Item	도구
+settings		Friendship	친밀도
+settings		Attack	공격
+settings		Defense	방어
+settings		Sp. Atk	특수공격
+settings		Sp. Def	특수방어
+settings		Speed	스피드
+settings		EVs {evTotal}/510	노력치 {evTotal}/510
+settings		EV	노력치
+settings		IV	개체값
+settings		Switch to	교체
+settings		rock smash	바위깨기
+settings		old rod	낡은낚싯대
+settings		good rod	좋은낚싯대
+settings		super rod	대단한낚싯대
+settings		Where	위치
+settings		%s  ·  Lv %d  ·  %d%%	%s  ·  Lv %d  ·  %d%%
+settings		%s  ·  Lv %d-%d  ·  %d%%	%s  ·  Lv %d-%d  ·  %d%%
+settings		takes {takes}	받는 피해 {takes}
+settings		Old Rod	낡은낚싯대
+settings		Good Rod	좋은낚싯대
+settings		Super Rod	대단한낚싯대
+settings		The second SD card was taken out.	두 번째 SD 카드가 제거되었습니다.
+settings		{d} can't be read: {reason}.	{d} 읽기 실패: {reason}.
+settings		{files} free	{files} 여유
+settings		Add a server	서버 추가
+settings		Download options	다운로드 옵션
+settings		Folder	폴더
+settings		Downloading	다운로드 중
+settings		Paste here	여기에 붙여넣기
+settings		Download {clipWhat}	{clipWhat} 다운로드
+settings		Copy {value}	{value} 복사
+settings		Move {value}	{value} 이동
+settings		Copy	복사
+settings		Move	이동
+settings		Rename	이름 변경
+settings		Unpack...	압축 해제...
+settings		New folder	새 폴더
+settings		Mark all	모두 선택
+settings		Unmark all	모두 해제
+settings		Clear the clipboard	클립보드 비우기
+settings		Keep both	둘 다 유지
+settings		New names	새 이름
+settings		Replace	덮어쓰기
+settings		Skip those	건너뛰기
+settings		Press Y again to stop. What is done stays; the file in hand is left out.	Y를 다시 눌러 중지하세요. 완료된 작업은 유지되고 진행 중이던 파일은 제외합니다.
+settings		Nothing was pasted.	붙여넣은 항목 없음.
+settings		{value} to copy	{value} 복사
+settings		{value} to move	{value} 이동
+settings		{row}: open the folder they go to, then X, Paste here.	{row}: 대상 폴더를 열고 X, 여기에 붙여넣기를 선택하세요.
+settings		A types the key, B deletes, X capitals, L symbols, Y a space, START renames it, SELECT leaves it as it was. Or tap the keys. Not in a name: \ / : * ? " < > |.	A: 입력, B: 지우기, X: 대문자, L: 기호, Y: 공백, START: 이름 변경, SELECT: 취소. 터치 입력도 가능합니다. 사용할 수 없는 문자: \ / : * ? " < > |.
+settings		{value} A game's saves, play time and star in Favorites go by its file name: renamed, it starts without them (they stay where they are).	{value} 게임의 저장 데이터, 플레이 시간 및 즐겨찾기는 파일명에 따라 관리됩니다. 이름을 바꾸면 기존 기록이 남아 있더라도 연결되지 않을 수 있습니다.
+settings		The clipboard is empty.	클립보드가 비어 있습니다.
+settings		New folder in	새 폴더 위치
+settings		A types the key, B deletes, X capitals, L symbols, Y a space, START makes the folder, SELECT cancels. Or tap the keys. Not in a name: \ / : * ? " < > |.	A: 입력, B: 지우기, X: 대문자, L: 기호, Y: 공백, START: 폴더 생성, SELECT: 취소. 터치 입력도 가능합니다. 사용할 수 없는 문자: \ / : * ? " < > |.
+settings		Not into banana/: it holds Banana's own files (the settings, the servers, the jobs). Choose another folder.	banana/에는 설정, 서버 및 작업 파일이 저장되어 있습니다. 다른 폴더를 선택하세요.
+settings		Not into banana/: it holds Banana's own files (the settings, the servers, the jobs).	banana/에는 설정, 서버 및 작업 파일이 저장되어 있어 사용할 수 없습니다.
+settings		in {dir}	{dir}에
+settings		into {dest}	{dest}에
+settings		Deleted	삭제됨
+settings		Copied	복사됨
+settings		Moved	이동됨
+settings		into {jobWhere}.	{jobWhere}에.
+settings		Stopped: {done} of {pr}{del}	중지됨: {done} / {pr}{del}
+settings		{value} deleted.	{value} 삭제됨.
+settings		{value} done.	{value} 완료.
+settings		Nothing was deleted.	삭제된 항목 없음.
+settings		{value} left as it was.	{value} 변경하지 않음.
+settings		{value} left as they were.	{value} 변경하지 않음.
+settings		{failed} couldn't be: {error}	{failed} 실패: {error}
+settings		{value} But a card refused a write at the end, or was taken out: some of it may not be on it.	{value} 마지막 기록 단계에서 카드 쓰기가 실패했거나 카드가 제거되었습니다. 일부 파일이 저장되지 않았을 수 있습니다.
+settings		Made the folder {text}.	폴더 {text} 생성됨.
+settings		Renamed {renaming} to {text}.	{renaming}을(를) {text}(으)로 변경했습니다.
+settings		In the clipboard: {clipWhat} to download, from {title} {dir}.	클립보드: {title} {dir}에서 다운로드할 {clipWhat}.
+settings		In the clipboard: {what}{clipOp}, from {clipFrom}.	클립보드: {clipFrom}의 {what}{clipOp}.
+settings		Unpacking {value}	{value} 압축 해제 중
+settings		Downloading {value}	{value} 다운로드 중
+settings		Choose a folder	폴더 선택
+settings		Files	파일
+settings		{free} free of {total}	{free} 여유 / 전체 {total}
+settings		{pickNote}A opens a card, then its folders: Y takes the folder shown (A too, on a file or in an empty folder), X makes a new one. B goes back to the download as it was.	{pickNote}A로 카드와 폴더를 엽니다. Y로 현재 폴더 선택(A로 빈 폴더나 파일에서도 선택 가능), X로 폴더 생성, B로 기존 다운로드 화면으로 돌아갑니다.
+settings		The cards' folders and files: A opens a card. In a folder, Y marks, X copies, moves, renames, deletes or unpacks what is marked, or makes a new folder. LEFT and RIGHT turn a page, L and R go to the first and last rows. START: Files' settings (a new server, the download options).	A: 카드 열기. 폴더 안에서 Y: 선택, X: 복사/이동/이름 변경/삭제/압축 해제/폴더 생성. 좌우: 페이지 이동, L/R: 처음/끝 항목. START: 파일 설정(서버 및 다운로드 옵션).
+settings		A shows each file. It carries on in the background while you play (paused) or the menu shows anything else; with the lid closed it finishes before the handheld sleeps.	A로 파일별 진행 상황을 표시합니다. 게임이나 다른 메뉴 화면에서도 백그라운드에서 계속 진행합니다. 덮개를 닫으면 작업 완료 후 절전합니다.
+settings		A opens its folders: Y marks, X downloads what is marked into a folder on a card, or copies it for Paste here in one. Y here changes the server or deletes it.	A: 폴더 열기, Y: 선택, X: 카드 폴더에 다운로드 또는 복사 후 붙여넣기. 서버 목록에서 Y로 서버를 수정하거나 삭제합니다.
+settings		{value} Plain FTP sends the password unencrypted.	{value} 일반 FTP는 비밀번호를 암호화하지 않습니다.
+settings		Files' settings	파일 설정
+settings		A NAS, or a computer sharing a folder: over SMB (Windows' and macOS's file sharing, most NAS), SFTP (SSH) or FTP. Its files are downloaded onto the cards, archives unpacked.	NAS 또는 컴퓨터 공유 폴더에 SMB, SFTP(SSH), FTP로 접속합니다. 파일을 카드에 내려받고 압축을 해제할 수 있습니다.
+settings		Unpacking after a download, the archive deleted after, an archive's single folder unwrapped, the servers' hidden files.	다운로드 후 압축 해제, 원본 압축 삭제, 단일 폴더 펼치기 및 서버 숨김 파일 표시 설정입니다.
+settings		{value} B goes back to the cards and the servers.	{value} B로 카드 및 서버 목록으로 돌아갑니다.
+settings		An empty folder	빈 폴더
+settings		{pickNote}A or Y takes this folder, X makes a new one in it. B goes up.	{pickNote}A 또는 Y로 이 폴더 선택, X로 새 폴더 생성. B로 상위 이동.
+settings		A or X makes a new folder here{clipEmpty}{clipNote}	A 또는 X로 이곳에 새 폴더 생성{clipEmpty}{clipNote}
+settings		, or pastes.	, 또는 붙여넣기.
+settings		Folder · {n}	폴더 · {n}
+settings		A opens it, Y marks, X: {value}	A: 열기, Y: 선택, X: {value}
+settings		Y marks, A or X: {value}	Y: 선택, A 또는 X: {value}
+settings		{dir}copy, move, rename, delete, unpack, a new folder. B goes up.{clipNote}	{dir}복사, 이동, 이름 변경, 삭제, 압축 해제, 새 폴더. B로 상위 이동.{clipNote}
+settings		{name}A download is writing it: it takes its own name once it is whole.{clipNote}	{name}다운로드 중입니다. 완료되면 원래 파일명으로 바뀝니다.{clipNote}
+settings		item marked	개 선택됨
+settings		items marked	개 선택됨
+settings		{marked}: X for what to do with them.{clipNote}	{marked}: X로 작업 선택.{clipNote}
+settings		A opens it. Y takes	A: 열기. Y: 선택
+settings		A or Y takes	A 또는 Y: 선택
+settings		{lead} the folder shown ({dir}), X makes a new one in it. B goes up; from the cards, back to the download as it was.	{lead} 현재 폴더({dir})를 선택합니다. X: 폴더 생성, B: 상위 폴더 또는 기존 다운로드 화면으로 돌아가기.
+settings		{value} A game's play time and its star in Favorites go by its place: moved, it starts without them (its saves go by its name and stay).	{value} 게임의 플레이 시간과 즐겨찾기는 파일 위치를 기준으로 관리합니다. 이동하면 연결이 끊길 수 있으며 파일명을 기준으로 한 저장 데이터는 유지됩니다.
+settings		From {title} into this folder: {dir}. The next page says how (archives unpacked, files already here).	{title}에서 현재 폴더({dir})로 다운로드합니다. 다음 화면에서 압축 해제 및 중복 파일 처리 방법을 선택합니다.
+settings		Into this folder: {dir}. A name already here asks first.{clipOp}	대상 폴더: {dir}. 같은 이름이 있으면 먼저 확인합니다.{clipOp}
+settings		{value} Moved on one card it is at once; from the other card each file is copied, then deleted where it was.	{value} 같은 카드 안에서는 즉시 이동합니다. 다른 카드로 이동할 때는 각 파일을 복사한 뒤 원본을 삭제합니다.
+settings		Into the clipboard: then open the folder it goes to, and X, Paste here.	클립보드에 복사합니다. 대상 폴더에서 X, 여기에 붙여넣기를 선택하세요.
+settings		Into the clipboard, to be moved: then open the folder it goes to, and X, Paste here.	클립보드에 이동 대상을 저장합니다. 대상 폴더에서 X, 여기에 붙여넣기를 선택하세요.
+settings		A new name, typed on the keyboard.	키보드에서 새 이름을 입력합니다.
+settings		Press A again to delete {movable} for good (a folder with everything in it, hidden files too).	A를 다시 누르면 {movable}을 영구 삭제합니다. 폴더 안의 숨김 파일도 삭제됩니다.
+settings		For good: there is no bin. A twice.	영구 삭제됩니다. 휴지통은 없습니다. A를 두 번 누르세요.
+settings		A folder in {dir}, its name typed on the keyboard.	{dir}에 폴더를 만들고 키보드에서 이름을 입력합니다.
+settings		Into a folder chosen on the next page (this one first): zip, 7z and RAR archives, multi-volume ones by their first part, one with a password asked for it.	다음 화면에서 대상 폴더를 선택합니다. ZIP, 7z, RAR 및 분할 압축을 지원하며 암호가 필요하면 입력을 요청합니다.
+settings		Every entry of this folder, for Copy, Move or Delete.	이 폴더의 모든 항목을 복사, 이동 또는 삭제 대상으로 선택합니다.
+settings		What Copy or Move put in it is let go of: nothing on the cards or the servers changes.	클립보드 내용만 지웁니다. 카드나 서버의 파일은 변경되지 않습니다.
+settings		{keep} So it can be copied, not moved, renamed or deleted.	{keep} 복사만 가능하며 이동, 이름 변경, 삭제할 수 없습니다.
+settings		Not {what}: the card's own folder stays where it is.	{what} 불가: 카드의 시스템 폴더는 그대로 유지됩니다.
+settings		folder stays	폴더 유지
+settings		folders stay	폴더 유지
+settings		it is.	있습니다.
+settings		they are.	있습니다.
+settings		Already here	이미 존재함
+settings		{names}. Keep both gives the new ones another name (2); Replace puts them over the old ones (a folder: the two in one); Skip those leaves them out. B pastes nothing.	{names}. 모두 유지: 새 파일명에 번호(2)를 붙입니다. 교체: 기존 파일을 덮어쓰며 폴더는 병합합니다. 건너뛰기: 중복 파일을 제외합니다. B: 붙여넣기 취소.
+settings		Deleting	삭제 중
+settings		Copying	복사 중
+settings		Moving	이동 중
+settings		Counting...	개수 확인 중...
+settings		{plural} so far	현재 {plural}
+settings		Files stays open till it is done. Y stops: what is deleted stays deleted.	완료될 때까지 파일 화면을 유지합니다. Y로 중지할 수 있지만 삭제한 항목은 복구되지 않습니다.
+settings		Each file goes in under a hidden name and takes its own once it is whole. Files stays open till it is done; Y stops: what is done stays.	각 파일은 임시 숨김 이름으로 기록하고 완료 후 원래 이름으로 변경합니다. 작업이 끝날 때까지 파일 화면을 유지합니다. Y로 중지하면 완료된 파일은 남습니다.
+settings		· {files}/s · {duration} left	· {files}/초 · {duration} 남음
+settings		{marked} marked	{marked} 선택됨
+settings		What to do	작업 선택
+settings		Nothing to show.	표시할 항목 없음.
+settings		Stop!	중지!
+settings		Up	위
+settings		Edit	편집
+settings		Add	추가
+settings		Unpack here	여기에 압축 해제
+settings		Download here	여기에 다운로드
+settings		Unmark	선택 해제
+settings		Mark	선택
+settings		Actions	작업
+settings		Paste	붙여넣기
+settings		Unpack	압축 해제
+settings		FTPS	FTPS
+settings		Files' helper ({prog}) couldn't be started.	파일 도구 ({prog})를 실행할 수 없습니다.
+settings		Stopped.	중지됨.
+settings		{help} START when it is typed.	{help} 입력 후 START를 누르세요.
+settings		That card was taken out: choose the folder again.	카드가 제거되었습니다. 폴더를 다시 선택하세요.
+settings		Finished: {downloaded} downloaded	완료: {downloaded} 다운로드
+settings		Finished	완료
+settings		, {unpacked} unpacked	, {unpacked} 압축 해제
+settings		, {failed} failed	, {failed} 실패
+settings		, {packed} left packed	, {packed} 압축 유지
+settings		Cancelling	취소 중
+settings		Cancelling: the job stops	취소 중: 작업 중지
+settings		Needs a password	비밀번호 필요
+settings		Waiting for the password of {name}	{name} 비밀번호 대기 중
+settings		Stopped	중지됨
+settings		Stopped: {reason} A goes on once it is back.	중지됨: {reason} 다시 연결되면 A로 계속합니다.
+settings		Stopped: A goes on from where it was	중지됨: A로 이어서 진행
+settings		Downloading {of}: {percent}%	{of} 다운로드 중: {percent}%
+settings		· {duration} left	· {duration} 남음
+settings		Trying again	다시 시도 중
+settings		Trying again in {seconds} s ({attempt} of {retries})	{seconds}초 후 다시 시도 ({attempt} / {retries})
+settings		Unpacking {percent}%	압축 해제 중 {percent}%
+settings		Unpacking {of}: {percent}%	{of} 압축 해제 중: {percent}%
+settings		Connecting	연결 중
+settings		Connecting ({of})	연결 중 ({of})
+settings		Working	작업 중
+settings		The password of {name}: the download goes on with it. It isn't kept (the server's Remember password is off).	{name}의 비밀번호로 다운로드를 계속합니다. 서버의 비밀번호 기억 설정이 꺼져 있어 저장하지 않습니다.
+settings		Stopped. The files downloaded so far are kept: A goes on from where it was.	중지됨. 받은 파일은 유지됩니다. A로 이어서 진행합니다.
+settings		Cancelling...	취소 중...
+settings		Cancelled. The files it had finished stay on the card.	취소됨. 완료된 파일은 카드에 남습니다.
+settings		Link	링크
+settings		{value} (by type)	{value} (종류 기준)
+settings		{value} (as last time)	{value} (지난 위치)
+settings		{value} (new)	{value} (새 항목)
+settings		· {fetch} free	· {fetch} 여유
+settings		Card	카드
+settings		Unpack archives	압축 파일 해제
+settings		Yes	예
+settings		No	아니요
+settings		Zips	ZIP 파일
+settings		Unpack them too	함께 압축 해제
+settings		Keep them as they are	원본 유지
+settings		Delete the archive after	해제 후 압축 파일 삭제
+settings		Delete archives after	해제 후 압축 파일 삭제
+settings		Skip them	건너뛰기
+settings		Replace them	덮어쓰기
+settings		Unpacked	압축 해제됨
+settings		Not unpacked	압축 해제 안 함
+settings		(the address)	(주소)
+settings		Protocol	프로토콜
+settings		FTP	FTP
+settings		SFTP	SFTP
+settings		SMB	SMB
+settings		Address	주소
+settings		Type it	입력
+settings		Port	포트
+settings		Anonymous	익명
+settings		User	사용자
+settings		Kept	저장됨
+settings		Remember password	비밀번호 기억
+settings		Domain	도메인
+settings		Start folder	시작 폴더
+settings		Where the login lands	로그인 시 이동할 위치
+settings		FTPS (TLS)	FTPS (TLS)
+settings		File names	파일 이름
+settings		Delete this server	이 서버 삭제
+settings		Ask	매번 확인
+settings		Unpack after a download	다운로드 후 압축 해제
+settings		Unwrap a single folder	단일 폴더 제거
+settings		Hidden files on servers	서버의 숨김 파일
+settings		Shown	표시
+settings		It is kept on the card, sealed for this handheld (Remember password).	비밀번호 기억 기능으로 이 기기에 암호화하여 저장됩니다.
+settings		It isn't kept: Files asks for it again next time (the server's Remember password is off).	저장되지 않습니다. 다음 연결 시 다시 묻습니다 (비밀번호 기억 꺼짐).
+settings		Listing {listing}...	{listing} 목록 가져오는 중...
+settings		The server refused the name or the password: type it again.	서버에서 이름 또는 비밀번호를 거부했습니다. 다시 입력하세요.
+settings		{title}'s key changed: it isn't the server it was ({old} before, {new} now). If it wasn't reinstalled, someone may be in between. Press A again to trust the new key.	{title}의 서버 키가 변경되었습니다(이전 {old}, 현재 {new}). 서버를 재설치한 것이 아니라면 중간자 공격일 수 있습니다. 확인 후 A를 다시 눌러 새 키를 신뢰하세요.
+settings		{n} files of {total} are there already: skip them, replace them or keep both, then Download.	전체 {total}개 중 {n}개 파일이 이미 있습니다. 건너뛰기, 교체 또는 모두 유지를 선택하고 다운로드하세요.
+settings		{value} is	{value}
+settings		{value} are	{value}
+settings		That password is wrong: type it again.	비밀번호가 틀렸습니다. 다시 입력하세요.
+settings		The archive is protected by a password.	비밀번호로 보호된 압축 파일입니다.
+settings		{plural}, {fetch} unpacked.	{plural}, {fetch} 압축 해제됨.
+settings		Unpacking it takes {need} of memory, and {free} is free: it may fail. Press A again to try anyway.	압축 해제에 메모리 {need}가 필요하지만 {free}만 남아 있어 실패할 수 있습니다. 그래도 시도하려면 A를 다시 누르세요.
+settings		Saved.	저장됨.
+settings		Deleted.	삭제됨.
+settings		Listing the files...	파일 목록 가져오는 중...
+settings		Everything chosen is there already.	선택한 항목이 모두 이미 있습니다.
+settings		Not enough room on {label}: {need} needed, {free} free.	{label} 공간 부족: {need} 필요, {free} 여유.
+settings		A file is {fetch}: this card (FAT32) takes 4 GB a file at most.	파일 크기 {fetch}: FAT32 카드는 파일당 최대 4GB입니다.
+settings		{todo} from {title}	{title}의 {todo}
+settings		Couldn't write the job in {jobs}.	{jobs}에 작업을 기록할 수 없습니다.
+settings		Looking into {fetch}...	{fetch} 확인 중...
+settings		Unpack {fetch}	{fetch} 압축 해제
+settings		What the list calls it (empty: its address).	목록에 표시할 이름 (비어 있으면 주소).
+settings		The NAS's or the computer's IP address on your network, like 192.168.1.10, or its name.	네트워크의 NAS 또는 PC IP 주소(예: 192.168.1.10) 또는 이름.
+settings		SMB 445, SFTP 22, FTP 21: change it only when the server uses another.	SMB 445, SFTP 22, FTP 21: 서버에서 다른 포트를 사용할 때만 변경하세요.
+settings		The account's name on the server.	서버 계정 이름.
+settings		The account's password. Kept sealed on the card when Remember password is on.	계정 비밀번호. 비밀번호 기억을 켜면 암호화하여 카드에 저장합니다.
+settings		Only for an account in a Windows domain: usually empty.	Windows 도메인 계정에서만 사용합니다. 보통 비워 둡니다.
+settings		Where its folders open, like /Games (on SMB the share first: /Games is the share Games). Empty: where the login lands.	서버 접속 시 열리는 시작 폴더입니다. 예: /Games(SMB는 Games 공유 폴더). 비워 두면 로그인 기본 위치를 엽니다.
+settings		The server's address is needed: an IP address like 192.168.1.10, or its name.	서버 주소가 필요합니다. 192.168.1.10 같은 IP 또는 서버 이름을 입력하세요.
+settings		Plain FTP sends the password unencrypted: prefer FTPS or SFTP when the server has them. Press A again to save anyway.	일반 FTP는 비밀번호를 암호화하지 않습니다. 가능하면 FTPS 또는 SFTP를 사용하세요. 그래도 저장하려면 A를 다시 누르세요.
+settings		Saving...	저장 중...
+settings		Press X again to stop. The files downloaded so far are kept, and Resume goes on.	X를 다시 눌러 중지하세요. 받은 파일은 유지되며 이어받을 수 있습니다.
+settings		Press Y again to cancel this job: what it hasn't finished is deleted (the files it finished stay on the card).	Y를 다시 누르면 작업을 취소하고 미완료 파일을 삭제합니다. 완료된 파일은 카드에 남습니다.
+settings		Trusting the new key...	새 키 신뢰 중...
+settings		{targets} to download: open the folder they go to on a card, then X, Paste here.	다운로드할 {targets}: 카드의 대상 폴더에서 X, 여기에 붙여넣기를 선택하세요.
+settings		Its name	이름
+settings		Its address	주소
+settings		Its port	포트
+settings		The user	사용자
+settings		The password	비밀번호
+settings		Its domain	도메인
+settings		The start folder	시작 폴더
+settings		{title} goes from the list (its password too). Press A again.	{title} 및 비밀번호를 목록에서 삭제합니다. A를 다시 누르세요.
+settings		Change a server	서버 수정
+settings		A new server	새 서버
+settings		SMB: Windows' and macOS's file sharing, and most NAS (SMB 2 and 3). SFTP: SSH's file transfer, with a password. FTP: FTP or FTPS, passive.	SMB: Windows/macOS 및 NAS 공유(SMB 2/3). SFTP: SSH 파일 전송(비밀번호). FTP: 일반 FTP 또는 FTPS(수동 모드).
+settings		Anonymous: the server's public files, no account.	익명: 계정 없이 공개 파일에 접근합니다.
+settings		Guest: the share without an account (a NAS's public folder).	게스트: 계정 없이 공유 폴더에 접근합니다 (NAS 공개 폴더).
+settings		Yes: kept on the card, sealed for this handheld (another one, or a computer, can't read it). No: asked each time.	예: 이 기기에서만 읽을 수 있도록 카드에 암호화해 저장합니다. 아니요: 연결할 때마다 입력합니다.
+settings		FTPS: the login and the files encrypted (explicit TLS). Its certificate is trusted the first time and checked after.	FTPS는 로그인 정보와 파일을 암호화합니다(명시적 TLS). 처음 접속할 때 인증서를 신뢰하고 이후 변경 여부를 확인합니다.
+settings		How an old server writes names in Cyrillic: UTF-8 for any recent one, CP1251 or CP866 for an old Windows one.	오래된 서버의 키릴 문자 파일명 인코딩입니다. 최신 서버는 UTF-8, 구형 Windows 서버는 CP1251 또는 CP866을 선택하세요.
+settings		START saves too.	START로도 저장할 수 있습니다.
+settings		The server goes from the list, its password with it.	서버와 비밀번호를 목록에서 삭제합니다.
+settings		{fieldHelp} A types it.	{fieldHelp} A로 입력합니다.
+settings		Not connected: A tries again. B goes back.	연결되지 않음: A로 다시 시도. B로 뒤로.
+settings		{marked} marked{bytes}.	{marked} 선택됨{bytes}.
+settings		A opens a folder. Y marks, X: download what is marked (a folder with all in it), or copy it to paste in a card's folder. SELECT reads the folder again, B goes up.	A: 폴더 열기, Y: 선택, X: 선택 항목과 하위 파일 다운로드 또는 카드에 붙여넣기, SELECT: 새로고침, B: 상위 폴더.
+settings		Into {dest}{how}: the next page says where, and any folder on a card can be chosen there.	{dest}{how}에 저장: 다음 화면에서 위치를 확인하고 카드의 폴더를 선택할 수 있습니다.
+settings		, by the files' type	, 파일 종류 기준
+settings		, as last time	, 지난 위치
+settings		Into Files' clipboard: then open a folder on a card, and X, Paste here downloads them there.	파일 클립보드에 저장합니다. 카드의 폴더를 열고 X > 여기에 붙여넣기를 선택하면 다운로드합니다.
+settings		Every entry of this folder, for Download or Copy.	이 폴더의 모든 항목을 다운로드 또는 복사 대상으로 선택합니다.
+settings		Into the folder chosen. Archives of one folder are unwrapped (Options).	선택한 폴더에 저장합니다. 단일 폴더 압축 파일은 폴더를 제거할 수 있습니다 (옵션).
+settings		Into the folder chosen. Archives are unpacked after their last part comes in.	선택한 폴더에 저장합니다. 분할 압축 파일은 모든 부분을 받은 후 해제합니다.
+settings		The files' type says it. {value}	파일 종류에 따라 결정됩니다. {value}
+settings		Where this server folder's downloads went last time. {value}	이 서버 폴더에서 지난번에 다운로드한 위치. {value}
+settings		A chooses another folder on the cards, or makes one: Files opens on it, Y takes the folder shown (A too, on a file or in an empty folder), X makes a new one.{local}	A로 카드의 다른 폴더를 선택하거나 생성합니다. 파일 화면에서 Y로 현재 폴더 선택(A로 파일이나 빈 폴더에서도 선택), X로 새 폴더 생성.{local}
+settings		{value} A server's folder goes in as a folder.	{value} 서버 폴더는 폴더 자체로 저장됩니다.
+settings		{value} The server's folder of this system goes into it itself.	{value} 이 게임기의 서버 폴더는 해당 폴더에 저장됩니다.
+settings		The same folder on the other card (made when it starts, if it isn't there).	다른 카드의 같은 폴더 (없으면 시작 시 생성).
+settings		Yes: 7z and RAR archives unpacked into the folder, then (Delete archives after) deleted. This system plays its games zipped: its zips are kept as they are unless the next row says otherwise.	예: 7z 및 RAR을 폴더에 압축 해제한 다음 설정에 따라 원본을 삭제합니다. ZIP 실행을 지원하는 시스템의 ZIP 파일은 다음 항목에서 변경하지 않으면 유지합니다.
+settings		Yes: archives unpacked into the folder, then (Delete archives after) deleted. Zips for a system that plays them zipped are kept as they are by default.	예: 대상 폴더에 압축을 해제하고 설정에 따라 원본을 삭제합니다. ZIP 실행을 지원하는 시스템의 ZIP은 기본적으로 유지합니다.
+settings		This system plays its games zipped, so its zips are kept as they are, the 7z and RAR archives unpacked all the same. Unpack them too: the zips as well.	이 시스템은 ZIP 상태로 게임을 실행할 수 있어 ZIP은 유지하고 7z/RAR은 압축 해제합니다. ZIP도 해제를 선택하면 ZIP까지 풀립니다.
+settings		Skip them: those stay as they are. Replace them: the new ones over the old. Keep both: the new ones get another name (2).	건너뛰기: 기존 파일 유지. 교체: 새 파일로 덮어쓰기. 모두 유지: 새 파일명에 번호(2) 추가.
+settings		Each archive into the folder chosen. One with a password stays packed: its row on the next page unpacks it, the password typed then.	압축 파일을 선택한 폴더에 각각 해제합니다. 비밀번호가 있는 파일은 유지하고 다음 화면에서 비밀번호를 입력하여 해제합니다.
+settings		Unpacking	압축 해제 중
+settings		Nothing to do	작업 없음
+settings		{value} A shows it in Files, to unpack it from there.	{value} A로 파일 화면에서 확인하고 압축 해제합니다.
+settings		A clears it (the files stay on the card). Your games show in the menu when you go back to it.	A로 작업 기록을 지웁니다(파일은 카드에 남음). 메뉴로 돌아가면 새 게임을 확인할 수 있습니다.
+settings		The job stops, then what it hasn't finished is deleted.	작업을 중지하고 완료되지 않은 항목을 삭제합니다.
+settings		A types the password. Y cancels the download.	A로 비밀번호 입력. Y로 다운로드 취소.
+settings		A goes on from where it stopped. Y cancels it: what it hasn't finished is deleted.	A로 이어받기. Y로 취소하면 완료되지 않은 항목이 삭제됩니다.
+settings		B goes back: it carries on meanwhile, also while you play (paused) or the menu shows anything else. X stops it, Y cancels it.	B로 돌아가도 게임이나 다른 메뉴에서 작업이 계속 진행됩니다. X: 중지, Y: 취소.
+settings		{jobsBehind} after this one.	이 작업 뒤에 {jobsBehind}.
+settings		more job waits	개 작업 대기
+settings		more jobs wait	개 작업 대기
+settings		Ask: the Download page asks each time. Always or Never: it doesn't ask.	매번 확인: 다운로드 화면에서 확인합니다. 항상 또는 안 함은 묻지 않습니다.
+settings		An archive unpacked is deleted after (all its parts): ask each time, always or never.	압축 해제 후 모든 분할 파일을 삭제합니다: 매번 확인, 항상 또는 안 함.
+settings		An archive holding a single folder: its contents go into the folder chosen, not the folder itself.	압축 파일에 폴더 하나만 있으면 해당 폴더가 아닌 내부 파일을 선택한 폴더에 해제합니다.
+settings		Files and folders whose names start with a dot, on the servers (the cards' stay hidden in Files).	서버에서 마침표로 시작하는 숨김 파일 및 폴더를 표시합니다. 카드의 숨김 파일은 계속 숨깁니다.
+settings		Change the server	서버 변경
+settings		Unpack where	압축 해제 위치
+settings		Download where	다운로드 위치
+settings		Last unpacking	마지막 압축 해제
+settings		Last download	마지막 다운로드
+settings		Not connected.	연결되지 않음.
+settings		Nothing to download.	다운로드할 항목 없음.
+settings		Trust	신뢰
+settings		Clear	지우기
+settings		Resume	계속하기
+settings		Show	표시
+settings		Cancel!	취소!
+settings		{title} isn't in the list of servers any more.	{title}이 서버 목록에 없습니다.
+settings		KB	KB
+settings		MB	MB
+settings		GB	GB
+settings		TB	TB
+settings		{value} file	파일 {value}개
+settings		{value} files	파일 {value}개
+settings		{m} files and folders	파일 및 폴더 {m}개
+settings		Wrong PIN for	PIN 오류
+settings		PIN for	PIN
+settings		That PIN wasn't right. {value}	PIN이 틀렸습니다. {value}
+settings		{value} asks for a PIN: it is in LocalSend there (Settings, Require PIN). START sends with it, B gives up.	{value}에서 PIN을 요청합니다. 상대방 LocalSend의 설정 > PIN 요구에서 확인하세요. START로 전송하고 B로 취소합니다.
+settings		Receiving from {reqFrom}...	{reqFrom}에서 수신 중...
+settings		Declined: nothing was saved.	거절됨: 저장된 항목 없음.
+settings		That folder can't be read.	폴더를 읽을 수 없습니다.
+settings		Computer	컴퓨터
+settings		Handheld	게임기
+settings		Phone	휴대전화
+settings		Browser	브라우저
+settings		Device	기기
+settings		Send	보내기
+settings		Options	옵션
+settings		{deviceName} (gone)	{deviceName} (연결 끊김)
+settings		Receive when closed	닫은 상태에서도 받기
+settings		Require PIN	PIN 요구
+settings		PIN	PIN
+settings		Bshare	Bshare
+settings		Your PIN	내 PIN
+settings		The PIN a phone or computer types to send here: 4 to 8 digits. START keeps it.	휴대전화나 PC가 전송할 때 입력하는 4~8자리 PIN입니다. START로 저장합니다.
+settings		Nothing was sent.	보낸 파일이 없습니다.
+settings		A send is under way: Sending shows it.	전송 중입니다. 전송 화면에서 확인하세요.
+settings		Choose a device first: a phone or computer with LocalSend open.	LocalSend를 실행한 휴대전화 또는 PC를 먼저 선택하세요.
+settings		Choose the files first.	파일을 먼저 선택하세요.
+settings		A PIN is 4 to 8 digits: kept as it was.	PIN은 4~8자리 숫자입니다. 기존 PIN이 유지됩니다.
+settings		Get files from a phone or computer with LocalSend.	LocalSend가 실행된 휴대전화나 PC에서 파일을 받습니다.
+settings		Seen as {name} while this page is open.	이 화면이 열려 있을 때 {name}(으)로 표시됩니다.
+settings		Send files or folders to a phone or computer with LocalSend open.	LocalSend가 실행된 휴대전화나 PC에 파일 또는 폴더를 보냅니다.
+settings		Receiving while Bshare is closed, and about Bshare.	Bshare를 닫은 상태에서 수신하는 설정 및 정보.
+settings		{reqFrom} wants to send	{reqFrom}에서 전송 요청
+settings		First: {reqFirst}.	첫 항목: {reqFirst}.
+settings		Nothing is saved.	저장되는 항목이 없습니다.
+settings		Everything goes into {location}.	모든 파일을 {location}에 저장합니다.
+settings		Ready	준비 완료
+settings		Seen as {name}{myPin}	표시 이름: {name}{myPin}
+settings		·  PIN {myPin}	·  PIN {myPin}
+settings		Open LocalSend on your phone or computer, on the same Wi-Fi, and send to {name}.{myPin}	같은 Wi-Fi에서 휴대전화나 PC의 LocalSend를 열고 {name}(으)로 보내세요.{myPin}
+settings		It asks for your PIN, {myPin}.	PIN {myPin}을(를) 입력해야 합니다.
+settings		Files go into {location}.	파일은 {location}에 저장됩니다.
+settings		Games go into their system's folder, everything else into banana/received. Location changes that.	게임은 시스템별 폴더에, 기타 파일은 banana/received에 저장합니다. 위치에서 변경할 수 있습니다.
+settings		Receiving from {rc}	{rc}에서 수신 중
+settings		{done} of {total} files	파일 {done} / {total}개
+settings		Last: {files} from {rc}.	최근: {rc}에서 {files}.
+settings		The cards	카드
+settings		A opens a folder. This folder: everything received goes here.	A로 폴더 열기. 이 폴더를 선택하면 받은 모든 파일이 여기에 저장됩니다.
+settings		A phone or computer with LocalSend open, on the same Wi-Fi.	같은 Wi-Fi에서 LocalSend가 실행된 휴대전화 또는 PC.
+settings		Files or folders on the cards.	카드의 파일 또는 폴더.
+settings		{marked} chosen. A changes them.	{marked} 선택됨. A로 변경합니다.
+settings		{marked} to {deviceName}. It asks there before taking them.	{marked}을(를) {deviceName}(으)로 보냅니다. 상대방이 수락해야 합니다.
+settings		Choose a device and the files first.	기기와 파일을 먼저 선택하세요.
+settings		A shows it.	A로 표시합니다.
+settings		Looking for devices	기기 검색 중
+settings		Phones and computers with LocalSend open, on the same Wi-Fi.	같은 Wi-Fi에서 LocalSend가 실행된 휴대전화 및 PC.
+settings		A opens a folder or picks a file. Y picks a whole folder. START: done.	A로 폴더 열기 또는 파일 선택. Y로 폴더 전체 선택. START: 완료.
+settings		{marked} chosen.	{marked} 선택됨.
+settings		{who} asks for a PIN	{who}에서 PIN을 요구합니다
+settings		Wrong PIN for {who}	{who} PIN 오류
+settings		Waiting for {who}	{who} 응답 대기 중
+settings		Sending to {who}	{who}에게 전송 중
+settings		Sent to {who}	{who}에게 전송 완료
+settings		{who} said no	{who}에서 거절함
+settings		{who} is busy	{who} 사용 중
+settings		Partly sent	일부 전송됨
+settings		It didn't work	실패
+settings		The PIN is in LocalSend there (Settings, Require PIN). Send again to type it.	상대 LocalSend 설정의 PIN 요구에서 확인하세요. 다시 보내면서 입력합니다.
+settings		It asks there first.	상대방에게 먼저 확인을 요청합니다.
+settings		You can leave: it carries on.	화면을 나가도 계속 진행됩니다.
+settings		All the files arrived.	모든 파일을 받았습니다.
+settings		The device couldn't be reached. Is LocalSend open, on the same Wi-Fi?	기기에 연결할 수 없습니다. 같은 Wi-Fi에서 LocalSend를 열었나요?
+settings		Whether devices can send to {name} while Bshare is closed.	Bshare가 닫혀 있을 때 {name}(으)로 전송할 수 있는지 설정합니다.
+settings		A notification asks; Bshare's Receive page answers.	알림으로 요청하며 Bshare 받기 화면에서 응답합니다.
+settings		Files are saved without asking: only on a network you trust.	확인 없이 파일을 저장합니다. 신뢰할 수 있는 네트워크에서만 사용하세요.
+settings		Only while Bshare's Receive page is open.	Bshare 받기 화면이 열려 있을 때만 허용합니다.
+settings		Whether a phone or computer must type your PIN before it can send to {name}, as LocalSend's own Require PIN.	휴대전화 또는 컴퓨터가 {name}에 파일을 보낼 때 PIN을 요구할지 설정합니다. LocalSend의 PIN 요구와 같습니다.
+settings		On: your PIN is {myPin}. The PIN row changes it.	켜짐: 내 PIN은 {myPin}입니다. PIN 항목에서 변경합니다.
+settings		Off: anyone on the Wi-Fi can ask to send (you still accept each one).	꺼짐: Wi-Fi의 누구나 전송을 요청할 수 있습니다 (매번 수락 필요).
+settings		Your PIN, {myPin}: LocalSend asks for it on the phone or computer that sends here. A changes it.	내 PIN: {myPin}. 이 기기로 파일을 보내는 상대방 LocalSend에서 입력해야 합니다. A로 변경합니다.
+settings		Pick folder	폴더 선택
+settings		Unpick	선택 해제
+settings		Pick	선택
+settings		{marked} chosen	{marked} 선택됨
+settings		Commodore - 64	Commodore - 64
+settings		Sinclair - ZX Spectrum	Sinclair - ZX Spectrum
+settings		AXVS	AXVS
+settings		Pokémon Rubí	포켓몬스터 루비
+settings		AXPS	AXPS
+settings		Pokémon Zafiro	포켓몬스터 사파이어
+settings		BPES	BPES
+settings		Pokémon Esmeralda	포켓몬스터 에메랄드
+settings		BPRS	BPRS
+settings		Pokémon Rojo Fuego	포켓몬스터 파이어레드
+settings		BPGS	BPGS
+settings		Pokémon Verde Hoja	포켓몬스터 리프그린
+settings		Hardy	노력
+settings		Lonely	외로움
+settings		Brave	용감
+settings		Adamant	고집
+settings		Naughty	개구쟁이
+settings		Bold	대담
+settings		Docile	온순
+settings		Relaxed	무사태평
+settings		Impish	장난꾸러기
+settings		Lax	촐랑
+settings		Timid	겁쟁이
+settings		Hasty	성급
+settings		Serious	성실
+settings		Jolly	명랑
+settings		Naive	천진난만
+settings		Modest	조심
+settings		Mild	의젓
+settings		Quiet	냉정
+settings		Bashful	수줍음
+settings		Rash	덜렁
+settings		Calm	차분
+settings		Gentle	얌전
+settings		Sassy	건방
+settings		Quirky	변덕
+settings		NORMAL	노말
+settings		FIGHT	격투
+settings		FAIRY	페어리
+settings		writing {n}%	기록 중 {n}%
+settings		Not {what}: the card's own folders stay where they are.	{what} 불가: 카드의 시스템 폴더는 그대로 유지됩니다.
+settings		1 file of {total} is there already: skip them, replace them or keep both, then Download.	{total}개 중 파일 1개가 이미 있습니다. 건너뛰기, 덮어쓰기 또는 둘 다 유지를 선택하고 다운로드하세요.
+bananads		or press F / HOME	또는 F / HOME 누르기
+bananads		or the menu button	또는 메뉴 버튼 누르기
+bananads		LAST SAVE  %s	최근 저장  %s
+bananads		put dsi_bios9.bin + dsi_bios7.bin in {dir}	{dir}에 dsi_bios9.bin + dsi_bios7.bin을 넣으세요
+bananads		or press F	또는 F 누르기
+bananads		Sharp pixels	선명한 픽셀
+bananads		Keep the shape	비율 유지
+bananads		Whole numbers	정수 배율
+bananads		Fill the screen	화면 채우기
+bananads		Picture size	화면 크기
+bananads		Unknown game	알 수 없는 게임
+bananads		Login failed: %s	로그인 실패: %s
+menu		Last played: {sys.resumeTitle}	최근 실행: {sys.resumeTitle}
+settings		In a DS game, in both emulators. Swap screens: as F + SELECT. Fast-forward: on, and off again. Blow on the mic: the game hears a blow while it is held, the microphone on or off. Save and load state: as F + R and F + L. F + a button and HOME keep their own (the Hotkeys page). (The RG DS Plus has no R3.)	두 DS 에뮬레이터에 적용됩니다. 화면 교체: F + SELECT, 빨리 감기: 켜기/끄기, 마이크 불기: 누르는 동안 게임에 전달(마이크 설정 무관), 상태 저장/불러오기: F + R/L. F 조합과 HOME은 기존 단축키를 유지합니다. RG DS Plus에는 R3가 없습니다.
+settings		Alone, in this system's games. Game's own: the game's button. Fast-forward: on, and off again (as F + R2). Save and load state: the current slot (as F + R and F + L). Menu: RetroArch's (as F + X). With F held, the button is RetroArch's hotkey. (The RG DS Plus has no R3.)	이 시스템의 게임에서 단독 버튼 기능을 설정합니다. 게임 자체 버튼, 빨리 감기(F + R2), 상태 저장/불러오기(F + R/L), RetroArch 메뉴(F + X)를 선택합니다. F와 함께 누르면 RetroArch 단축키가 작동합니다. RG DS Plus에는 R3가 없습니다.
+settings		In a DS game, in both emulators, as Nintendo DS > Buttons has it now; that page gives it another job. (The RG DS Plus has no R3.)	두 DS 에뮬레이터에서 Nintendo DS > 버튼의 설정을 따릅니다. 해당 메뉴에서 변경할 수 있습니다. RG DS Plus에는 R3가 없습니다.
+settings		Dark	어둡게
+settings		New versions of Banana: checking, installing, and going back.	Banana 새 버전 확인, 설치 및 이전 버전으로 되돌리기.
+settings		A new version, from GitHub or a package on the card. It runs from the next restart.	GitHub 또는 카드의 패키지에서 새 버전을 설치합니다. 다음 재시작부터 적용됩니다.
+settings		Whether the update check counts test versions.	업데이트 확인 시 테스트 버전을 포함할지 설정합니다.
+settings		Test versions count. Every release so far is one.	테스트 버전 포함. 지금까지 모든 릴리스가 테스트 버전입니다.
+settings		Only stable versions.	안정 버전만.
+settings		When Banana looks for a new version. Nothing downloads without you.	새 버전 확인 주기. 직접 선택하기 전에는 다운로드하지 않습니다.
+settings		Only when you choose Check for updates.	업데이트 확인을 선택했을 때만.
+settings		Also once a day, when Wi-Fi connects.	Wi-Fi 연결 시 하루에 한 번 추가 확인.
+settings	Second screen (RetroArch games)	Fast	빠르게
+settings	Settings: updates	{n} packages	패키지 {n}개
+settings		Korean edition uses its own GitHub releases.	한국어판은 전용 GitHub 릴리스를 사용합니다.
+settings		Korean update channel	한국어판 업데이트 채널
+settings		R switches Korean/English; tap #+= to cycle keyboards.	R: 한/영 전환, #+=: 키보드 전환.
+settings		the update is not from the Korean edition	한국어판 업데이트 파일이 아닙니다
+settings		the checksum is not from the Korean edition	한국어판 체크섬 파일이 아닙니다

@@ -39,4 +39,5 @@ echo "$VERSION" > "$U/VERSION"; echo "$BOARD" > "$U/board"
 (cd "$U" && sha256sum Image *.dtb rootfs.squashfs > sha256sums)
 tar -cf "$U.tar" "$U"
 rm -rf "$U"
+sha256sum "$U.tar" "banana-$BOARD.img.gz" > "SHA256SUMS-$BOARD.txt"
 echo "SD card image: $BINARIES_DIR/banana-$BOARD.img(.gz); update package: $BINARIES_DIR/$U.tar"

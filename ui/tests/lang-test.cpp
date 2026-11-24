@@ -13,7 +13,7 @@ static void expect(const std::string& got, const std::string& want, const char* 
 int main(int argc, char** argv)
 {
 	if (argc < 2) { fprintf(stderr, "usage: lang-test <lang dir>\n"); return 2; }
-	const char* langs[] = { "fi", "it", "ru", "zh-cn" };
+	const char* langs[] = { "fi", "it", "ru", "zh-cn", "ko" };
 	for (const char* code : langs)
 	{
 		if (!lang::load(argv[1], code, { "menu", "settings", "systems" }) || !lang::active())

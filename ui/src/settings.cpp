@@ -160,6 +160,8 @@ namespace banana
 	// ---- palette: ROCKNIXDS Pixel's (RndsUI.cpp darkPal / lightPal), the colours this screen uses (settings_draw.h) ---
 	// Update's row: a download going on, a newer version the last check found, or how many update packages wait in
 	// banana/updates on the card ("" for none); looked at once every 2 s at most (the list is drawn on every change)
+	static const char* updateCheckName() { const char* f = getenv("BANANA_UPDATE_FEED"); return f && *f ? "/.check" : "/.check-ko"; }
+	static bool privateBetaEnabled() { const char* f = getenv("BANANA_UPDATE_BETA_FEED"); return f && *f; }
 	static std::string updatesWaiting(const std::string& updates, const std::string& run, const std::string& running)
 	{
 		static time_t at = 0;
@@ -174,7 +176,7 @@ namespace banana
 			if (pid > 0 && kill(pid, 0) == 0 && sscanf(readLine(run + "/update-download").c_str(), "downloading %lld %lld", &a, &t) == 2 && t > 0)
 				return v = "Downloading " + std::to_string((int)(a * 100 / t)) + "%";
 			std::string state, last, current, latest;
-			std::ifstream f(updates + "/.check");
+			std::ifstream f(updates + updateCheckName());
 			for (std::string ln; std::getline(f, ln);)
 			{
 				if (ln.compare(0, 6, "state=") == 0) state = ln.substr(6);
@@ -2920,6 +2922,23 @@ namespace banana
 		{ "!@#$%^&*()", "QWERTYUIOP", "ASDFGHJKL:", "ZXCVBNM<>?" },
 		{ "~`'\"-_=+\\|", "[]{}<>()!?", "@#$%^&*;:/", ",.?!@#&*-_" },
 	};
+	static const char32_t* KOREAN_KEYS[2][4] = {
+		{ U"1234567890", U"ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ", U"ㅁㄴㅇㄹㅎㅗㅓㅏㅣ;", U"ㅋㅌㅊㅍㅠㅜㅡ,./" },
+		{ U"!@#$%^&*()", U"ㅃㅉㄸㄲㅆㅛㅕㅑㅒㅖ", U"ㅁㄴㅇㄹㅎㅗㅓㅏㅣ:", U"ㅋㅌㅊㅍㅠㅜㅡ<>?" },
+	};
+	bool Settings::koreanEntry() const
+	{
+		return entry == ENTRY_SEARCH || entry == ENTRY_FOLDER || entry == ENTRY_RENAME ||
+			entry == ENTRY_GAME_NAME || entry == ENTRY_GAME_SORT || entry == ENTRY_ART_SEARCH;
+	}
+	void Settings::keyboardSymbols()
+	{
+		koreanComposer.commit();
+		if (!koreanEntry()) { koreanKeys = false; layer = layer == 2 ? 0 : 2; return; }
+		if (koreanKeys) { koreanKeys = false; layer = 0; }
+		else if (layer == 2) { koreanKeys = true; layer = 0; }
+		else layer = 2;
+	}
 	static const struct { const char* name; int c0, span; } FKEYS[] = {
 		{ "Shift", 0, 2 }, { "#+=", 2, 2 }, { "Space", 4, 3 }, { "Del", 7, 1 }, { "Done", 8, 2 },
 	};
@@ -2935,17 +2954,18 @@ namespace banana
 	{
 		if (row < 4)
 		{
-			if (pw.size() < entryMax) pw += KEYS[layer][row][col];
+			if (koreanKeys && layer < 2) koreanComposer.input(pw, KOREAN_KEYS[layer][row][col], entryMax);
+			else { koreanComposer.commit(); if (pw.size() < entryMax) pw += KEYS[layer][row][col]; }
 			message.clear();
 			return MOVED;
 		}
 		switch (fkeyAt(col))
 		{
 		case 0: layer = layer == 1 ? 0 : 1; break;
-		case 1: layer = layer == 2 ? 0 : 2; break;
-		case 2: if (pw.size() < entryMax) pw += ' '; break;
-		case 3: popChar(pw); break;
-		case 4: return finishEntry();
+		case 1: keyboardSymbols(); break;
+		case 2: koreanComposer.commit(); if (pw.size() < entryMax) pw += ' '; break;
+		case 3: koreanComposer.erase(pw); break;
+		case 4: koreanComposer.commit(); return finishEntry();
 		}
 		message.clear();
 		return MOVED;
@@ -2975,11 +2995,12 @@ namespace banana
 		case Key::B:
 			if (pw.empty() && entry == ENTRY_SEARCH) { close(); return CLOSED; }
 			if (pw.empty()) { page = entryBack; message.clear(); return MOVED; }
-			popChar(pw);
+			koreanComposer.erase(pw);
 			return MOVED;
 		case Key::X: layer = layer == 1 ? 0 : 1; return MOVED;
-		case Key::L: layer = layer == 2 ? 0 : 2; return MOVED;	// the symbols
-		case Key::Y: if (pw.size() < entryMax) pw += ' '; return MOVED;
+		case Key::L: keyboardSymbols(); return MOVED;	// symbols, Korean, Latin
+		case Key::R: if (koreanEntry()) { koreanComposer.commit(); koreanKeys = !koreanKeys; layer = 0; return MOVED; } return NONE;
+		case Key::Y: koreanComposer.commit(); if (pw.size() < entryMax) pw += ' '; return MOVED;
 		case Key::START: return keyboardKey(4, FKEYS[4].c0);
 		case Key::SELECT:
 			// Files' names and its servers' fields: back with nothing changed (B takes a character off, and Rename starts with
@@ -3394,7 +3415,8 @@ namespace banana
 			text(shown, true, 22, 70, 165, p.ink);
 		}
 		be->fill(std::round(X(72 + w)), std::round(X(166)), std::round(X(10)), std::round(X(24)), p.accent);	// the cursor
-		std::string n = std::to_string(pw.size()) + (pw.size() == 1 ? " character" : " characters");
+		size_t chars = rnds::utf8to32(pw).size();
+		std::string n = std::to_string(chars) + (chars == 1 ? " character" : " characters");
 		if (entry == ENTRY_SEARCH && searchCount)
 		{
 			int m = pw.empty() ? -1 : searchCount(pw);
@@ -3412,6 +3434,7 @@ namespace banana
 			: entry == ENTRY_GAME_NAME || entry == ENTRY_GAME_SORT ? "A types the key, B deletes, X capitals, L symbols, Y a space, START when it is typed. Kept in banana/game-titles.tsv on the card."
 			: entry == ENTRY_ART_SEARCH ? "A types the key, B deletes, X capitals, L symbols, Y a space, START looks. A few words of the name are enough: the closest names come first."
 			: "A types the key, B deletes, X capitals, L symbols, Y a space, START when it is typed. Or tap the keys. Accounts are kept in banana/accounts.conf on the card.";
+		if (koreanEntry() && message.empty()) help = lang::tr(help) + " " + lang::tr("R switches Korean/English; tap #+= to cycle keyboards.");
 		wrapped(help, 20, 50, 252, 540, 6, message.empty() ? p.muted : p.accent);
 		be->endScreen();
 
@@ -3422,7 +3445,7 @@ namespace banana
 		{
 			// at the right: the length of a password; for a search the games it finds (a bare number there read as a
 			// match count)
-			std::string n = std::to_string(pw.size());
+			std::string n = std::to_string(rnds::utf8to32(pw).size());
 			if (entry == ENTRY_SEARCH && searchCount)
 			{
 				int m = pw.empty() ? -1 : searchCount(pw);
@@ -3450,7 +3473,7 @@ namespace banana
 				float x = KX + c * KPITCH, y = KY + r * KROW;
 				bool on = r == krow && c == kcol;
 				box(on ? "pick" : "slot", on, x, y, KPITCH - 6, KH);
-				std::string k(1, KEYS[layer][r][c]);
+				std::string k = koreanKeys && layer < 2 ? HangulComposer::utf8(KOREAN_KEYS[layer][r][c]) : std::string(1, KEYS[layer][r][c]);
 				float tw = text(k, true, 28, 0, 0, p.ink, false, 0, true);
 				text(k, true, 28, x + std::round((KPITCH - 6 - tw) / 2), y + 13, on ? p.onPick : p.ink);
 			}
@@ -3461,6 +3484,7 @@ namespace banana
 			bool on = i == fsel;
 			box(on ? "pick" : "slot", on, x, y, kw, KH);
 			std::string k = i == 1 && layer == 2 ? "abc" : i == 0 && layer == 1 ? "SHIFT" : FKEYS[i].name;
+			if (i == 1 && koreanEntry()) k = koreanKeys ? "ABC" : layer == 2 ? "한글" : "#+=";
 			if (i == 4) k = entry == ENTRY_WIFI ? "Join" : "Done";
 			bool lit = (i == 0 && layer == 1) || (i == 1 && layer == 2);
 			float tw = text(k, true, 21, 0, 0, p.ink, false, 0, true);
@@ -3599,7 +3623,7 @@ namespace banana
 	void Settings::readOnline()
 	{
 		Online o;
-		std::ifstream f(updatesDir + "/.check");
+		std::ifstream f(updatesDir + updateCheckName());
 		for (std::string ln; std::getline(f, ln);)
 		{
 			size_t eq = ln.find('=');
@@ -3658,12 +3682,12 @@ namespace banana
 	bool Settings::betaOn() const
 	{
 		// the password kept (.beta) and the channel not turned off since (.channel says "github" then: the password stays)
-		return betaKept() && readLine(updatesDir + "/.channel") != "github";
+		return privateBetaEnabled() && betaKept() && readLine(updatesDir + "/.channel") != "github";
 	}
 	bool Settings::betaKept() const
 	{
 		struct stat st;
-		return stat((updatesDir + "/.beta").c_str(), &st) == 0 && st.st_size > 0;
+		return privateBetaEnabled() && stat((updatesDir + "/.beta").c_str(), &st) == 0 && st.st_size > 0;
 	}
 	// update beta-on / beta-off / beta-forget, its one line of answer
 	std::string Settings::betaRun(const char* what)
@@ -3689,6 +3713,7 @@ namespace banana
 
 	Settings::Result Settings::pressBeta()
 	{
+		if (!privateBetaEnabled()) { message = "Korean edition uses its own GitHub releases."; return MOVED; }
 		if (betaJob.running() || downloading || checkJob.running()) return NONE;
 		if (!betaOn())
 		{
@@ -4482,7 +4507,8 @@ namespace banana
 		}
 		else if (usel == 1)
 		{
-			if (betaJob.running()) help = "Checking the password with bananaos-cfw.dev...";
+			if (!privateBetaEnabled()) help = "Korean edition uses its own GitHub releases.";
+			else if (betaJob.running()) help = "Checking the password with bananaos-cfw.dev...";
 			else if (!message.empty()) help = message;
 			else if (betaOn()) help = "Two channels: GitHub's releases, or the beta testers' builds on bananaos-cfw.dev. On: the beta builds. A, then A again, turns it off (GitHub again); the password is kept for turning it back on. X twice forgets the password.";
 			else if (betaKept()) help = "Two channels: GitHub's releases (now), or the beta testers' builds on bananaos-cfw.dev. A turns the beta channel on again with the password kept on the card; X twice forgets the password.";
@@ -4525,9 +4551,9 @@ namespace banana
 			if (i == 0) { name = orow; tag = otag; hot = armed == 2000 || downloading; }
 			else if (i == 1)
 			{
-				name = "Beta channel";
-				hot = armed == 3000 || betaJob.running();
-				tag = betaJob.running() ? "Checking..." : armed == 3000 ? "Press A again" : armed == 3001 ? "Press X again: forget" : betaOn() ? "On" : betaKept() ? "Off (password kept)" : "Off";
+				name = privateBetaEnabled() ? "Beta channel" : "Korean update channel";
+				hot = privateBetaEnabled() && (armed == 3000 || betaJob.running());
+				tag = !privateBetaEnabled() ? "GitHub" : betaJob.running() ? "Checking..." : armed == 3000 ? "Press A again" : armed == 3001 ? "Press X again: forget" : betaOn() ? "On" : betaKept() ? "Off (password kept)" : "Off";
 			}
 			else
 			{
@@ -4544,7 +4570,7 @@ namespace banana
 		float bw = faceWidth("B", "Back");
 		if (!applying) face("B", "Back", 18, bw);
 		std::string act = updated ? "Restart" : applying ? "" : usel == 0 ? oact
-			: usel == 1 ? (betaJob.running() ? "" : !betaOn() ? "Turn on" : armed == 3000 ? "Confirm" : "Turn off")
+			: usel == 1 ? (!privateBetaEnabled() || betaJob.running() ? "" : !betaOn() ? "Turn on" : armed == 3000 ? "Confirm" : "Turn off")
 			: armed == 1000 + usel - 2 ? "Confirm" : "Update";
 		if (!act.empty())
 		{
@@ -5905,6 +5931,7 @@ namespace banana
 		// (a server's address, a start folder, a password: up to 255)
 		entryMax = e == ENTRY_FOLDER || e == ENTRY_RENAME ? 765 : e == ENTRY_SERVER ? 255 : 63;
 		pw = start;
+		koreanComposer.commit(); koreanKeys = koreanEntry() && lang::current().code == "ko";
 		layer = 0; krow = 1; kcol = 0;
 		message.clear();
 		page = KEYBOARD;
