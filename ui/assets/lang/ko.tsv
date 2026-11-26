@@ -2903,3 +2903,36 @@ settings		Apply / restart	적용 / 재시작
 settings		Settings saved. Apply / restart to use them.	설정 저장 완료. 적용 / 재시작을 눌러 반영하세요.
 settings		Filename encoding	파일명 인코딩
 settings		Valid UTF-8 names are preserved. Select the original encoding for old Korean or Japanese filenames. Changes apply after restart.	UTF-8 파일명은 그대로 사용합니다. 구형 한글·일본어 파일명은 원래 인코딩을 선택하세요. 재시작 후 적용됩니다.
+settings		Game Boy Advance defaults	게임보이 어드밴스 기본 설정
+settings		Game Boy Color defaults	게임보이 컬러 기본 설정
+settings		Game Boy defaults	게임보이 기본 설정
+settings		NES defaults	패미컴 기본 설정
+settings		Super Nintendo defaults	슈퍼패미컴 기본 설정
+settings		Mega Drive defaults	메가드라이브 기본 설정
+settings		Commodore 64 defaults	코모도어 64 기본 설정
+settings		ZX Spectrum defaults	ZX 스펙트럼 기본 설정
+settings		PlayStation defaults	플레이스테이션 기본 설정
+settings		Nintendo 64 defaults	닌텐도 64 기본 설정
+settings		FinalBurn Neo defaults	파이널번 네오 기본 설정
+settings		PICO-8 defaults	PICO-8 기본 설정
+settings		EasyRPG defaults	이지RPG 기본 설정
+settings		MKXP defaults	MKXP 기본 설정
+settings		Game & Watch defaults	게임 & 워치 기본 설정
+settings		Nintendo DS defaults	닌텐도 DS 기본 설정
+settings		Open this emulator's default settings. Changes apply to games on their next launch.	에뮬레이터 기본 설정을 엽니다. 다음 게임 실행부터 적용됩니다.
+settings		Choose an installed core. Auto uses the system's built-in core.	설치된 코어를 선택합니다. 자동은 기종의 기본 코어를 사용합니다.
+settings		PICO-8 engine	PICO-8 엔진
+settings		Auto uses official PICO-8 if installed, otherwise Fake-08. Other settings below apply to Fake-08.	자동은 공식 PICO-8이 설치되면 사용하고, 아니면 Fake-08을 사용합니다. 아래 설정은 Fake-08에 적용됩니다.
+settings		Choose the frontend for this system.	이 기종에서 사용할 프론트엔드를 선택합니다.
+settings		Whether frames wait for the screen's refresh. This option applies to RetroArch.	화면 주사율에 맞춰 프레임을 동기화합니다. RetroArch에 적용됩니다.
+settings		Scale by whole pixels instead of fractional enlargement.	소수점 확대 대신 정수 배율로 확대합니다.
+settings		This RPG system runs as a standalone engine, not a RetroArch core.	RetroArch 코어가 아닌 독립 실행 엔진입니다.
+settings		Game & Watch uses its dedicated MAME engine.	게임 & 워치 전용 MAME 엔진을 사용합니다.
+settings		Artwork view	아트워크 화면
+settings		Use the artwork background when available, or MAME's automatic view.	아트워크 배경 또는 MAME 자동 화면을 사용합니다.
+settings		Background	배경
+settings		Automatic view	자동 화면
+settings		Game audio	게임 소리
+settings		Mute or enable Game & Watch audio.	게임 & 워치 소리를 켜거나 끕니다.
+settings		Choose the default DS emulator.	DS 기본 에뮬레이터를 선택합니다.
+settings		Default settings for every installed game system and emulator.	모든 설치된 게임 기종과 에뮬레이터의 기본 설정입니다.

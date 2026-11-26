@@ -24,6 +24,10 @@ if ! grep -q '^menu_pause' $D/ini/ui.ini 2>/dev/null; then
 fi
 exec >$LOGS/last.log 2>&1
 echo "run-gw: $GAME"
+. "$(dirname "$0")/emulator-defaults"
+export BANANA_SYSTEM=gameandwatch
+audio=sdl
+[ "$(emu_override audio)" != off ] || audio=none
 
 # the game's screens, from MAME itself; one panel's size (1024x768 on the Plus, 640x480 on the RG DS)
 DISPLAYS=$(/usr/bin/mame-gnw "$GAME" -rompath "$ROMS" -listxml 2>/dev/null | grep '<display ')
@@ -61,6 +65,10 @@ VIEW="Background"
 if ! unzip -l "$ART/$GAME.zip" 2>/dev/null | grep -q '\.lay$'; then
     VIEW="auto"
 fi
+case "$(emu_override artwork)" in
+    plain) VIEW=auto ;;
+    background) [ "$VIEW" = Background ] || VIEW=auto ;;
+esac
 if [ $SIDE = 1 ]; then
     export BANANA_SVG_MAXW=$((PW / 2))
 fi
@@ -75,7 +83,7 @@ cd $D
     -inipath $D/ini -cfg_directory $D/cfg -nvram_directory /data/saves/gameandwatch \
     -state_directory /data/states/gameandwatch -snapshot_directory /data/screenshots -snapname "%g-%i" -homepath $D \
     -skip_gameinfo -nowindow -video accel -view "$VIEW" -uifont /usr/share/banana/rnds/fonts/PixelifySans-Medium.ttf \
-    -joystick -joystickprovider sdlgame -sound sdl &
+    -joystick -joystickprovider sdlgame -sound "$audio" &
 PID=$!
 # a quit (the menu, a shutdown: TERM to this launcher, game.pid) reaches MAME, and the launcher waits for it: MAME
 # writes the game's NVRAM (its high scores) as it ends, before the menu takes the panels back (as run-retroarch)

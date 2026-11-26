@@ -7,7 +7,11 @@ BF=${BANANAFRONT_BIN:-/usr/bin/bananafront}    # (tests: another build)
 CORE=/usr/lib/libretro/$1_libretro.so
 case $1 in /*) CORE=$1 ;; esac          # (tests: a core by its path)
 ROM=$2
+# Per-system defaults are separate from global settings and the core's own overrides.
+. "$(dirname "$0")/emulator-defaults"
 setting() {
+    v=$(emu_override "$1")
+    if [ -n "$v" ]; then printf '%s' "$v"; return; fi
     v=$(sed -n "/^ *$1 *= */{s///;h};\${x;p}" /data/banana/settings.conf 2>/dev/null)
     [ -n "$v" ] || v=$(sed -n "/^ *$1 *= */{s///;h};\${x;p}" /etc/banana/settings.conf 2>/dev/null)
     printf '%s' "$v"
@@ -21,7 +25,10 @@ if [ -n "$BANANA_SYSTEM" ] && [ "${1#/}" = "$1" ]; then
 fi
 [ -f "$CORE" ] || { echo "no core $1" >&2; exit 1; }
 CFG=/data/retroarch/retroarch.cfg
-ra_cfg() { sed -n "/^$1 = \"\(.*\)\"/{s//\1/;h};\${x;p}" $CFG 2>/dev/null; }
+ra_cfg() {
+    v=$(emu_override "$1")
+    if [ -n "$v" ]; then printf '%s' "$v"; return; fi
+    sed -n "/^$1 = \"\(.*\)\"/{s//\1/;h};\${x;p}" $CFG 2>/dev/null; }
 mkdir -p /data/saves /data/states /data/screenshots
 # the saves in the one folder the Home server syncs (saves-flat: a card's core folders migrated once per boot)
 [ -x /usr/libexec/banana/saves-flat ] && /usr/libexec/banana/saves-flat

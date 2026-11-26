@@ -5,7 +5,9 @@
 #   run-pico8 <cart>
 DIR=/data/roms/pico-8
 case "$(basename "$1" | tr A-Z a-z)" in *splore*) SPLORE=1 ;; *) SPLORE= ;; esac
-if [ -f $DIR/pico8_64 ]; then
+. "$(dirname "$0")/emulator-defaults"
+export BANANA_SYSTEM=pico-8
+if [ -f $DIR/pico8_64 ] && [ "$(emu_override pico_engine)" != fake08 ]; then
     chmod 755 $DIR/pico8_64 2>/dev/null
     # its settings and saves in the folder itself; SDL straight to the panels (KMS) and ALSA
     export HOME=$DIR SDL_VIDEODRIVER=kmsdrm SDL_AUDIODRIVER=alsa

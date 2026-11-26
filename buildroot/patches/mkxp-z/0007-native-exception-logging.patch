@@ -1,0 +1,123 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Safely record complete RGSS exception backtraces
+
+--- a/binding/binding-mri.cpp
++++ b/binding/binding-mri.cpp
+@@ -1220,78 +1220,47 @@
+     }
+ }
+ 
++// Ruby exceptions may have no backtrace (or custom exception methods).
++// Never mutate Ruby-owned strings or assume the first frame has two colons.
++static VALUE safeExceptionMethod(VALUE arg) {
++    VALUE exc=rb_ary_entry(arg,0);
++    ID method=SYM2ID(rb_ary_entry(arg,1));
++    return rb_funcall(exc,method,0);
++}
++static VALUE exceptionField(VALUE exc,const char* field) {
++    int state=0;
++    VALUE args=rb_ary_new3(2,exc,ID2SYM(rb_intern(field)));
++    VALUE result=rb_protect(safeExceptionMethod,args,&state);
++    if(state) { rb_set_errinfo(exc); return Qnil; }
++    return result;
++}
++static std::string exceptionString(VALUE v) {
++    if(!RB_TYPE_P(v,T_STRING)) return {};
++    return std::string(RSTRING_PTR(v),RSTRING_LEN(v));
++}
+ static void showExc(VALUE exc, const BacktraceData &btData) {
+-    VALUE bt = rb_funcall2(exc, rb_intern("backtrace"), 0, NULL);
+-    VALUE msg = rb_funcall2(exc, rb_intern("message"), 0, NULL);
+-    VALUE bt0 = rb_ary_entry(bt, 0);
+-    VALUE name = rb_class_path(rb_obj_class(exc));
+-    
+-    VALUE ds = rb_sprintf("%" PRIsVALUE ": %" PRIsVALUE " (%" PRIsVALUE ")",
+-#if RAPI_MAJOR >= 2
+-                          bt0, exc, name);
+-#else
+-    // Ruby 1.9's version of this function needs char*
+-    RSTRING_PTR(bt0), RSTRING_PTR(exc), RSTRING_PTR(name));
+-#endif
+-    /* omit "useless" last entry (from ruby:1:in `eval') */
+-    for (long i = 1, btlen = RARRAY_LEN(bt) - 1; i < btlen; ++i)
+-        rb_str_catf(ds, "\n\tfrom %" PRIsVALUE,
+-#if RAPI_MAJOR >= 2
+-                    rb_ary_entry(bt, i));
+-#else
+-    RSTRING_PTR(rb_ary_entry(bt, i)));
+-#endif
+-    Debug() << StringValueCStr(ds);
+-    
+-    char *s = RSTRING_PTR(bt0);
+-    
+-    char line[16];
+-    std::string file(512, '\0');
+-    
+-    char *p = s + strlen(s);
+-    char *e;
+-    
+-    while (p != s)
+-        if (*--p == ':')
+-            break;
+-    
+-    e = p;
+-    
+-    while (p != s)
+-        if (*--p == ':')
+-            break;
+-    
+-    /* s         p  e
+-     * SectionXXX:YY: in 'blabla' */
+-    
+-    *e = '\0';
+-    strncpy(line, *p ? p + 1 : p, sizeof(line));
+-    line[sizeof(line) - 1] = '\0';
+-    *e = ':';
+-    e = p;
+-    
+-    /* s         e
+-     * SectionXXX:YY: in 'blabla' */
+-    
+-    *e = '\0';
+-    strncpy(&file[0], s, file.size());
+-    *e = ':';
+-    
+-    /* Shrink to fit */
+-    file.resize(strlen(file.c_str()));
+-    file = btData.scriptNames.value(file, file);
+-    
+-    std::string ms(640, '\0');
+-    snprintf(&ms[0], ms.size(), "Script '%s' line %s: %s occurred.\n\n%s",
+-             file.c_str(), line, RSTRING_PTR(name), RSTRING_PTR(msg));
+-
+-    // Keep the on-screen RGSS error dialog, but also mirror the complete
+-    // message into stderr so launcher per-game logs capture errors that occur
+-    // after the title screen (for example when selecting New Game).
+-    fprintf(stderr, "[RGSS ERROR] %s\n", ms.c_str());
++    const auto name=exceptionString(rb_class_path(rb_obj_class(exc)));
++    auto message=exceptionString(exceptionField(exc,"message"));
++    const VALUE bt=exceptionField(exc,"backtrace");
++    std::string report=name+": "+message;
++    if(RB_TYPE_P(bt,T_ARRAY)) {
++        for(long i=0;i<RARRAY_LEN(bt);++i) {
++            auto frame=exceptionString(rb_ary_entry(bt,i));
++            if(frame.empty()) continue;
++            auto colon=frame.find(':');
++            if(colon!=std::string::npos) {
++                auto script=frame.substr(0,colon);
++                frame=btData.scriptNames.value(script,script)+frame.substr(colon);
++            }
++            report+="\n  from "+frame;
++        }
++    } else report+="\n  (no Ruby backtrace available)";
++    fprintf(stderr,"[RGSS ERROR] %s\n",report.c_str());
+     fflush(stderr);
+-    
+-    showMsg(ms);
++    shState->rtData().rgssErrorMsg=report;
++    // No desktop message box on the standalone handheld display.
++    if(!SDL_getenv("BANANA_RPG_CONFIG")) showMsg(report);
++    RB_GC_GUARD(exc);
+ }
+ 
+ static void mriBindingExecute() {

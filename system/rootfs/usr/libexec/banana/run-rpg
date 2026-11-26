@@ -22,8 +22,16 @@ hex=$(printf '%s' "$key" | od -An -tx1 | tr -d ' \n')
 id=$(printf '%s' "$key" | sha256sum | cut -d ' ' -f1)
 cfg="$D/banana/rpg/$sys/$id"
 mkdir -p "$cfg" "$D/banana/logs" "$D/bios/easyrpg-player/Font" "$D/bios/easyrpg-player/Soundfont" "$D/bios/mkxp/fonts" "$D/bios/mkxp/soundfonts" "$D/bios/mkxp/rtp"
+get_raw() {
+    v=$(awk -v k="$hex.$1" 'index($0,k " = ")==1 {v=substr($0,length(k)+4)} END{print v}' "$D/banana/rpg-per-game.conf" 2>/dev/null || :)
+    if [ -z "$v" ]; then
+        v=$(awk -v k="$sys.$1" 'index($0,k " = ")==1 {v=substr($0,length(k)+4)} END{print v}' "$D/banana/emulator-defaults.conf" 2>/dev/null || :)
+    fi
+    printf '%s' "$v"
+}
 get() {
-    awk -v k="$hex.$1" 'index($0,k " = ")==1 {v=substr($0,length(k)+4)} END{print v}' "$D/banana/rpg-per-game.conf" 2>/dev/null || :
+    v=$(get_raw "$1")
+    case "$v" in auto|inherit|'') ;; *) printf '%s' "$v" ;; esac
 }
 asset() {
     name=$(get "$1")
@@ -41,17 +49,33 @@ export BANANA_SYSTEM="$sys" BANANA_RPG_ID="$id" BANANA_RPG_CONFIG="$cfg"
 export BANANA_SA_CMD="${BANANA_RA_CMD:-}"
 export BANANA_SA_LAUNCHER="${BANANA_SA_LAUNCHER:-/usr/libexec/banana/run-rpg}"
 export BANANA_SA_ENTRY="$entry"
-# Retain one complete session log for diagnostics, including a settings restart.
-if [ "${BANANA_SA_RESTARTING:-}" != 1 ]; then
-    [ ! -f "$cfg/last-run.log" ] || mv -f "$cfg/last-run.log" "$cfg/previous-run.log"
-    : > "$cfg/last-run.log"
+# MKXP diagnostics live beside Game.ini / the game project. If that folder
+# is read-only, retain the old per-game private location and still launch.
+log="$cfg/last-run.log"
+previous="$cfg/previous-run.log"
+if [ "$sys" = mkxp ]; then
+    candidate="$game/banana-mkxp.log"
+    old="$game/banana-mkxp.previous.log"
+    if [ ! -L "$candidate" ] && [ ! -L "$old" ] &&
+       { [ ! -e "$candidate" ] || [ -f "$candidate" ]; } &&
+       { [ ! -e "$old" ] || [ -f "$old" ]; } &&
+       ( : >> "$candidate" ) 2>/dev/null; then
+        log="$candidate"; previous="$old"
+    fi
 fi
-# The global log is convenient for SSH/SFTP; each game's log is kept separately.
-printf '%s\n' "$cfg/last-run.log" > "$D/banana/logs/rpg-last-log-path.txt"
+if [ "${BANANA_SA_RESTARTING:-}" != 1 ]; then
+    if [ -s "$log" ]; then mv -f "$log" "$previous" 2>/dev/null || :; fi
+    : > "$log"
+fi
+printf '%s\n' "$log" > "$D/banana/logs/rpg-last-log-path.txt"
 if [ "${BANANA_RPG_LOG:-1}" != 0 ]; then
-    exec >> "$cfg/last-run.log" 2>&1
+    exec >> "$log" 2>&1
 fi
 printf 'RPG %s launch %s restart=%s\n' "$sys" "$entry" "${BANANA_SA_RESTARTING:-0}"
+printf 'log=%s\n' "$log"
+for opt in rgss scale encoding filename_encoding font_hint font_scale render; do
+    printf '%s=%s\n' "$opt" "$(get "$opt")"
+done
 export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-kmsdrm}"
 export SDL_KMSDRM_FIRST="${BANANA_TOP:-DSI-2}"
 if [ "$SDL_VIDEODRIVER" = kmsdrm ]; then
@@ -61,12 +85,13 @@ fi
 export HOME="$cfg" XDG_DATA_HOME="$cfg" XDG_CONFIG_HOME="$cfg"
 export LD_LIBRARY_PATH="$R/$sys/lib:$R/common/lib"
 export BANANA_RPG_ENCODING="$(get encoding)"
-export BANANA_RPG_FILENAME_ENCODING="$(get filename_encoding)"
-case "$BANANA_RPG_FILENAME_ENCODING" in 949|932|1252|65001|'') ;; *) BANANA_RPG_FILENAME_ENCODING= ;; esac
+export BANANA_RPG_FILENAME_ENCODING="$(get_raw filename_encoding)"
 case "$BANANA_RPG_ENCODING" in 949|932|1252|65001|'') ;; *) BANANA_RPG_ENCODING= ;; esac
-if [ -z "$BANANA_RPG_FILENAME_ENCODING" ]; then
-    export BANANA_RPG_FILENAME_ENCODING="$BANANA_RPG_ENCODING"
-fi
+case "$BANANA_RPG_FILENAME_ENCODING" in
+    949|932|1252|65001) ;;
+    auto) BANANA_RPG_FILENAME_ENCODING= ;;
+    *) BANANA_RPG_FILENAME_ENCODING="$BANANA_RPG_ENCODING" ;;
+esac
 cd "$game"
 if [ "$sys" = easyrpg ]; then
     fonts="$D/bios/easyrpg-player/Font"; midi="$D/bios/easyrpg-player/Soundfont"

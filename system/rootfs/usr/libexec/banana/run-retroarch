@@ -4,7 +4,11 @@
 #   run-retroarch <core> <rom>       e.g. run-retroarch gpsp /data/roms/gba/game.gba
 CORE=/usr/lib/libretro/$1_libretro.so
 # setting <key>: the card's value, else the image's template (a card from an older Banana, or a line taken out)
+# Per-system defaults are separate from global settings and the core's own overrides.
+. "$(dirname "$0")/emulator-defaults"
 setting() {
+    v=$(emu_override "$1")
+    if [ -n "$v" ]; then printf '%s' "$v"; return; fi
     v=$(sed -n "/^ *$1 *= */{s///;h};\${x;p}" /data/banana/settings.conf 2>/dev/null)
     [ -n "$v" ] || v=$(sed -n "/^ *$1 *= */{s///;h};\${x;p}" /etc/banana/settings.conf 2>/dev/null)
     printf '%s' "$v"
@@ -53,6 +57,20 @@ c=${CORE##*/}; c=${c%_libretro.so}
 [ "$c" != "$1" ] && echo "run-retroarch: core $c (Settings > Other systems), not $1" >&2 || echo "run-retroarch: core $c" >&2
 CFG=/data/retroarch/retroarch.cfg
 [ -f $CFG ] || { mkdir -p /data/retroarch; cp /etc/banana/retroarch.cfg $CFG; }
+SKEEP=/data/retroarch/.banana-system.keep
+SKEYS=/data/retroarch/.banana-system.keys
+restore_system_defaults() {
+    if [ -f "$SKEYS" ] && [ -f "$SKEEP" ]; then
+        while IFS= read -r k; do
+            case "$k" in savestate_auto_save|savestate_auto_load|video_scale_integer|video_monitor_index)
+                sed -i "/^$k = /d" "$CFG" ;;
+            esac
+        done < "$SKEYS"
+        cat "$SKEEP" >> "$CFG"
+        rm -f "$SKEYS" "$SKEEP"
+    fi
+}
+restore_system_defaults
 mkdir -p /data/saves /data/states /data/screenshots
 # set_cfg <key> <value>: the file left alone when it has the line already (no rewrite of the card's file on every
 # launch), else the key's lines dropped and the line added. The value never goes into a sed expression: a password
@@ -399,6 +417,36 @@ fi
 # retroarch folder, not ~/.config on the read-only root
 export HOME=/data/retroarch XDG_CONFIG_HOME=/data/retroarch
 MON=$(sed -n '/^video_monitor_index = "\([0-9]\)"/{s//\1/;h};${x;p}' $CFG)
+# Save any global values touched by this run's scoped options. A power cut is
+# handled next time (same pattern as the existing border/button recovery).
+SCFG=/run/banana/retroarch-system.cfg
+SKEEP=/data/retroarch/.banana-system.keep
+SKEYS=/data/retroarch/.banana-system.keys
+
+# Recovery also runs early, before the global values are read (see above).
+: > "$SCFG"
+: > "$SKEEP"
+: > "$SKEYS"
+scoped() {
+    grep "^$1 = " "$CFG" >> "$SKEEP" 2>/dev/null || :
+    printf '%s\n' "$1" >> "$SKEYS"
+    printf '%s = "%s"\n' "$1" "$2" >> "$SCFG"
+}
+effective_mon=$MON
+v=$(emu_override video_monitor_index)
+case "$v" in 1|2) effective_mon=$v
+    if [ -z "$BANANA_DRM_LEASE_FD" ]; then scoped video_monitor_index "$v"; fi ;;
+esac
+v=$(emu_override video_scale_integer)
+case "$v" in true|false) scoped video_scale_integer "$v" ;; esac
+v=$(emu_override savestate_auto_save)
+case "$v" in true|false)
+    scoped savestate_auto_save "$v"
+    [ "$ONCE" = 1 ] || scoped savestate_auto_load "$v" ;;
+esac
+SA=
+[ ! -s "$SCFG" ] || SA="|$SCFG"
+
 if [ -n "$BANANA_DRM_LEASE_FD" ]; then
     # the game panel (banana-ui keeps the other panel): RetroArch draws on the panel it was lent (a DRM lease, its
     # only connector, so monitor 1, through banana-leaseshim.so), takes banana-ui's tiles as commands on its stdin,
@@ -412,14 +460,14 @@ if [ -n "$BANANA_DRM_LEASE_FD" ]; then
     # the Pokemon companion (Settings > Other systems): RetroArch's stdout, where it answers the panel's
     # READ_CORE_MEMORY commands, into the pipe banana-ui reads (its log goes to the file above, not there)
     if [ -n "$BANANA_RA_OUT" ] && [ -p "$BANANA_RA_OUT" ]; then exec 4>"$BANANA_RA_OUT"; else exec 4>&1; fi
-    LD_PRELOAD=/usr/lib/banana/banana-leaseshim.so retroarch --config $CFG --appendconfig "$L|$RA$BA$RBA" --verbose \
+    LD_PRELOAD=/usr/lib/banana/banana-leaseshim.so retroarch --config $CFG --appendconfig "$L|$RA$BA$RBA$SA" --verbose \
         --log-file /run/banana/retroarch.log -L "$CORE" "$2" < "${BANANA_RA_CMD:-/dev/null}" >&4 &
     P=$!
     exec 4>&-
 else
     # the panel RetroArch doesn't use (video_monitor_index: 2 the top, 1 the bottom) stays dark while the game runs
     . /usr/libexec/banana/one-panel
-    case ${MON:-2} in 2) one_panel_dark top ;; *) one_panel_dark bottom ;; esac
+    case ${effective_mon:-2} in 2) one_panel_dark top ;; *) one_panel_dark bottom ;; esac
     # commands on its stdin here too (bananad's AUDIO_REINIT when the headphone jack changes), through the pipe the
     # game panel uses; held open here (fd 3) so RetroArch never reads an end
     FIFO=/run/banana/retroarch.cmd
@@ -428,7 +476,7 @@ else
     printf 'stdin_cmd_enable = "true"\n' > $L
     [ $ONCE = 1 ] && echo 'savestate_auto_load = "true"' >> $L
     [ -n "$GBASAVE" ] && printf 'savefile_directory = "%s"\nsort_savefiles_enable = "false"\n' $GBASAVE >> $L
-    retroarch --config $CFG --appendconfig "$L|$RA$BA$RBA" -L "$CORE" "$2" < $FIFO &
+    retroarch --config $CFG --appendconfig "$L|$RA$BA$RBA$SA" -L "$CORE" "$2" < $FIFO &
     P=$!
 fi
 trap 'kill -TERM $P 2>/dev/null' TERM INT HUP
@@ -468,5 +516,7 @@ else
     one_panel_restore
 fi
 [ -n "$fix_d" ] && sed -i "$fix_d" $CFG && printf '%s' "$fix_l" >> $CFG
+restore_system_defaults
+rm -f "$SCFG"
 sync    # (the slot, save folder and hotkeys are back on the card before the menu returns)
 exit $S

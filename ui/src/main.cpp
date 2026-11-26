@@ -1077,6 +1077,11 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			}
 		}
 		// helpcheck: every Settings row's help (and a game page's) laid out as the top panel would: fits or OVERFLOW
+		else if (op == "emudefaultscheck") {
+			if(!settings.emulatorDefaultsCheck([&](const std::string& l){ logf("%s",l.c_str()); })) { logf("FAIL emulator defaults"); return 1; }
+			logf("PASS all emulator defaults");
+		}
+		else if (op == "settingssection") { std::string section; std::getline(cs >> std::ws,section); settings.openSection(section); }
 		else if (op == "helpcheck") { int n = settings.helpCheck([&](const std::string& l) { logf("%s", l.c_str()); }); logf("helpcheck: %d texts", n); }
 		// search <text>: the search keyboard open with that text typed (START then searches)
 		else if (op == "search") { std::string t; std::getline(cs, t); size_t b = t.find_first_not_of(' '); settings.openSearch(b == std::string::npos ? "" : t.substr(b)); logf("search open: \"%s\"", t.c_str()); }
@@ -2846,19 +2851,23 @@ int main(int argc, char** argv)
 		// (settings.conf retroarch_panel) and its touch tiles too; the official PICO-8, when it is on the card, takes
 		// the panels itself.
 		// BananaFront (run-bananafront) takes the same lease, pipe and tiles: it answers RetroArch's commands
+		auto emulatorDefault=[&](const std::string& k,const std::string& fallback) {
+			const auto v=getConfValue("/data/banana/emulator-defaults.conf",sd.id+"."+k,"inherit");
+			return v.empty()||v=="inherit"?fallback:v;
+		};
 		bool ra = sd.run.find("run-retroarch") != std::string::npos || sd.run.find("run-ps1") != std::string::npos ||
 			sd.run.find("run-bananafront") != std::string::npos ||
 			sd.run.find("run-rpg") != std::string::npos ||
-			(sd.run.find("run-pico8") != std::string::npos && access("/data/roms/pico-8/pico8_64", F_OK) != 0);
+			(sd.run.find("run-pico8") != std::string::npos && (emulatorDefault("pico_engine","auto")=="fake08" || access("/data/roms/pico-8/pico8_64", F_OK) != 0));
 		const bool nativeRpg = sd.id == "mkxp" || sd.id == "easyrpg";
-		bool panel = ra && (nativeRpg || settings["retroarch_panel"] != "off") && disp.isOpen();
+		bool panel = ra && (nativeRpg || emulatorDefault("retroarch_panel",settings["retroarch_panel"]) != "off") && disp.isOpen();
 		int gameScreen = 0, leaseFd = -1, cmdFd = -1, outFd = -1;
 		const char* OUT = "/run/banana/retroarch.out";	// RetroArch's stdout, for the Pokémon companion
 		if (panel)
 		{
 			// the panel RetroArch is set to use (Settings > Other systems > Screen: video_monitor_index 2 the top, 1 the
 			// bottom)
-			gameScreen = nativeRpg ? 0 : (getConfValue("/data/retroarch/retroarch.cfg", "video_monitor_index", "2") == "1" ? 1 : 0);
+			gameScreen = nativeRpg ? 0 : (emulatorDefault("video_monitor_index",getConfValue("/data/retroarch/retroarch.cfg", "video_monitor_index", "2")) == "1" ? 1 : 0);
 			leaseFd = disp.lease(gameScreen);
 			unlink(FIFO);
 			unlink("/run/banana/retroarch.log");	// (the last game's: the panel must not read it as this one's)

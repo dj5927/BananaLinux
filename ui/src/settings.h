@@ -44,6 +44,7 @@ namespace banana
 		// every Settings row's help and every game page row's (as the panel would lay it out now: the language's too)
 		// that doesn't fit its box at the smallest size, one line each to log; and how many were checked (ui/tests)
 		int helpCheck(const std::function<void(const std::string&)>& log);
+		bool emulatorDefaultsCheck(const std::function<void(const std::string&)>& log);
 		Settings(rnds::Backend* be, const std::string& assets, const std::string& dataDir, float scale, const std::string& variant);
 		void setVariant(const std::string& variant);	// "dark", "light", or "carts" (dark, in Inter: setFontDir first)
 		void setFontDir(const std::string& dir) { fontDir = dir; }
@@ -233,6 +234,8 @@ namespace banana
 		float s;
 		bool light = false, mOpen = false;
 		std::vector<Item> items;
+		struct PageReturn { std::string target, section, key; };
+		std::vector<PageReturn> pageReturns;
 		std::string langHelp;	// (the Language row's help: who translated each)
 		std::string coreSig;	// the RetroArch cores installed when the rows were made (coreSignature)
 		int sel = 0, top = 0, armed = -1;			// armed: an action waiting for its second A
@@ -306,6 +309,7 @@ namespace banana
 		bool pgNds = true;
 		enum PgRow { PG_EMU, PG_SHADER, PG_3D, PG_MIC, PG_NAME, PG_SORT, PG_ART, PG_DELETE, PG_RES, PG_TIMING, PG_CPU, PG_ACH, PG_RPG_RGSS, PG_RPG_SCALE, PG_RPG_FONT1, PG_RPG_FONT2, PG_RPG_FONT1_SIZE, PG_RPG_FONT2_SIZE, PG_RPG_MIDI, PG_RPG_ENCODING, PG_RPG_MKXP_FONT, PG_RPG_FONT_HINT, PG_RPG_FONT_SCALE, PG_RPG_RENDER, PG_RPG_FILENAME_ENCODING };
 		struct RpgChoice { PgRow row; const char* key; const char* label; const char* help; std::vector<std::string> names, values; };
+		std::vector<RpgChoice> rpgChoices(const std::string& system);
 		void loadRpgChoices(const std::string& system, const std::string& key);
 		std::vector<RpgChoice> pgRpgChoices;
 		const RpgChoice* rpgChoice(PgRow row) const;

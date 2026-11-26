@@ -389,6 +389,7 @@ namespace banana
 		{ "psx", "PlayStation", { { "pcsx_rearmed", "PCSX ReARMed" }, { "swanstation", "SwanStation" }, { "mednafen_psx", "Beetle PSX" } } },
 		{ "n64", "Nintendo 64", { { "mupen64plus_next", "Mupen64Plus-Next" }, { "parallel_n64", "ParaLLEl N64" } } },
 		{ "fbneo", "FinalBurn Neo", { { "fbneo", "FBNeo" } } },
+		{ "pico-8", "PICO-8", { { "fake08", "Fake-08" } } },
 	};
 	static bool coreInstalled(const std::string& core)
 	{
@@ -401,6 +402,9 @@ namespace banana
 		for (const auto& c : sys.cores)
 			if (coreInstalled(c.first)) { names.push_back(c.second); values.push_back(c.first); }
 	}
+	// All shipped emulated systems have a page, even with one installed engine.
+	static std::string emulatorDefaultsKey(const std::string& id) { return "emu_defaults." + id; }
+	static std::string emulatorDefaultsSection(const std::string& label) { return label + " defaults"; }
 	// a RetroArch system's own buttons page (Other systems > Buttons > the system): its row's key, its section
 	static std::string raButtonsKey(const RaSystem& sys) { return std::string("ra_buttons.") + sys.id; }
 	static std::string raButtonsSection(const RaSystem& sys) { return std::string(sys.label) + " buttons"; }
@@ -671,31 +675,66 @@ namespace banana
 				"/data/retroarch/retroarch.cfg", "video_scale_integer", { "Off", "On" }, { "false", "true" });
 			items.back().hints = { "The picture as large as the screen takes.", "Sharp pixels at a whole multiple, black around it." };
 		}
-		// the Emulators page (Other systems > Emulators): a row once some system has two cores to choose from
+		// A opens a dedicated default settings page. No ROM needs to be running.
 		{
 			const char* EM = "Emulators";
-			const size_t before = items.size();
-			// each system's emulator, among the cores installed for it (a row once there are two to choose from)
-			coreSig = coreSignature();
-			for (const auto& sys : RA_SYSTEMS)
-			{
-				std::vector<std::string> names, values;
-				coreChoices(sys, names, values);
-				// FBNeo is intentionally a single-core system; expose it anyway.
-				const bool arcade = std::string(sys.id) == "fbneo";
-				const bool project = rpg::isSystem(sys.id);
-				if (names.empty() || (!arcade && !project && names.size() < 2)) continue;
-				const char* help = project
-					? "This RPG Maker system uses BananaFront and its native game menu."
-					: arcade
-					? "FBNeo is the installed arcade core. Auto uses BananaFront's pause menu. SELECT and START are the usual arcade coin and start controls (game dependent)."
-					: std::string(sys.id) == "gba"
-					? "The emulator for GBA games. gpSP: the fastest. mGBA: the most accurate, and the one RetroAchievements accepts for hardcore. Cores downloaded with RetroArch's Core Downloader (its Online Updater) are listed here too."
-					: "The emulator (RetroArch core) for this system's games: the first is BananaOS's own. Cores downloaded with RetroArch's Core Downloader (its Online Updater) are listed here too.";
-				add(EM, "gamepad", sys.label, help, menu, (std::string("core.") + sys.id).c_str(), names, values);
+			const std::string df=data+"/emulator-defaults.conf";
+			const char* help="Open this emulator's default settings. Changes apply to games on their next launch.";
+			coreSig=coreSignature();
+			auto page=[&](const std::string& id,const std::string& label) {
+				add(EM,"gamepad",label.c_str(),help,"",emulatorDefaultsKey(id).c_str(),{},{},Item::PAGE);
+			};
+			for (const auto& sys:RA_SYSTEMS) {
+				const std::string id=sys.id, sec=emulatorDefaultsSection(sys.label);
+				page(id,sys.label);
+				std::vector<std::string> names,values;
+				coreChoices(sys,names,values);
+				// Always offer the launcher's built-in default (including a single-core system).
+				names.insert(names.begin(),"Auto"); values.insert(values.begin(),"");
+				add(sec.c_str(),"gamepad","Emulator","Choose an installed core. Auto uses the system's built-in core.",menu,("core."+id).c_str(),names,values);
+				auto option=[&](const char* label,const char* desc,const char* key,std::vector<std::string> n,std::vector<std::string> v) {
+					n.insert(n.begin(),"As in Settings"); v.insert(v.begin(),"inherit");
+					add(sec.c_str(),"gamepad",label,desc,df,(id+"."+key).c_str(),std::move(n),std::move(v));
+				};
+				if(id=="pico-8") {
+					add(sec.c_str(),"gamepad","PICO-8 engine","Auto uses official PICO-8 if installed, otherwise Fake-08. Other settings below apply to Fake-08.",df,(id+".pico_engine").c_str(),{"Auto","Fake-08"},{"auto","fake08"});
+				}
+				if(id!="n64" && id!="psx")
+					option("Frontend","Choose the frontend for this system.", "ra_frontend",{"Auto","BananaFront","RetroArch"},{"auto","bananafront","retroarch"});
+				option("Screen","Which screen other systems' games play on.","video_monitor_index",{"Top","Bottom"},{"2","1"});
+				option("Second screen","What the other screen shows while a game plays.","retroarch_panel",{"Game panel","Off"},{"panel","off"});
+				option("Shader","A look for RetroArch's games.","ra_shader",{"Off","LCD","CRT","Sharp pixels"},{"off","lcd","crt","sharp"});
+				option("Screen border","What fills the space around a game's picture.","ra_border",{"Off","On"},{"off","on"});
+				option("Audio latency","How soon the sound follows the game.","ra_audio_latency",{"Low (32 ms)","Default (64 ms)","Safe (128 ms)"},{"32","64","128"});
+				option("VSync","Whether frames wait for the screen's refresh. This option applies to RetroArch.","ra_vsync",{"On","Off"},{"on","off"});
+				option("Integer scaling","Scale by whole pixels instead of fractional enlargement.","video_scale_integer",{"Off","On"},{"false","true"});
+				option("Quick resume","What quitting a game does.","savestate_auto_save",{"Off","On"},{"false","true"});
+				// Existing button settings remain the single source of truth.
+				add(sec.c_str(),"gamepad","Buttons","This system's buttons: what L2, R2, L3 and R3 do alone in its games, and A/B and X/Y swapped or not.","",raButtonsKey(sys).c_str(),{},{},Item::PAGE);
 			}
-			if (items.size() > before)
-				add(O, "gamepad", "Emulators", "Which emulator each system uses, where there is more than one.", "", "ra_cores", {}, {}, Item::PAGE);
+			for (const auto& id: {std::string("easyrpg"),std::string("mkxp")}) {
+				const std::string label=id=="mkxp"?"MKXP":"EasyRPG",sec=emulatorDefaultsSection(label);
+				page(id,label);
+				add(sec.c_str(),"gamepad","Emulator","This RPG system runs as a standalone engine, not a RetroArch core.","",(id+".engine_info").c_str(), {label+" (SA)"},{""},Item::INFO);
+				for(auto c:rpgChoices(id)) {
+					// The first option is explicitly automatic, not a missing configuration.
+					c.values[0]="auto";
+					add(sec.c_str(),"gamepad",c.label,c.help,df,(id+"."+c.key).c_str(),std::move(c.names),std::move(c.values));
+				}
+			}
+			page("gameandwatch","Game & Watch");
+			const std::string gw=emulatorDefaultsSection("Game & Watch");
+			add(gw.c_str(),"gamepad","Emulator","Game & Watch uses its dedicated MAME engine.","","gameandwatch.engine_info",{"MAME (SA)"},{""},Item::INFO);
+			add(gw.c_str(),"picture","Artwork view","Use the artwork background when available, or MAME's automatic view.",df,"gameandwatch.artwork",{"Auto","Background","Automatic view"},{"auto","background","plain"});
+			add(gw.c_str(),"music","Game audio","Mute or enable Game & Watch audio.",df,"gameandwatch.audio",{"On","Off"},{"on","off"});
+			// DS already has its original dedicated settings. Provide the same engine settings here too.
+			page("nds","Nintendo DS");
+			const std::string ds=emulatorDefaultsSection("Nintendo DS");
+			add(ds.c_str(),"nds","Emulator","Choose the default DS emulator.",menu,"nds_emulator",{"SuperDrastic","BananaDS"},{"superdrastic","bananads"});
+			add(ds.c_str(),"nds","Quick resume","What quitting a game does.",menu,"quick_resume",{"Off","On"},{"off","on"});
+			add(ds.c_str(),"nds","SuperDrastic","SuperDrastic's own settings: picture, speed, sound and its hotkeys.","","nds_superdrastic",{},{},Item::PAGE);
+			add(ds.c_str(),"nds","BananaDS","BananaDS's own settings: picture, speed, sound and its hotkeys.","","nds_bananads",{},{},Item::PAGE);
+			add(O,"gamepad","Emulators","Default settings for every installed game system and emulator.","","ra_cores",{},{},Item::PAGE);
 		}
 		// L2, R2, L3 and R3 alone in RetroArch's games (the page below; run-retroarch, bananad)
 		add(O, "gamepad", "Buttons", "Each system's buttons: what L2, R2, L3 and R3 do, and A/B and X/Y swapped.", "", "ra_buttons", {}, {}, Item::PAGE);
@@ -990,7 +1029,11 @@ namespace banana
 			shaderChoices(data, it.names, it.values);
 		if (it.key.rfind("core.", 0) == 0)
 			for (const auto& sys : RA_SYSTEMS)
-				if (it.key == std::string("core.") + sys.id) coreChoices(sys, it.names, it.values);	// the cores installed now	// the card's shaders as they are now (one copied in while the menu runs)
+				if (it.key == std::string("core.") + sys.id) {
+					coreChoices(sys,it.names,it.values);
+					it.names.insert(it.names.begin(),"Auto");
+					it.values.insert(it.values.begin(),"");
+				}	// the cores installed now	// the card's shaders as they are now (one copied in while the menu runs)
 		if (it.key == "accent")
 		{
 			// a theme with its own accent: the row says so and has nothing to pick (it came back to life when the theme
@@ -1036,7 +1079,7 @@ namespace banana
 		if (it.file == data + "/settings.conf") def = getConfValue("/etc/banana/settings.conf", it.key, def);
 		if (it.key == "led_brightness") def = getConfValue("/etc/banana/bananad.conf", it.key, "128");
 		if (it.file.find("retroarch.cfg") != std::string::npos) def = getConfValue("/etc/banana/retroarch.cfg", it.key, def);
-		std::string v = getConfValue(it.file, it.key, def);
+		std::string v = getConfValue(it.file, it.key, it.key.rfind("core.",0)==0 ? "" : def);
 		it.at = -1;
 		for (size_t i = 0; i < it.values.size(); i++)
 			if (it.values[i] == v) it.at = (int)i;
@@ -1158,8 +1201,18 @@ namespace banana
 
 	void Settings::open()
 	{
+		pageReturns.clear();
 		// a core downloaded (or deleted) in RetroArch since the rows were made: a system's emulator row comes or goes
 		if (coreSignature() != coreSig) { items.clear(); groups.clear(); build(); sel = 0; top = 0; }
+		// RPG fonts and SoundFonts may have been uploaded while the menu is running.
+		for(const auto& sys:{std::string("mkxp"),std::string("easyrpg")}) {
+			for(auto c:rpgChoices(sys)) {
+				c.values[0]="auto";
+				for(auto& it:items) if(it.file==data+"/emulator-defaults.conf" && it.key==sys+"."+c.key) {
+					it.names=std::move(c.names); it.values=std::move(c.values); break;
+				}
+			}
+		}
 		if (groups.empty())
 			for (auto& it : items)
 				if (std::find(groups.begin(), groups.end(), it.section) == groups.end()) groups.push_back(it.section);
@@ -1185,6 +1238,10 @@ namespace banana
 	void Settings::save(const Item& it)
 	{
 		const std::string& v = it.values[it.at];
+		for(auto& other:items) if(&other!=&it && other.key==it.key && other.file==it.file && other.kind==Item::CHOICE) {
+			auto p=std::find(other.values.begin(),other.values.end(),v);
+			if(p!=other.values.end()) other.at=int(p-other.values.begin());
+		}
 		if (it.key == "ra_shader") unlink("/data/banana/.ra-shader");	// (apply this choice even if it matches the marker)
 		if (it.key == "ds_language")
 		{
@@ -1294,7 +1351,12 @@ namespace banana
 				{ "hs_systems", "Home server systems" },
 				{ "developer", "Developer options" },	// (PR #94: System's last row, once unlocked)
 			};
-			for (const auto& sys : RA_SYSTEMS) v.push_back({ raButtonsKey(sys), raButtonsSection(sys) });
+			for (const auto& sys : RA_SYSTEMS) {
+				v.push_back({raButtonsKey(sys),raButtonsSection(sys)});
+				v.push_back({emulatorDefaultsKey(sys.id),emulatorDefaultsSection(sys.label)});
+			}
+			for (const auto& p : std::vector<std::pair<std::string,std::string>>{{"easyrpg","EasyRPG"},{"mkxp","MKXP"},{"gameandwatch","Game & Watch"},{"nds","Nintendo DS"}})
+				v.push_back({emulatorDefaultsKey(p.first),emulatorDefaultsSection(p.second)});
 			return v;
 		}();
 		return all;
@@ -1338,7 +1400,10 @@ namespace banana
 			if (it.key == "ssh_password") { sshNewPassword.clear(); startEntry(ENTRY_SSH_PASS, "SSH password", "New password", LIST); return MOVED; }
 			if (it.key == "ds_name") { startEntry(ENTRY_DS_NAME, "The DS's name", "10 characters at most", LIST, dsName()); return MOVED; }
 			if (it.key == "bt_devices") { openBluetooth(); return MOVED; }
-			if (const Subpage* s = subpageFrom(it.key)) { message.clear(); openSection(s->section); return MOVED; }
+			if (const Subpage* s = subpageFrom(it.key)) {
+				pageReturns.push_back({s->section,it.section,it.key});
+				message.clear(); openSection(s->section); return MOVED;
+			}
 			if (it.key == "hs_server") { startPairing(); return MOVED; }
 			if (it.key == "hs_sync") { if (syncing()) stopSync(); else startSync(); return MOVED; }
 			if (it.key == "hs_pick") { openPickGames(); return MOVED; }
@@ -1478,6 +1543,7 @@ namespace banana
 		std::string beforeAccent = getConfValue(menu, "accent", "yellow");
 
 		resetSettings(data, emulator ? ResetScope::Emulator : ResetScope::System);
+		if (emulator) unlink((data+"/emulator-defaults.conf").c_str());
 		if (!emulator) speakereq::applySaved(data, eqShare());	// (its keys are back to theirs)
 
 		if (!emulator)
@@ -1589,6 +1655,13 @@ namespace banana
 		case Key::RIGHT: return items[sel].kind == Item::ACTION || items[sel].key == "scrape" || items[sel].key == "hs_sync" ? NONE : change(1);
 		case Key::A: if (items[sel].key == "theme") { openThemes(); return MOVED; } return change(1);	// (the gallery)
 		case Key::B:
+			if (!pageReturns.empty() && pageReturns.back().target==groups[g]) {
+				auto from=pageReturns.back(); pageReturns.pop_back();
+				for(size_t i=0;i<items.size();++i) if(items[i].section==from.section && items[i].key==from.key) {
+					sel=int(i); top=std::max(groupStart(groupOf(sel)),sel-ROWS+1);
+					armed=-1; message.clear(); return MOVED;
+				}
+			}
 			if (const Subpage* s = subpageOf(groups[g]))	// a subpage: back to the row that opened it
 			{
 				message.clear();
@@ -1616,6 +1689,11 @@ namespace banana
 			const Subpage* s = subpageOf(path.front());
 			if (!s) break;
 			const Item* row = itemByKey(s->key);
+			for(auto it=pageReturns.rbegin();it!=pageReturns.rend();++it) {
+				if(it->target!=path.front()) continue;
+				for(const auto& x:items) if(x.section==it->section && x.key==it->key) { row=&x; break; }
+				break;
+			}
 			if (!row) break;
 			path.insert(path.begin(), row->section);
 		}
@@ -2408,6 +2486,48 @@ namespace banana
 		wrapped(t, z, HELP_X, top, HELP_W, maxLines, c);
 	}
 
+	// Headless regression: use the same A/B path as the handheld. Includes
+	// single-core systems and standalone engines even without ROMs present.
+	bool Settings::emulatorDefaultsCheck(const std::function<void(const std::string&)>& log)
+	{
+		open();
+		openSection("Emulators");
+		std::vector<std::string> keys;
+		for(const auto& it:items) if(it.section=="Emulators" && it.kind==Item::PAGE) keys.push_back(it.key);
+		if(keys.size()!=16) { log("FAIL emulator page count "+std::to_string(keys.size())); return false; }
+		for(const auto& key:keys) {
+			openSection("Emulators");
+			for(size_t i=0;i<items.size();++i) if(items[i].section=="Emulators"&&items[i].key==key) sel=int(i);
+			const auto* page=subpageFrom(key);
+			if(!page || press(Key::A)!=MOVED || items[sel].section!=page->section) return false;
+			int choices=0;
+			for(const auto& it:items) if(it.section==page->section&&it.kind==Item::CHOICE) {
+				if(it.names.empty() || it.names.size()!=it.values.size() || it.at<0 || it.at>=int(it.values.size())) return false;
+				++choices;
+			}
+			if(!choices) return false;
+			log("PASS "+key+" A opens "+page->section+" ("+std::to_string(choices)+" choices)");
+			if(press(Key::B)!=MOVED || items[sel].section!="Emulators" || items[sel].key!=key) return false;
+		}
+		// Exercise a real save through the same choice handler; then verify the
+		// game options expose inheritance separately from an explicit Auto.
+		for(const auto& sys:{std::string("easyrpg"),std::string("mkxp")}) {
+			const std::string sec=emulatorDefaultsSection(sys=="mkxp"?"MKXP":"EasyRPG");
+			openSection(sec);
+			const std::string key=sys+".filename_encoding";
+			for(size_t i=0;i<items.size();++i) if(items[i].section==sec&&items[i].key==key) sel=int(i);
+			if(items[sel].key!=key) return false;
+			items[sel].at=0;
+			if(press(Key::RIGHT)!=CHANGED || getConfValue(data+"/emulator-defaults.conf",key,"")!="949") return false;
+			loadRpgChoices(sys,sys+"/QA");
+			const auto* c=rpgChoice(PG_RPG_FILENAME_ENCODING);
+			if(!c || c->values.size()<3 || c->values[0]!="" || c->values[1]!="auto" || pgRpg[PG_RPG_FILENAME_ENCODING]!=0) return false;
+			log("PASS "+sys+" saved CP949 default and inherited game setting");
+		}
+		openSection("Emulators");
+		return true;
+	}
+
 	int Settings::helpCheck(const std::function<void(const std::string&)>& log)
 	{
 		if (!mOpen) open();
@@ -2573,7 +2693,7 @@ namespace banana
 			{
 				if (const Item* b = itemByKey(it.mirror); b && b->at < (int)b->names.size()) v = b->names[b->at];
 			}
-			else if (it.kind == Item::INFO) v = it.key == "hk" && !it.names.empty() ? it.names[0] : "";	// (Hotkeys: what it does)
+			else if (it.kind == Item::INFO) v = (it.key == "hk" || it.key.find(".engine_info")!=std::string::npos) && !it.names.empty() ? it.names[0] : "";	// (Hotkeys: what it does)
 			// a page's row: Network the network it is on; Update the packages waiting on the card; the others nothing
 			else if (it.kind == Item::PAGE && (it.key == "nds_superdrastic" || it.key == "nds_bananads"))	// the DS emulator chosen
 			{
@@ -5661,15 +5781,14 @@ namespace banana
 	std::string Settings::gameEmulator(const std::string& rom) { return perGame("nds-per-game.conf", rom); }
 	void Settings::setGameEmulator(const std::string& rom, const std::string& emu) { setPerGame("nds-per-game.conf", rom, emu); }
 
-	void Settings::loadRpgChoices(const std::string& system, const std::string& key)
+	std::vector<Settings::RpgChoice> Settings::rpgChoices(const std::string& system)
 	{
-		pgRpg.clear();
-		pgRpgChoices.clear();
-		if (!rpg::isSystem(system)) return;
+		std::vector<RpgChoice> result;
+		if (!rpg::isSystem(system)) return result;
 		const bool mkxp = system == "mkxp";
 		const std::string bios = (rpg::fs::path(data).parent_path() / "bios").string();
-		if (mkxp) pgRpgChoices.push_back({PG_RPG_RGSS, "rgss", "RGSS version", "Automatically detect XP, VX or VX Ace, or select a version for this game only. The setting takes effect next launch.", {"Auto","RPG Maker XP","RPG Maker VX","RPG Maker VX Ace"}, {"","1","2","3"}});
-		pgRpgChoices.push_back({PG_RPG_SCALE, "scale", "RPG screen scale", "Choose the screen scaling for this game. Integer scaling preserves pixel boundaries. Original aspect uses the largest size that fits.", {"Auto","Original aspect","Integer scale","Smooth"}, {"","aspect","integer","smooth"}});
+		if (mkxp) result.push_back({PG_RPG_RGSS, "rgss", "RGSS version", "Automatically detect XP, VX or VX Ace, or select a version for this game only. The setting takes effect next launch.", {"Auto","RPG Maker XP","RPG Maker VX","RPG Maker VX Ace"}, {"","1","2","3"}});
+		result.push_back({PG_RPG_SCALE, "scale", "RPG screen scale", "Choose the screen scaling for this game. Integer scaling preserves pixel boundaries. Original aspect uses the largest size that fits.", {"Auto","Original aspect","Integer scale","Smooth"}, {"","aspect","integer","smooth"}});
 		auto files = [&](PgRow row,const char* name,const char* label,const std::string& dir,bool midi) {
 			RpgChoice c{row,name,label,"Choose a file from the shared BIOS folder. Changes apply next launch.",{"Auto"},{""}};
 			for (const auto& e : rpg::entries(dir)) {
@@ -5679,13 +5798,13 @@ namespace banana
 				auto n = e.path().filename().string();
 				c.names.push_back(n); c.values.push_back(n);
 			}
-			pgRpgChoices.push_back(std::move(c));
+			result.push_back(std::move(c));
 		};
 		if (mkxp) {
 			files(PG_RPG_MKXP_FONT,"mkxp_font","MKXP fallback font",bios+"/mkxp/fonts",false);
-			pgRpgChoices.push_back({PG_RPG_FONT_HINT,"font_hint","Font rendering","Choose sharper hinted text or the original RGSS font rendering.",{"Auto","Sharp","Original"},{"","sharp","original"}});
-			pgRpgChoices.push_back({PG_RPG_FONT_SCALE,"font_scale","Font size adjustment","Adjust MKXP font size relative to the game's original size.",{"Auto","90%","100%","110%","120%"},{"","90","100","110","120"}});
-			pgRpgChoices.push_back({PG_RPG_RENDER,"render","Graphics compatibility","Use the safer shader rendering path by default. Native blitting is optional.",{"Auto","Compatible","Native blit"},{"","compat","native"}});
+			result.push_back({PG_RPG_FONT_HINT,"font_hint","Font rendering","Choose sharper hinted text or the original RGSS font rendering.",{"Auto","Sharp","Original"},{"","sharp","original"}});
+			result.push_back({PG_RPG_FONT_SCALE,"font_scale","Font size adjustment","Adjust MKXP font size relative to the game's original size.",{"Auto","90%","100%","110%","120%"},{"","90","100","110","120"}});
+			result.push_back({PG_RPG_RENDER,"render","Graphics compatibility","Use the safer shader rendering path by default. Native blitting is optional.",{"Auto","Compatible","Native blit"},{"","compat","native"}});
 		}
 		if (!mkxp) {
 			files(PG_RPG_FONT1,"font1","Game font 1",bios+"/easyrpg-player/Font",false);
@@ -5693,18 +5812,30 @@ namespace banana
 			auto sizes = [&](PgRow row,const char* name,const char* label) {
 				RpgChoice c{row,name,label,"Choose the font size in pixels. Changes apply next launch.",{"Auto"},{""}};
 				for (int i = 8; i <= 48; i++) { c.names.push_back(std::to_string(i)); c.values.push_back(std::to_string(i)); }
-				pgRpgChoices.push_back(std::move(c));
+				result.push_back(std::move(c));
 			};
 			sizes(PG_RPG_FONT1_SIZE,"font1_size","Font 1 size");
 			sizes(PG_RPG_FONT2_SIZE,"font2_size","Font 2 size");
-			pgRpgChoices.push_back({PG_RPG_ENCODING,"encoding","Text encoding","Select the game's original encoding. Changes apply next launch.",{"Auto","Korean (CP949)","Japanese (CP932)","Western (CP1252)","UTF-8"},{"","949","932","1252","65001"}});
+			result.push_back({PG_RPG_ENCODING,"encoding","Text encoding","Select the game's original encoding. Changes apply next launch.",{"Auto","Korean (CP949)","Japanese (CP932)","Western (CP1252)","UTF-8"},{"","949","932","1252","65001"}});
 		}
-		pgRpgChoices.push_back({PG_RPG_FILENAME_ENCODING,"filename_encoding","Filename encoding","Valid UTF-8 names are preserved. Select the original encoding for old Korean or Japanese filenames. Changes apply after restart.",{"Auto","Korean (CP949)","Japanese (CP932)","Western (CP1252)","UTF-8"},{"","949","932","1252","65001"}});
+		result.push_back({PG_RPG_FILENAME_ENCODING,"filename_encoding","Filename encoding","Valid UTF-8 names are preserved. Select the original encoding for old Korean or Japanese filenames. Changes apply after restart.",{"Auto","Korean (CP949)","Japanese (CP932)","Western (CP1252)","UTF-8"},{"","949","932","1252","65001"}});
 		files(PG_RPG_MIDI,"soundfont","MIDI SoundFont",mkxp?bios+"/mkxp/soundfonts":bios+"/easyrpg-player/Soundfont",true);
-		for (const auto& c : pgRpgChoices) {
-			const auto v = perGame("rpg-per-game.conf", rpg::key(key) + "." + c.key);
-			auto it = std::find(c.values.begin(),c.values.end(),v);
-			pgRpg[c.row] = it == c.values.end()?0:int(it-c.values.begin());
+		return result;
+	}
+	void Settings::loadRpgChoices(const std::string& system, const std::string& key)
+	{
+		pgRpg.clear();
+		pgRpgChoices=rpgChoices(system);
+		for(auto& c:pgRpgChoices) {
+			c.values[0]="auto";
+			c.names.insert(c.names.begin(),"As in Settings");
+			c.values.insert(c.values.begin(),"");
+			const auto effective=getConfValue(data+"/emulator-defaults.conf",system+"."+c.key,"auto");
+			auto d=std::find(c.values.begin()+1,c.values.end(),effective);
+			if(d!=c.values.end()) c.names[0]=lang::tr("As in Settings")+" ("+lang::tr(c.names[d-c.values.begin()])+")";
+			const auto v=perGame("rpg-per-game.conf",rpg::key(key)+"."+c.key);
+			auto it=std::find(c.values.begin(),c.values.end(),v);
+			pgRpg[c.row]=it==c.values.end()?0:int(it-c.values.begin());
 		}
 	}
 	const Settings::RpgChoice* Settings::rpgChoice(PgRow row) const

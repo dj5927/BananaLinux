@@ -1,0 +1,11 @@
+#!/bin/sh
+# Shared, read-only per-system setting resolver. Do not evaluate card contents as shell code.
+# Scope: emulator-defaults.conf (system.option), then the original global settings.
+emu_override() {
+    case "${BANANA_SYSTEM:-}" in ''|*[!a-z0-9_-]*) return 0 ;; esac
+    case "$1" in
+        ra_frontend|ra_shader|ra_border|ra_audio_latency|ra_vsync|video_monitor_index|retroarch_panel|video_scale_integer|savestate_auto_save|pico_engine|artwork|audio) ;;
+        *) return 0 ;;
+    esac
+    awk -v k="${BANANA_SYSTEM}.$1" 'index($0,k " = ")==1 {v=substr($0,length(k)+4)} END{if(v!="inherit")print v}' "${BANANA_DEFAULTS_FILE:-/data/banana/emulator-defaults.conf}" 2>/dev/null || :
+}
