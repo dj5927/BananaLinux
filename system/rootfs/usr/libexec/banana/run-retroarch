@@ -13,9 +13,14 @@ setting() {
 # systems (the same cores, saves, states and settings; RetroArch stays as the fallback). Auto: BananaFront only for the
 # systems checked on it (BF_SYSTEMS, both handhelds: stress ROM at least as fast, saves carried over, a game played);
 # RetroArch: never. N64 and PlayStation always stay on RetroArch (their cores draw with the GPU).
-BF_SYSTEMS="gb gbc gba megadrive pico-8 nes snes"    # (checked 2026-11-01 on both handhelds: front in overnight-findings)
+BF_SYSTEMS="gb gbc gba megadrive pico-8 nes snes fbneo"
+# Both frontends need the same FBNeo BIOS and high-score directory.
+if [ "$BANANA_SYSTEM" = fbneo ]; then
+    mkdir -p /data/bios/fbneo
+    [ -f /data/bios/fbneo/hiscore.dat ] || cp /usr/share/banana/fbneo/hiscore.dat /data/bios/fbneo/hiscore.dat
+fi
 case $BANANA_SYSTEM in
-n64|psx|fbneo|"") ;; # FBNeo is tested with RetroArch, not BananaFront.
+n64|psx|"") ;;
 *)
     case $(setting ra_frontend) in
     bananafront) bf=1 ;;
@@ -48,11 +53,6 @@ c=${CORE##*/}; c=${c%_libretro.so}
 [ "$c" != "$1" ] && echo "run-retroarch: core $c (Settings > Other systems), not $1" >&2 || echo "run-retroarch: core $c" >&2
 CFG=/data/retroarch/retroarch.cfg
 [ -f $CFG ] || { mkdir -p /data/retroarch; cp /etc/banana/retroarch.cfg $CFG; }
-if [ "$BANANA_SYSTEM" = fbneo ]; then
-    mkdir -p /data/bios/fbneo
-    # Do not replace a user's existing hiscore table.
-    [ -f /data/bios/fbneo/hiscore.dat ] || cp /usr/share/banana/fbneo/hiscore.dat /data/bios/fbneo/hiscore.dat
-fi
 mkdir -p /data/saves /data/states /data/screenshots
 # set_cfg <key> <value>: the file left alone when it has the line already (no rewrite of the card's file on every
 # launch), else the key's lines dropped and the line added. The value never goes into a sed expression: a password

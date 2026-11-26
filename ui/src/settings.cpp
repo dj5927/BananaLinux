@@ -387,6 +387,7 @@ namespace banana
 		{ "zxspectrum", "ZX Spectrum", { { "fuse", "Fuse" } } },
 		{ "psx", "PlayStation", { { "pcsx_rearmed", "PCSX ReARMed" }, { "swanstation", "SwanStation" }, { "mednafen_psx", "Beetle PSX" } } },
 		{ "n64", "Nintendo 64", { { "mupen64plus_next", "Mupen64Plus-Next" }, { "parallel_n64", "ParaLLEl N64" } } },
+		{ "fbneo", "FinalBurn Neo", { { "fbneo", "FBNeo" } } },
 	};
 	static bool coreInstalled(const std::string& core)
 	{
@@ -679,8 +680,12 @@ namespace banana
 			{
 				std::vector<std::string> names, values;
 				coreChoices(sys, names, values);
-				if (names.size() < 2) continue;
-				const char* help = std::string(sys.id) == "gba"
+				// FBNeo is intentionally a single-core system; expose it anyway.
+				const bool arcade = std::string(sys.id) == "fbneo";
+				if (names.empty() || (!arcade && names.size() < 2)) continue;
+				const char* help = arcade
+					? "FBNeo is the installed arcade core. Auto uses BananaFront's pause menu. SELECT and START are the usual arcade coin and start controls (game dependent)."
+					: std::string(sys.id) == "gba"
 					? "The emulator for GBA games. gpSP: the fastest. mGBA: the most accurate, and the one RetroAchievements accepts for hardcore. Cores downloaded with RetroArch's Core Downloader (its Online Updater) are listed here too."
 					: "The emulator (RetroArch core) for this system's games: the first is BananaOS's own. Cores downloaded with RetroArch's Core Downloader (its Online Updater) are listed here too.";
 				add(EM, "gamepad", sys.label, help, menu, (std::string("core.") + sys.id).c_str(), names, values);

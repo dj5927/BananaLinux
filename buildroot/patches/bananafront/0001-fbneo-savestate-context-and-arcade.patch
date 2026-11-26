@@ -1,0 +1,29 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Handle FBNeo capability probe and arcade console mapping
+
+--- a/src/core.c
++++ b/src/core.c
+@@ -282,7 +282,10 @@
+         return bf_hw_render_request(data);
+     case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER: return false;
+     case RETRO_ENVIRONMENT_GET_JIT_CAPABLE: *(bool*)data = true; return true;
+-    case RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT: *(int*)data = RETRO_SAVESTATE_CONTEXT_NORMAL; return true;
++    case RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT:
++        // FBNeo probes this capability with NULL before requesting the context.
++        if (data) *(int*)data = RETRO_SAVESTATE_CONTEXT_NORMAL;
++        return true;
+     case RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY: return true;
+     case RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE: return false;
+     case RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE: return false;
+--- a/src/ra.c
++++ b/src/ra.c
+@@ -612,7 +612,8 @@
+         { "nes", RC_CONSOLE_NINTENDO }, { "snes", RC_CONSOLE_SUPER_NINTENDO }, { "megadrive", RC_CONSOLE_MEGA_DRIVE },
+         { "sms", RC_CONSOLE_MASTER_SYSTEM }, { "gamegear", RC_CONSOLE_GAME_GEAR }, { "psx", RC_CONSOLE_PLAYSTATION },
+         { "n64", RC_CONSOLE_NINTENDO_64 }, { "pcengine", RC_CONSOLE_PC_ENGINE }, { "ngp", RC_CONSOLE_NEOGEO_POCKET },
+-        { "atari2600", RC_CONSOLE_ATARI_2600 }, { "lynx", RC_CONSOLE_ATARI_LYNX } };
++        { "atari2600", RC_CONSOLE_ATARI_2600 }, { "lynx", RC_CONSOLE_ATARI_LYNX },
++        { "fbneo", RC_CONSOLE_ARCADE } };
+     for (unsigned i = 0; s && i < sizeof T / sizeof *T; i++)
+         if (!strcmp(T[i].id, s)) return T[i].c;
+     return 0;

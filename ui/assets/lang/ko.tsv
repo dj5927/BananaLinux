@@ -2850,6 +2850,9 @@ settings		No list	목록 없음
 settings		No description.	설명 없음.
 systems		Game & Watch	Game & Watch
 systems		FinalBurn Neo	파이널번 네오
+settings		FinalBurn Neo	파이널번 네오
+settings		FinalBurn Neo buttons	파이널번 네오 버튼
+settings		FBNeo is the installed arcade core. Auto uses BananaFront's pause menu. SELECT and START are the usual arcade coin and start controls (game dependent).	설치된 아케이드 코어는 FBNeo입니다. 자동 모드에서는 바나나OS의 일시 정지 메뉴를 사용합니다. SELECT는 코인 투입, START는 게임 시작에 사용합니다(게임에 따라 다름).
 systems		Activity	플레이 기록
 settings		that is a package for the {package's handheld}, this is the {board}	이 패키지는 {package's handheld}용이며 현재 기종은 {board}입니다.
 settings		the package's sha256sums doesn't list {file}: download it again	패키지의 sha256sums에 {file} 항목이 없습니다. 다시 다운로드하세요.
