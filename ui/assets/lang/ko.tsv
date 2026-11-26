@@ -2849,6 +2849,7 @@ settings		Page	페이지
 settings		No list	목록 없음
 settings		No description.	설명 없음.
 systems		Game & Watch	Game & Watch
+systems		FinalBurn Neo	파이널번 네오
 systems		Activity	플레이 기록
 settings		that is a package for the {package's handheld}, this is the {board}	이 패키지는 {package's handheld}용이며 현재 기종은 {board}입니다.
 settings		the package's sha256sums doesn't list {file}: download it again	패키지의 sha256sums에 {file} 항목이 없습니다. 다시 다운로드하세요.

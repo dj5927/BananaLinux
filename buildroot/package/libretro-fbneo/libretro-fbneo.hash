@@ -1,0 +1,4 @@
+# From ROCKNIXK 20261121, projects/ROCKNIX/packages/emulators/libretro/fbneo-lr/package.mk
+sha256  2a48438ab5ea6b78f26f35abbb62fea8b2e2e3b09a04f745ed20fd29746bdb95  libretro-fbneo-37a1eff1e1e6e0603cb21789c35c84a889a85bde.tar.gz
+sha256  bb2369f1b75f42242968a78191b47ee90f85682224d3ad1ef63044e244b3e202  src/license.txt
+sha256  70411cebf1c000ba6fe9e27a62e96691c8b6cc84665dffe6d85edb4a5a07a917  LICENSE.md

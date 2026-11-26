@@ -89,6 +89,13 @@ config BR2_PACKAGE_LIBRETRO_FAKE08
 	help
 	  PICO-8 carts (.p8 and .p8.png), when the official PICO-8 isn't on the card.
 
+config BR2_PACKAGE_LIBRETRO_FBNEO
+	bool "libretro-fbneo (ROCKNIXK)"
+	default y
+	help
+	  FinalBurn Neo arcade core, pinned to the DsNo build used in
+	  ROCKNIXK tag 20261121. Non-commercial distribution only.
+
 config BR2_PACKAGE_RETROARCH_GLSL_SHADERS
 	bool "retroarch-glsl-shaders"
 	default y

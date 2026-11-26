@@ -23,6 +23,14 @@
 - 두 앱은 시스템의 한국어 설정을 따릅니다. 기존 언어와 원본 게임 이름을 유지하고, 공용 글꼴의 한글 글리프를 사용합니다.
 - 이전 SSH/SFTP와 커널, 장치 트리, 에뮬레이터를 유지한 OTA 증분 빌드입니다.
 
+## 0.5.3.6.4 — FinalBurn Neo
+
+- ROCKNIXK 태그 [20261121](https://github.com/UzuCore/ROCKNIXK/tree/20261121/projects/ROCKNIX/packages/emulators/libretro/fbneo-lr)의 FBNeo 패키지가 지정하는 [DsNo 수정 소스](https://github.com/aleksei74/FBNeo/tree/37a1eff1e1e6e0603cb21789c35c84a889a85bde)를 사용합니다. 소스 해시: `2a48438ab5ea6b78f26f35abbb62fea8b2e2e3b09a04f745ed20fd29746bdb95`.
+- FBNeo만 신규 탑재하며 기존 코어, 커널, UI 실행 파일을 유지합니다. ARM64용으로 performance 프로필과 USE_CYCLONE=0을 사용하고 ARM32 전용 NEON 컴파일 옵션을 제외합니다. 실행은 검증 대상인 RetroArch로 고정합니다.
+- 게임은 `roms/fbneo/`에 ZIP 또는 7Z로 넣으세요. 네오지오/CPS 역시 이 폴더를 사용합니다. 파일명을 롬셋의 정식 shortname으로 유지하고 필요한 부모 롬을 같이 준비하세요. 네오지오 BIOS 등은 `bios/fbneo/`에 넣으세요.
+- 게임 파일이 있으면 메인 화면에 파이널번 네오 항목이 표시됩니다. ROM/BIOS 파일은 제공하지 않습니다.
+- FBNeo는 비상업적 사용/배포만 허용되며 원본 라이선스의 전문을 펌웨어에 포함합니다. 빌드 소스 변경 및 정확한 원본 위치는 이 저장소의 buildroot/package/libretro-fbneo/에 공개합니다.
+
 ## 설치
 
 기종을 반드시 확인하세요. RG DS에는 rgds, RG DS Plus에는 rgds-plus 파일을 사용합니다.
