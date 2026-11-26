@@ -1,0 +1,96 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Accept inherited DRM panel lease for standalone RPG engines
+
+--- a/src/video/kmsdrm/SDL_kmsdrmvideo.c
++++ b/src/video/kmsdrm/SDL_kmsdrmvideo.c
+@@ -68,6 +68,27 @@
+ #define EGL_PLATFORM_GBM_MESA 0x31D7
+ #endif
+ 
++/* Banana's native standalone games inherit the game panel's DRM lease.
++ * Never reopen the full card or attempt to take DRM master in that mode. */
++static int BananaLeaseFd(void)
++{
++    const char *s = SDL_getenv("BANANA_DRM_LEASE_FD");
++    char *end = NULL;
++    long fd;
++    if (!s) return -1;
++    fd = SDL_strtol(s, &end, 10);
++    if (!*s || !end || *end || fd < 3 || fd > 1048575 || fcntl((int)fd, F_GETFD) < 0)
++        return -2;
++    return (int)fd;
++}
++
++static int BananaOpenCard(const char *path)
++{
++    const int lease = BananaLeaseFd();
++    if (lease == -2) { errno = EBADF; return -1; }
++    return lease >= 0 ? fcntl(lease, F_DUPFD_CLOEXEC, 3) : open(path, O_RDWR | O_CLOEXEC);
++}
++
+ static int get_driindex(void)
+ {
+     int available = -ENOENT;
+@@ -79,6 +100,10 @@
+     const char *hint;
+     struct dirent *res;
+ 
++    if (SDL_getenv("BANANA_DRM_LEASE_FD")) {
++        if (BananaLeaseFd() < 0) return SDL_SetError("Invalid Banana DRM lease");
++        return 0; /* The inherited fd, not this index, selects the device. */
++    }
+     hint = SDL_GetHint(SDL_HINT_KMSDRM_DEVICE_INDEX);
+     if (hint && *hint) {
+         char *endptr = NULL;
+@@ -534,6 +559,7 @@
+ {
+     SDL_VideoData *viddata = ((SDL_VideoData *)_this->driverdata);
+ 
++    if (SDL_getenv("BANANA_DRM_LEASE_FD")) return SDL_TRUE;
+     /* Check if we have DRM master to begin with */
+     if (KMSDRM_drmAuthMagic(viddata->drm_fd, 0) == -EACCES) {
+         /* Nope, nothing to do then */
+@@ -947,7 +973,7 @@
+                        kmsdrm_dri_cardpath, viddata->devindex);
+ 
+     SDL_LogDebug(SDL_LOG_CATEGORY_VIDEO, "Opening device %s", viddata->devpath);
+-    viddata->drm_fd = open(viddata->devpath, O_RDWR | O_CLOEXEC);
++    viddata->drm_fd = BananaOpenCard(viddata->devpath);
+ 
+     if (viddata->drm_fd < 0) {
+         ret = SDL_SetError("Could not open %s", viddata->devpath);
+@@ -1058,14 +1084,14 @@
+ 
+     /* Reopen the FD if we weren't able to drop master on the original one */
+     if (viddata->drm_fd < 0) {
+-        viddata->drm_fd = open(viddata->devpath, O_RDWR | O_CLOEXEC);
++        viddata->drm_fd = BananaOpenCard(viddata->devpath);
+         if (viddata->drm_fd < 0) {
+             return SDL_SetError("Could not reopen %s", viddata->devpath);
+         }
+     }
+ 
+     /* Set the FD as current DRM master. */
+-    KMSDRM_drmSetMaster(viddata->drm_fd);
++    if (!SDL_getenv("BANANA_DRM_LEASE_FD")) KMSDRM_drmSetMaster(viddata->drm_fd);
+ 
+     /* Create the GBM device. */
+     viddata->gbm_dev = KMSDRM_gbm_create_device(viddata->drm_fd);
+@@ -1296,7 +1322,7 @@
+             KMSDRM_DestroySurfaces(_this, window);
+         }
+     }
+-    KMSDRM_drmDropMaster(viddata->drm_fd);
++    if (!SDL_getenv("BANANA_DRM_LEASE_FD")) KMSDRM_drmDropMaster(viddata->drm_fd);
+ }
+ 
+ static void KMSDRM_AcquireVT(void *userdata)
+@@ -1305,7 +1331,7 @@
+     SDL_VideoData *viddata = _this->driverdata;
+     int i;
+ 
+-    KMSDRM_drmSetMaster(viddata->drm_fd);
++    if (!SDL_getenv("BANANA_DRM_LEASE_FD")) KMSDRM_drmSetMaster(viddata->drm_fd);
+     for (i = 0; i < viddata->num_windows; i++) {
+         SDL_Window *window = viddata->windows[i];
+         if (!(window->flags & SDL_WINDOW_VULKAN)) {

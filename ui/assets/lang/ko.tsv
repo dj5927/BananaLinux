@@ -2877,3 +2877,16 @@ menu		Received {count} files from {sender}	{sender} 님에게서 파일 {count}�
 menu		Sent {count} file to {recipient}	{recipient} 님에게 파일 {count}개를 보냈습니다.
 menu		Sent {count} files to {recipient}	{recipient} 님에게 파일 {count}개를 보냈습니다.
 settings		A computer opens it as \\<address>\banana.	컴퓨터에서 \\<address>\banana로 열 수 있습니다.
+settings		Game font 1	게임 글꼴 1
+settings		Game font 2	게임 글꼴 2
+settings		Font 1 size	글꼴 1 크기
+settings		Font 2 size	글꼴 2 크기
+settings		MIDI SoundFont	MIDI 사운드폰트
+settings		Text encoding	문자 인코딩
+settings		Choose a file from the shared BIOS folder. Changes apply next launch.	공용 BIOS 폴더의 파일을 선택합니다. 다음 실행부터 적용합니다.
+settings		Choose the font size in pixels. Changes apply next launch.	픽셀 단위 글꼴 크기를 선택합니다. 다음 실행부터 적용합니다.
+settings		Select the game's original encoding. Changes apply next launch.	게임의 원래 문자 인코딩을 선택합니다. 다음 실행부터 적용합니다.
+settings		Pause / Resume	일시 정지 / 계속
+settings		Restart this game? Unsaved progress will be lost.	게임을 다시 시작할까요? 저장하지 않은 진행 내용은 사라집니다.
+settings		Quit this game? Unsaved progress will be lost.	게임을 종료할까요? 저장하지 않은 진행 내용은 사라집니다.
+settings		Save in the game. Settings apply next launch.	게임 안에서 저장하세요. 설정은 다음 실행부터 적용됩니다.

@@ -106,7 +106,7 @@ namespace banana
 		// The game panel (settings.cpp, end): while a RetroArch game runs on one panel through a DRM lease, the other
 		// shows the game's RetroAchievements (progress and the latest unlocks with their badges) and touch tiles for
 		// RetroArch (save, load, its menu, fast forward, quit), in the in-game menu's look.
-		enum GameAction { G_NONE, G_SAVE, G_LOAD, G_MENU, G_FFWD, G_QUIT, G_LOADSLOT };
+		enum GameAction { G_NONE, G_SAVE, G_LOAD, G_MENU, G_FFWD, G_QUIT, G_LOADSLOT, G_RESET };
 		void gameOpen(const std::string& title, const std::string& system, int screen, bool touch);
 		// the panel's on-screen keyboard (a computer's game: C64, ZX Spectrum): the virtual keyboard the emulator
 		// reads as a USB one (vkbd.h), made before the game starts. null: no Keys tile on the panel
@@ -117,6 +117,7 @@ namespace banana
 		// the game's system id (systems.conf's [id], before gameOpen): the Achievements list's console when the game panel
 		// has no game id from the emulator yet
 		void gameSystem(const std::string& id) { gSysId = id; }
+		void gameProjectKey(const std::string& key) { gProjectKey = key; }
 		int gameSlot() const { return gSlotPick; }	// G_LOADSLOT's slot
 		void gameClose();
 		bool gameUpdate(double nowMs);		// true: the panel changed (a log line, a reply, a badge, a flash ending)
@@ -303,9 +304,10 @@ namespace banana
 		std::string pgTitle, pgRom;
 		int pgRow = 0, pgTop = 0, pgEmu = 0, pgShader = 0, pg3d = 0, pgMic = 0, pgRes = 0, pgTiming = 0, pgCpu = 0;	// (pg3d, pgMic, pgRes, pgTiming, pgCpu: 0 as in Settings)
 		bool pgNds = true;
-		enum PgRow { PG_EMU, PG_SHADER, PG_3D, PG_MIC, PG_NAME, PG_SORT, PG_ART, PG_DELETE, PG_RES, PG_TIMING, PG_CPU, PG_ACH, PG_RPG_RGSS, PG_RPG_SCALE, PG_RPG_SHADER, PG_RPG_SWAP_AB, PG_RPG_SWAP_XY };
+		enum PgRow { PG_EMU, PG_SHADER, PG_3D, PG_MIC, PG_NAME, PG_SORT, PG_ART, PG_DELETE, PG_RES, PG_TIMING, PG_CPU, PG_ACH, PG_RPG_RGSS, PG_RPG_SCALE, PG_RPG_FONT1, PG_RPG_FONT2, PG_RPG_FONT1_SIZE, PG_RPG_FONT2_SIZE, PG_RPG_MIDI, PG_RPG_ENCODING };
 		struct RpgChoice { PgRow row; const char* key; const char* label; const char* help; std::vector<std::string> names, values; };
-		static const std::vector<RpgChoice>& rpgChoices();
+		void loadRpgChoices(const std::string& system, const std::string& key);
+		std::vector<RpgChoice> pgRpgChoices;
 		const RpgChoice* rpgChoice(PgRow row) const;
 		std::map<PgRow,int> pgRpg;
 		bool pgDelAll = false, pgDelArmed = false;	// Delete game: its saves, states and art too; A pressed once
@@ -760,7 +762,11 @@ namespace banana
 		std::map<std::string, rnds::TexPtr> gBadges;	// badge textures by file
 		// the panel's achievements list (the List button on the achievements box): the game's whole list in the panel, a
 		// page of rows at a time; from the watch once the server answered, else the card's cache (the last one seen)
-		std::string gSysId, gRomPath;
+		std::string gSysId, gRomPath, gProjectKey;
+		int gRpgPage = 0;
+		int gRpgConfirm = 0;
+		void rpgPanelFrame();
+		GameAction rpgPanelTouch(float x, float y, bool down);
 		bool gAchOpen = false;
 		int gAchPage = 0;
 		ach::List gAchCache;		// (read once as the list opens, while the watch has none)

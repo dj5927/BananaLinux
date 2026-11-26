@@ -2615,7 +2615,7 @@ int main(int argc, char** argv)
 	// starts so the emulator sees it as a keyboard plugged in, gone when the game ends (vkbd.h)
 	VirtualKeyboard vkbd;
 	bool keysOn = false;
-	auto gamePanel = [&](pid_t pid, int& status, int gameScreen, int cmdFd, int outFd, const std::string& title, const std::string& sysName)
+	auto gamePanel = [&](pid_t pid, int& status, int gameScreen, int cmdFd, int outFd, const std::string& title, const std::string& sysName, const std::string& projectKey)
 	{
 		const int panelScreen = 1 - gameScreen;
 		// the GBA Pokémon companion's pages (gba/panel.h, their data gba/host.h): every game the companion opens
@@ -2634,6 +2634,7 @@ int main(int argc, char** argv)
 			settingsView.link = compLink.open() ? &compLink : nullptr;	// (the emulator's RA block, once it attaches)
 			settingsView.gameRom(gameRomPath);
 			settingsView.gameSystem(gameSysId);
+			settingsView.gameProjectKey(projectKey);
 			settingsView.gameKeyboard(keysOn ? &vkbd : nullptr);
 			settingsView.gameOpen(title, sysName, panelScreen, input.hasTouch(panelScreen));
 			settingsView.gbaAttach(gbaHost.get());
@@ -2708,7 +2709,7 @@ int main(int argc, char** argv)
 					char slotCmd[32];
 					snprintf(slotCmd, sizeof slotCmd, "LOAD_STATE_SLOT %d\n", settingsView.gameSlot());
 					const char* c = a == Settings::G_LOADSLOT ? slotCmd : a == Settings::G_SAVE ? "SAVE_STATE\n" : a == Settings::G_LOAD ? "LOAD_STATE\n" :
-						a == Settings::G_MENU ? "MENU_TOGGLE\n" : a == Settings::G_FFWD ? "FAST_FORWARD\n" : a == Settings::G_QUIT ? "QUIT\n" : nullptr;
+						a == Settings::G_MENU ? "MENU_TOGGLE\n" : a == Settings::G_FFWD ? "FAST_FORWARD\n" : a == Settings::G_RESET ? "RESET\n" : a == Settings::G_QUIT ? "QUIT\n" : nullptr;
 					if (c) { logf("game panel: %.*s (panel-tap)", (int)strlen(c) - 1, c); if (!pipeWrite(cmdFd, c, strlen(c))) logf("game panel: the command pipe is full or closed: %.*s", (int)strlen(c) - 1, c); }
 				}
 				want = true;
@@ -2748,7 +2749,11 @@ int main(int argc, char** argv)
 						if (ev.type == InputEvent::PRESS)
 						{
 							std::lock_guard<std::mutex> l(worker.uiLock);
-							if (settingsView.gameButton(ev.code, nowMs())) want = true;
+							if ((gameSysId == "mkxp" || gameSysId == "easyrpg") && ev.code == BTN_MODE) {
+								const char cmd[] = "MENU_TOGGLE\n";
+								if (!pipeWrite(cmdFd, cmd, sizeof(cmd)-1)) logf("RPG panel: command pipe closed");
+								want = true;
+							} else if (settingsView.gameButton(ev.code, nowMs())) want = true;
 							return;
 						}
 						if (ev.type == InputEvent::RELEASE) return;
@@ -2775,7 +2780,7 @@ int main(int argc, char** argv)
 						snprintf(slotCmd, sizeof slotCmd, "LOAD_STATE_SLOT %d\n", settingsView.gameSlot());
 						const char* c = a == Settings::G_LOADSLOT ? slotCmd : a == Settings::G_SAVE ? "SAVE_STATE\n" : a == Settings::G_LOAD ? "LOAD_STATE\n" :
 							a == Settings::G_MENU ? "MENU_TOGGLE\n" : a == Settings::G_FFWD ? "FAST_FORWARD\n" :
-							a == Settings::G_QUIT ? "QUIT\n" : nullptr;
+							a == Settings::G_RESET ? "RESET\n" : a == Settings::G_QUIT ? "QUIT\n" : nullptr;
 						if (c)
 						{
 							logf("game panel: %.*s", (int)strlen(c) - 1, c);
@@ -2832,14 +2837,15 @@ int main(int argc, char** argv)
 			sd.run.find("run-bananafront") != std::string::npos ||
 			sd.run.find("run-rpg") != std::string::npos ||
 			(sd.run.find("run-pico8") != std::string::npos && access("/data/roms/pico-8/pico8_64", F_OK) != 0);
-		bool panel = ra && settings["retroarch_panel"] != "off" && disp.isOpen();
+		const bool nativeRpg = sd.id == "mkxp" || sd.id == "easyrpg";
+		bool panel = ra && (nativeRpg || settings["retroarch_panel"] != "off") && disp.isOpen();
 		int gameScreen = 0, leaseFd = -1, cmdFd = -1, outFd = -1;
 		const char* OUT = "/run/banana/retroarch.out";	// RetroArch's stdout, for the Pokémon companion
 		if (panel)
 		{
 			// the panel RetroArch is set to use (Settings > Other systems > Screen: video_monitor_index 2 the top, 1 the
 			// bottom)
-			gameScreen = getConfValue("/data/retroarch/retroarch.cfg", "video_monitor_index", "2") == "1" ? 1 : 0;
+			gameScreen = nativeRpg ? 0 : (getConfValue("/data/retroarch/retroarch.cfg", "video_monitor_index", "2") == "1" ? 1 : 0);
 			leaseFd = disp.lease(gameScreen);
 			unlink(FIFO);
 			unlink("/run/banana/retroarch.log");	// (the last game's: the panel must not read it as this one's)
@@ -3042,7 +3048,7 @@ int main(int argc, char** argv)
 			}
 			if (panel)
 			{
-				gamePanel(pid, status, gameScreen, cmdFd, outFd, lib.gameAt(game).title, sd.name);
+				gamePanel(pid, status, gameScreen, cmdFd, outFd, lib.gameAt(game).title, sd.name, lib.gameKey(game));
 			}
 			else if (ndsPage)
 			{

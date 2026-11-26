@@ -1,0 +1,143 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Native standalone RPG menu control
+
+--- a/src/config.cpp
++++ b/src/config.cpp
+@@ -251,6 +251,8 @@
+     SET_OPT_CUSTOMKEY(jit.maxCache, JITMaxCache, integer);
+     SET_OPT_CUSTOMKEY(jit.minCalls, JITMinCalls, integer);
+     SET_OPT_CUSTOMKEY(yjit.enabled, YJITEnable, boolean);
++    if (const char* v = SDL_getenv("BANANA_RPG_RGSS"))
++        if (v[0]>='1' && v[0]<='3' && !v[1]) opts["rgssVersion"] = int(v[0]-'0');
+     SET_OPT(rgssVersion, integer);
+     SET_OPT(defScreenW, integer);
+     SET_OPT(defScreenH, integer);
+@@ -266,6 +268,20 @@
+     userConfPath = mkxp_fs::normalizePath(std::string(customDataPath + "/" CONF_FILE).c_str(), 0, 1);
+     json::value userConf = readConfFile(userConfPath.c_str());
+     copyObject(optsJ, userConf);
++    if (SDL_getenv("BANANA_RPG_CONFIG")) {
++        opts["fullscreen"] = true;
++        opts["enableSettings"] = false; // single KMS window; settings live on Banana's other panel
++        if (const char* v=SDL_getenv("BANANA_RPG_SCALE")) {
++            if (!strcmp(v,"integer") || !strcmp(v,"aspect") || !strcmp(v,"smooth")) {
++                opts["fixedAspectRatio"] = true;
++                opts["integerScalingActive"] = !strcmp(v,"integer");
++                opts["smoothScaling"] = !strcmp(v,"smooth") ? 1 : 0;
++                opts["smoothScalingDown"] = !strcmp(v,"smooth") ? 1 : 0;
++            }
++        }
++        if (const char* v=SDL_getenv("BANANA_RPG_MIDI"))
++            if (*v) opts["midiSoundFont"] = v;
++    }
+     
+     // now RESUME
+     
+--- a/src/eventthread.cpp
++++ b/src/eventthread.cpp
+@@ -20,6 +20,7 @@
+  */
+ 
+ #include "eventthread.h"
++#include "banana_sa_control.h"
+ 
+ #include <SDL_events.h>
+ #include <SDL_keyboard.h>
+@@ -235,13 +236,35 @@
+     void *sMenu = 0;
+ #endif
+     
++    banana_sa::Channel banana;
++    bool bananaPaused=false;
++    auto bananaResume = [&]() {
++        if (!bananaPaused) return;
++        if (HAVE_ALC_DEVICE_PAUSE) alc.DeviceResume(rtData.alcDev);
++        rtData.syncPoint.resumeThreads();
++        bananaPaused=false;
++    };
+     while (true)
+     {
+-        if (!SDL_WaitEvent(&event))
+-        {
++        const auto cmd=banana.next();
++        if (cmd==banana_sa::Quit) { bananaResume(); terminate=true; break; }
++        if (cmd==banana_sa::TogglePause && shState) {
++            if (bananaPaused) bananaResume();
++            else {
++                if (HAVE_ALC_DEVICE_PAUSE) alc.DevicePause(rtData.alcDev);
++                rtData.syncPoint.haltThreads(); bananaPaused=true;
++            }
++        }
++        if (cmd==banana_sa::Reset && shState && rtData.config.enableReset) {
++            bananaResume();
++            rtData.rqResetFinish.clear(); rtData.rqReset.set(); rtData.rqResetFinish.set();
++        }
++        if (!(banana.enabled()?SDL_WaitEventTimeout(&event,20):SDL_WaitEvent(&event))) {
++            if (banana.enabled()) continue;
+             Debug() << "EventThread: Event error";
+             break;
+         }
++        if (bananaPaused && event.type!=SDL_QUIT) continue;
+ #ifndef __APPLE__
+         if (sMenu && sMenu->onEvent(event))
+         {
+@@ -664,6 +687,7 @@
+             break;
+     }
+     
++    bananaResume();
+     /* Just in case */
+     rtData.syncPoint.resumeThreads();
+     
+--- /dev/null
++++ b/src/banana_sa_control.h
+@@ -0,0 +1,49 @@
++#pragma once
++// Standalone engine control channel, shared by the two native adapters.
++// A command is a fixed ASCII token on the private FIFO created by banana-ui.
++#include <cstdlib>
++#include <cstring>
++#include <fcntl.h>
++#include <sys/stat.h>
++#include <unistd.h>
++namespace banana_sa {
++enum Command { None, TogglePause, Reset, Quit };
++class Channel {
++    int fd_ = -1;
++    char line_[32]{};
++    unsigned used_ = 0;
++    bool overflow_ = false;
++public:
++    Channel() {
++        const char* path = std::getenv("BANANA_SA_CMD");
++        if (!path || !*path) return;
++        fd_ = open(path,O_RDONLY|O_NONBLOCK|O_CLOEXEC|O_NOFOLLOW);
++        struct stat st{};
++        if (fd_ >= 0 && (fstat(fd_,&st) != 0 || !S_ISFIFO(st.st_mode))) { close(fd_); fd_=-1; }
++    }
++    ~Channel() { if (fd_>=0) close(fd_); }
++    Channel(const Channel&) = delete;
++    Channel& operator=(const Channel&) = delete;
++    bool enabled() const { return fd_>=0; }
++    Command next() {
++        if (fd_<0) return None;
++        for (unsigned n=0;n<128;n++) {
++            char ch;
++            if (read(fd_,&ch,1)!=1) return None;
++            if (ch=='\n') {
++                line_[used_]=0;
++                Command c=None;
++                if (!overflow_) {
++                    if (!std::strcmp(line_,"MENU_TOGGLE")) c=TogglePause;
++                    else if (!std::strcmp(line_,"RESET")) c=Reset;
++                    else if (!std::strcmp(line_,"QUIT")) c=Quit;
++                }
++                used_=0; overflow_=false;
++                if (c!=None) return c;
++            } else if (used_<sizeof(line_)-1) line_[used_++]=ch;
++            else overflow_=true;
++        }
++        return None;
++    }
++};
++}

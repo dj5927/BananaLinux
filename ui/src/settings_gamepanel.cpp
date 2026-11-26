@@ -3,6 +3,7 @@
 // states, the on-screen keyboard; with a companion, its pages instead (the GBA Pokémon companion: gba/panel.h; any
 // other GBA game with a definition: the game companion, gamecomp.h). Moved out of settings.cpp as it was.
 #include "settings.h"
+#include "rpg_projects.h"
 #include "settings_draw.h"
 #include "settings_curl.h"
 #include <linux/input.h>
@@ -361,6 +362,11 @@ namespace banana
 		gTitle = title; gSystem = system; gScreen = screen; gTouch = touch;
 		gFlash = gDown = -1; gSeen = -1; awardsSeen = 0; wake = false;
 		gKeysOpen = false; gKeyPage = 0; gKeyShift = 0; gKeyTyped.clear();
+		if (rpg::isSystem(gSysId)) {
+			raw.reset(); gRpgPage = gRpgConfirm = 0;
+			loadRpgChoices(gSysId,gProjectKey);
+			return;
+		}
 		gcView = gcLast = gcomp::P_STATUS; gcScreen = 0; gcScreens = 1; gcList = gcRow = -1; gcBattle = false; gcHits.clear();
 		if (gameComp) gameComp->want(gcView);
 		// the buttons that switch between the menu and the companion: a job of Companion (Settings > Other systems >
@@ -592,7 +598,7 @@ namespace banana
 		// the unlocks of this game's run kept for the library's list (on a thread: the card's write isn't the menu's wait)
 		if (raw) { auto w = raw; std::thread([w] { RaWatch::save(w); }).detach(); }
 		raw.reset();
-		gAchOpen = false; gAchCache = ach::List(); gRomPath.clear(); gSysId.clear();
+		gAchOpen = false; gAchCache = ach::List(); gRomPath.clear(); gSysId.clear(); gProjectKey.clear();
 		gStates = false; gSlotSel = gSlotPick = -1;
 		for (auto& f : gStateFiles) f = StateFile();
 		gStateBase.clear();
@@ -689,6 +695,7 @@ namespace banana
 	bool Settings::gameUpdate(double t)
 	{
 		now = t;
+		if (rpg::isSystem(gSysId)) return false;
 		bool changed = false;
 		if (raw)
 		{
@@ -743,6 +750,7 @@ namespace banana
 	Settings::GameAction Settings::gameTouch(float x, float y, bool down)
 	{
 		float lx = x / s, ly = y / s;
+		if (rpg::isSystem(gSysId)) return rpgPanelTouch(lx,ly,down);
 		int hit = -1;
 		// the on-screen keyboard (the Keys tile): a key types on the press, the bar's pages and Done on the release
 		if (gKeysOpen)
@@ -932,8 +940,83 @@ namespace banana
 		evict();
 	}
 
+	// Independent SA panel. No RetroAchievements or Libretro state slots.
+	Settings::GameAction Settings::rpgPanelTouch(float x,float y,bool down)
+	{
+		if (down) return G_NONE;
+		if (gRpgConfirm) {
+			const int action = gRpgConfirm;
+			gRpgConfirm = 0;
+			if (y >= 365 && y < 425 && x >= 320) return action == 1 ? G_RESET : G_QUIT;
+			return G_NONE;
+		}
+		if (y >= 364 && y < 425) {
+			if (x < 212) return G_MENU;
+			gRpgConfirm = x < 424 ? 1 : 2;
+			return G_NONE;
+		}
+		if (y >= 305 && y < 353) {
+			const int pages = std::max(1, int(pgRpgChoices.size()+3)/4);
+			if (x < 150) gRpgPage = (gRpgPage+pages-1)%pages;
+			if (x >= 490) gRpgPage = (gRpgPage+1)%pages;
+			return G_NONE;
+		}
+		if (y >= 88 && y < 296) {
+			const size_t i = size_t(gRpgPage*4 + int((y-88)/52));
+			if (i >= pgRpgChoices.size() || x < 320) return G_NONE;
+			const auto& c = pgRpgChoices[i];
+			int& v = pgRpg[c.row]; int n = int(c.values.size());
+			if (n > 0) {
+				v=(v+(x<475?-1:1)+n)%n;
+				setPerGame("rpg-per-game.conf",rpg::key(gProjectKey)+"."+c.key,c.values[v]);
+			}
+		}
+		return G_NONE;
+	}
+	void Settings::rpgPanelFrame()
+	{
+		SPal p=pal(light);
+		be->beginScreen(gScreen);
+		box("screen",false,0,0,640,480);
+		text(fit(gTitle,true,25,600),true,25,20,12,p.ink);
+		text(gSysId=="mkxp"?"mkxp-z SA":"EasyRPG Player SA",false,18,20,48,p.muted);
+		auto button = [&](float x,float y,float w,float h,const std::string& label) {
+			box("slot",false,x,y,w,h);
+			auto l=fit(lang::tr(label),true,19,w-12);
+			float tw=text(l,true,19,0,0,p.ink,false,0,true);
+			text(l,true,19,x+(w-tw)/2,y+(h-24)/2,p.ink);
+		};
+		if (gRpgConfirm) {
+			wrapped(gRpgConfirm==1?"Restart this game? Unsaved progress will be lost.":"Quit this game? Unsaved progress will be lost.",24,32,110,576,5,p.ink);
+			button(20,365,292,60,"Cancel"); button(328,365,292,60,"Confirm");
+			be->endScreen(); return;
+		}
+		for (int j=0;j<4;j++) {
+			size_t i=size_t(gRpgPage*4+j);
+			if (i>=pgRpgChoices.size()) break;
+			const auto& c=pgRpgChoices[i];
+			float y=88+j*52;
+			box("slot",false,18,y,604,47);
+			text(fit(lang::tr(c.label),true,18,288),true,18,30,y+12,p.ink);
+			text("<",true,18,318,y+12,p.accent);
+			const auto v=fit(lang::tr(c.names[pgRpg[c.row]]),false,17,248);
+			text(v,false,17,342,y+13,p.ink);
+			text(">",true,18,598,y+12,p.accent);
+		}
+		button(18,305,132,43,"Previous");
+		button(490,305,132,43,"Next");
+		int pages=std::max(1,int(pgRpgChoices.size()+3)/4);
+		text(std::to_string(gRpgPage+1)+" / "+std::to_string(pages),true,18,290,315,p.muted);
+		button(18,364,190,60,"Pause / Resume");
+		button(224,364,190,60,"Restart");
+		button(430,364,192,60,"Quit");
+		wrapped("Save in the game. Settings apply next launch.",15,22,438,596,2,p.muted);
+		be->endScreen();
+	}
+
 	void Settings::gameFrame()
 	{
+		if (rpg::isSystem(gSysId)) { rpgPanelFrame(); return; }
 		SPal p = pal(light);
 		int state;
 		std::string game;

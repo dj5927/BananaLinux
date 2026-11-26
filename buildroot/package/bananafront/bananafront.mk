@@ -12,7 +12,7 @@ BANANAFRONT_VERSION = a23fad993a8d29ea0d8394e176b8b91e22c39567
 BANANAFRONT_SITE = $(call github,JorreFog,BananaFront,$(BANANAFRONT_VERSION))
 BANANAFRONT_LICENSE = GPL-3.0+, MIT (libretro.h, rcheevos, bcomp), public domain/MIT (stb)
 BANANAFRONT_LICENSE_FILES = LICENSE src/third_party/rcheevos/LICENSE
-BANANAFRONT_DEPENDENCIES = libdrm alsa-lib zlib libegl libgles
+BANANAFRONT_DEPENDENCIES = libdrm alsa-lib zlib
 
 define BANANAFRONT_BUILD_CMDS
 	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D) device OUT=$(@D)/build/target \

@@ -389,8 +389,6 @@ namespace banana
 		{ "psx", "PlayStation", { { "pcsx_rearmed", "PCSX ReARMed" }, { "swanstation", "SwanStation" }, { "mednafen_psx", "Beetle PSX" } } },
 		{ "n64", "Nintendo 64", { { "mupen64plus_next", "Mupen64Plus-Next" }, { "parallel_n64", "ParaLLEl N64" } } },
 		{ "fbneo", "FinalBurn Neo", { { "fbneo", "FBNeo" } } },
-		{ "easyrpg", "EasyRPG", { { "easyrpg", "EasyRPG" } } },
-		{ "mkxp", "MKXP", { { "mkxp-z", "mkxp-z" } } },
 	};
 	static bool coreInstalled(const std::string& core)
 	{
@@ -5663,20 +5661,47 @@ namespace banana
 	std::string Settings::gameEmulator(const std::string& rom) { return perGame("nds-per-game.conf", rom); }
 	void Settings::setGameEmulator(const std::string& rom, const std::string& emu) { setPerGame("nds-per-game.conf", rom, emu); }
 
-	const std::vector<Settings::RpgChoice>& Settings::rpgChoices()
+	void Settings::loadRpgChoices(const std::string& system, const std::string& key)
 	{
-		static const std::vector<RpgChoice> choices = {
-			{PG_RPG_RGSS, "rgss", "RGSS version", "Automatically detect XP, VX or VX Ace, or select a version for this game only. The setting takes effect next launch.", {"Auto","RPG Maker XP","RPG Maker VX","RPG Maker VX Ace"}, {"","1","2","3"}},
-			{PG_RPG_SCALE, "scale", "RPG screen scale", "Choose the screen scaling for this game. Integer scaling preserves pixel boundaries. Original aspect uses the largest size that fits.", {"As in Settings","Original aspect","Integer scale"}, {"","aspect","integer"}},
-			{PG_RPG_SHADER, "shader", "Shader", "Select the display filter for this game only.", {"As in Settings","None","LCD","CRT","Sharp"}, {"","none","lcd","crt","sharp"}},
-			{PG_RPG_SWAP_AB, "swap_ab", "Swap A/B", "Swap confirm and cancel buttons for this game only.", {"As in Settings","Off","On"}, {"","off","on"}},
-			{PG_RPG_SWAP_XY, "swap_xy", "Swap X/Y", "Swap X and Y for this game only.", {"As in Settings","Off","On"}, {"","off","on"}}
+		pgRpg.clear();
+		pgRpgChoices.clear();
+		if (!rpg::isSystem(system)) return;
+		const bool mkxp = system == "mkxp";
+		if (mkxp) pgRpgChoices.push_back({PG_RPG_RGSS, "rgss", "RGSS version", "Automatically detect XP, VX or VX Ace, or select a version for this game only. The setting takes effect next launch.", {"Auto","RPG Maker XP","RPG Maker VX","RPG Maker VX Ace"}, {"","1","2","3"}});
+		pgRpgChoices.push_back({PG_RPG_SCALE, "scale", "RPG screen scale", "Choose the screen scaling for this game. Integer scaling preserves pixel boundaries. Original aspect uses the largest size that fits.", {"Auto","Original aspect","Integer scale","Smooth"}, {"","aspect","integer","smooth"}});
+		auto files = [&](PgRow row,const char* name,const char* label,const std::string& dir,bool midi) {
+			RpgChoice c{row,name,label,"Choose a file from the shared BIOS folder. Changes apply next launch.",{"Auto"},{""}};
+			for (const auto& e : rpg::entries(dir)) {
+				if (!rpg::regular(e)) continue;
+				const auto ext = rpg::lower(e.path().extension().string());
+				if (midi ? ext != ".sf2" && ext != ".sf3" : ext != ".ttf" && ext != ".otf" && ext != ".ttc") continue;
+				auto n = e.path().filename().string();
+				c.names.push_back(n); c.values.push_back(n);
+			}
+			pgRpgChoices.push_back(std::move(c));
 		};
-		return choices;
+		if (!mkxp) {
+			files(PG_RPG_FONT1,"font1","Game font 1","/data/bios/easyrpg-player/Font",false);
+			files(PG_RPG_FONT2,"font2","Game font 2","/data/bios/easyrpg-player/Font",false);
+			auto sizes = [&](PgRow row,const char* name,const char* label) {
+				RpgChoice c{row,name,label,"Choose the font size in pixels. Changes apply next launch.",{"Auto"},{""}};
+				for (int i = 8; i <= 48; i++) { c.names.push_back(std::to_string(i)); c.values.push_back(std::to_string(i)); }
+				pgRpgChoices.push_back(std::move(c));
+			};
+			sizes(PG_RPG_FONT1_SIZE,"font1_size","Font 1 size");
+			sizes(PG_RPG_FONT2_SIZE,"font2_size","Font 2 size");
+			pgRpgChoices.push_back({PG_RPG_ENCODING,"encoding","Text encoding","Select the game's original encoding. Changes apply next launch.",{"Auto","Korean (CP949)","Japanese (CP932)","Western (CP1252)","UTF-8"},{"","949","932","1252","65001"}});
+		}
+		files(PG_RPG_MIDI,"soundfont","MIDI SoundFont",mkxp?"/data/bios/mkxp/soundfonts":"/data/bios/easyrpg-player/Soundfont",true);
+		for (const auto& c : pgRpgChoices) {
+			const auto v = perGame("rpg-per-game.conf", rpg::key(key) + "." + c.key);
+			auto it = std::find(c.values.begin(),c.values.end(),v);
+			pgRpg[c.row] = it == c.values.end()?0:int(it-c.values.begin());
+		}
 	}
 	const Settings::RpgChoice* Settings::rpgChoice(PgRow row) const
 	{
-		for (const auto& c : rpgChoices()) if (c.row == row) return &c;
+		for (const auto& c : pgRpgChoices) if (c.row == row) return &c;
 		return nullptr;
 	}
 
@@ -5690,18 +5715,8 @@ namespace banana
 		gameKey = key; gameName = name; gameSort = sort;
 		pgRows.clear();
 		if (nds) pgRows = { PG_EMU, PG_SHADER, PG_RES, PG_3D, PG_MIC, PG_TIMING, PG_CPU };
-		pgRpg.clear();
-		if (rpg::isSystem(system))
-		{
-			for (const auto& c : rpgChoices())
-			{
-				if (c.row == PG_RPG_RGSS && system != "mkxp") continue;
-				pgRows.push_back(c.row);
-				const std::string v = perGame("rpg-per-game.conf", rpg::key(key) + "." + c.key);
-				auto it = std::find(c.values.begin(), c.values.end(), v);
-				pgRpg[c.row] = it == c.values.end() ? 0 : (int)(it - c.values.begin());
-			}
-		}
+		loadRpgChoices(system,key);
+		for (const auto& c : pgRpgChoices) pgRows.push_back(c.row);
 		pg3d = pgMic = pgRes = pgTiming = pgCpu = 0;
 		{
 			std::string v = perGame("nds-per-game-3d.conf", romName), m = perGame("nds-per-game-mic.conf", romName);

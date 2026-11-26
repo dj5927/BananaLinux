@@ -1,11 +1,10 @@
 #!/bin/sh
-# RPG Maker games: the UI supplies the selected project's real entry file
-# and a stable library key, never an executable from the game folder.
+# Standalone RPG engines; never execute a Game.exe or Libretro core.
 set -eu
 sys="$1"; entry="$2"
 case "$sys" in
-    easyrpg) core=easyrpg ;;
-    mkxp) core=mkxp-z ;;
+    easyrpg) exe=easyrpg-player ;;
+    mkxp) exe=mkxp-z ;;
     *) echo "Unknown RPG system: $sys" >&2; exit 2 ;;
 esac
 [ -f "$entry" ] || { echo "Missing RPG project entry: $entry" >&2; exit 2; }
@@ -14,23 +13,55 @@ case "$sys" in
     easyrpg) [ "$(basename "$entry" | tr '[:upper:]' '[:lower:]')" = rpg_rt.ldb ] || exit 2 ;;
     mkxp) case "$(basename "$entry" | tr '[:upper:]' '[:lower:]')" in game.ini|mkxp.json|*.rxproj|*.rvproj|*.rvproj2) ;; *) exit 2 ;; esac ;;
 esac
-D=/data
-# The two games' settings/state names cannot collide even when both use Game.ini.
-key=${BANANA_GAME_KEY:-$sys/$(dirname "$entry")}
+D=${BANANA_RPG_DATA:-/data}
+R=${BANANA_RPG_RUNTIME:-/usr/lib/banana/rpg}
+game=$(dirname "$entry")
+key=${BANANA_GAME_KEY:-$sys/$game}
 hex=$(printf '%s' "$key" | od -An -tx1 | tr -d ' \n')
 id=$(printf '%s' "$key" | sha256sum | cut -d ' ' -f1)
+cfg="$D/banana/rpg/$sys/$id"
+mkdir -p "$cfg" "$D/bios/easyrpg-player/Font" "$D/bios/easyrpg-player/Soundfont" "$D/bios/mkxp/fonts" "$D/bios/mkxp/soundfonts" "$D/bios/mkxp/rtp"
 get() {
     awk -v k="$hex.$1" 'index($0,k " = ")==1 {v=substr($0,length(k)+4)} END{print v}' "$D/banana/rpg-per-game.conf" 2>/dev/null || :
 }
-export BANANA_SYSTEM="$sys" BANANA_RPG_ID="$id"
-export BANANA_RPG_SCALE="$(get scale)" BANANA_RPG_SHADER="$(get shader)"
-export BANANA_RPG_SWAP_AB="$(get swap_ab)" BANANA_RPG_SWAP_XY="$(get swap_xy)"
-export BANANA_RPG_RGSS="$(get rgss)"
-case "$BANANA_RPG_SCALE" in aspect|integer|'') ;; *) BANANA_RPG_SCALE= ;; esac
-case "$BANANA_RPG_SHADER" in none|lcd|crt|sharp|'') ;; *) BANANA_RPG_SHADER= ;; esac
-case "$BANANA_RPG_SWAP_AB" in on|off|'') ;; *) BANANA_RPG_SWAP_AB= ;; esac
-case "$BANANA_RPG_SWAP_XY" in on|off|'') ;; *) BANANA_RPG_SWAP_XY= ;; esac
+asset() {
+    name=$(get "$1")
+    case "$name" in ''|.*|*/*|*\\*) return 0 ;; esac
+    [ -f "$2/$name" ] && [ ! -L "$2/$name" ] && printf '%s' "$2/$name" || :
+}
+num() {
+    v=$(get "$1")
+    case "$v" in ''|*[!0-9]*) return 0 ;; esac
+    [ "${#v}" -le 2 ] && [ "$v" -ge 8 ] && [ "$v" -le 48 ] && printf '%s' "$v" || :
+}
+B="$R/$sys/$exe"
+[ -x "$B" ] || { echo "Standalone RPG runtime not installed: $B" >&2; exit 3; }
+export BANANA_SYSTEM="$sys" BANANA_RPG_ID="$id" BANANA_RPG_CONFIG="$cfg"
+export BANANA_SA_CMD="${BANANA_RA_CMD:-}"
+export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-kmsdrm}"
+export SDL_KMSDRM_FIRST="${BANANA_TOP:-DSI-2}"
+export HOME="$cfg" XDG_DATA_HOME="$cfg" XDG_CONFIG_HOME="$cfg"
+export LD_LIBRARY_PATH="$R/$sys/lib:$R/common/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+cd "$game"
+if [ "$sys" = easyrpg ]; then
+    fonts="$D/bios/easyrpg-player/Font"; midi="$D/bios/easyrpg-player/Soundfont"
+    set -- --project-path "$game" --save-path "$game" --config-path "$cfg" --fullscreen --font-path "$fonts" --soundfont-path "$midi"
+    v=$(get scale); case "$v" in integer) set -- "$@" --scaling integer ;; aspect) set -- "$@" --scaling nearest ;; smooth) set -- "$@" --scaling bilinear ;; esac
+    v=$(asset font1 "$fonts"); [ -z "$v" ] || set -- "$@" --font1 "$v"
+    v=$(asset font2 "$fonts"); [ -z "$v" ] || set -- "$@" --font2 "$v"
+    v=$(num font1_size); [ -z "$v" ] || set -- "$@" --font1-size "$v"
+    v=$(num font2_size); [ -z "$v" ] || set -- "$@" --font2-size "$v"
+    v=$(asset soundfont "$midi"); [ -z "$v" ] || set -- "$@" --soundfont "$v"
+    v=$(get encoding); case "$v" in 932|949|1252|65001) set -- "$@" --encoding "$v" ;; esac
+    export RPG2K_RTP_PATH="$D/bios/rtp/2000" RPG2K3_RTP_PATH="$D/bios/rtp/2003"
+    exec "$B" "$@"
+fi
+export BANANA_RPG_RGSS="$(get rgss)" BANANA_RPG_SCALE="$(get scale)"
+export BANANA_RPG_MIDI="$(asset soundfont "$D/bios/mkxp/soundfonts")"
+export MKXP_PORTABLE_RTP_ROOT="$D/bios/mkxp/rtp"
+if [ -d "$R/mkxp/ruby/stdlib" ] && [ -d "$R/mkxp/ruby/extensions" ]; then
+    export MKXP_PORTABLE_RUBY_LOADPATH="$R/mkxp/ruby/stdlib:$R/mkxp/ruby/extensions"
+fi
 case "$BANANA_RPG_RGSS" in 1|2|3|'') ;; *) BANANA_RPG_RGSS= ;; esac
-[ -f "/usr/lib/libretro/${core}_libretro.so" ] || { echo "RPG core not installed: $core" >&2; exit 3; }
-# No RetroArch fallback: the native BananaOS game panel and pause menu are mandatory.
-exec /usr/libexec/banana/run-bananafront "$core" "$entry"
+case "$BANANA_RPG_SCALE" in aspect|integer|smooth|'') ;; *) BANANA_RPG_SCALE= ;; esac
+exec "$B"
