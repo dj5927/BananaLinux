@@ -2,6 +2,25 @@
 #: language = 한국어
 #: language-en = Korean
 #: translated-by = Korean localization contributors
+settings		SSH / SFTP	SSH / SFTP
+settings		A shell and secure file transfer over Wi-Fi.	Wi-Fi로 원격 명령과 보안 파일 전송을 사용합니다.
+settings		SFTP: root, port 22. Set the SSH password below.	SFTP: root, 포트 22. 아래에서 SSH 비밀번호를 설정하세요.
+settings		SSH password	SSH 비밀번호
+settings		Set a password for the root account. Public keys remain supported.	root 계정의 비밀번호를 설정합니다. 공개키 인증도 지원합니다.
+settings		SSH key only	SSH 공개키 전용
+settings		Remove the SSH password. Public-key login still works. Press A twice.	비밀번호를 삭제하고 공개키 인증만 사용합니다. A를 두 번 누르세요.
+settings		Password removed. Use public-key authentication.	비밀번호를 삭제했습니다. 공개키 인증을 사용하세요.
+settings		Couldn't change the SSH password.	SSH 비밀번호를 변경하지 못했습니다.
+settings		In WinSCP or FileZilla select SFTP, user root, port 22. Set an SSH password below. Only enable SSH on a trusted network.	WinSCP 또는 FileZilla에서 SFTP, root, 포트 22를 선택하세요. 아래에서 비밀번호를 설정하세요. 신뢰하는 네트워크에서만 켜세요.
+settings		Password set	비밀번호 설정됨
+settings		New password	새 비밀번호
+settings		Confirm password	비밀번호 확인
+settings		Use 8 to 63 ASCII characters. START to continue. SELECT cancels. Only a salted hash is saved.	영문, 숫자, 기호 8~63자를 입력하세요. START: 계속, SELECT: 취소. 비밀번호는 해시로만 저장합니다.
+settings		Type the same password again and press START to save. SELECT cancels.	같은 비밀번호를 다시 입력한 뒤 START를 누르면 저장합니다. SELECT: 취소.
+settings		Use 8 to 63 characters for the SSH password.	SSH 비밀번호는 8~63자여야 합니다.
+settings		Use ASCII characters for the SSH password.	SSH 비밀번호는 영문, 숫자, 기호만 사용할 수 있습니다.
+settings		Passwords do not match. Try again.	비밀번호가 일치하지 않습니다. 다시 입력하세요.
+settings		SSH password saved. Enable SSH / SFTP above to connect.	SSH 비밀번호를 저장했습니다. 위의 SSH / SFTP를 켜면 접속할 수 있습니다.
 menu		Ready	준비 완료
 menu		Fav	즐겨찾기
 menu		Start	시작

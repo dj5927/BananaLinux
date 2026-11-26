@@ -718,8 +718,10 @@ namespace banana
 				menu, "share_login", { "Name and password", "Guest" }, { "password", "guest" });
 			items.back().hints = { "The name and password below. Windows needs one.", "Anyone on the network. Only on a network you trust." };
 			add(FS, "phone", "Sharing name and password", "", "", "share_account", {}, {}, Item::PAGE);
-			add(FS, "phone", "SSH", "A shell on the handheld from a computer, over Wi-Fi.", menu, "ssh", { "Off", "On" }, { "off", "on" });
-			items.back().hints = { "Off.", "On: ssh root@<address>." };
+			add(FS, "phone", "SSH / SFTP", "A shell and secure file transfer over Wi-Fi.", menu, "ssh", { "Off", "On" }, { "off", "on" });
+			items.back().hints = { "Off.", "SFTP: root, port 22. Set the SSH password below." };
+			add(FS, "phone", "SSH password", "Set a password for the root account. Public keys remain supported.", "", "ssh_password", {}, {}, Item::PAGE);
+			add(FS, "phone", "SSH key only", "Remove the SSH password. Public-key login still works. Press A twice.", "", "ssh_key_only", {}, {}, Item::ACTION);
 		}
 		add(W, "phone", "Home server", "Your games, box art and saves from a server at home: Romhost or RomM.",
 			"", "homesync", {}, {}, Item::PAGE);
@@ -1324,6 +1326,7 @@ namespace banana
 			if (it.key == "colors") { openColors(); return MOVED; }
 			if (it.key == "speaker_eq_page") { openEq(); return MOVED; }
 			if (it.key == "share_account") { startEntry(ENTRY_SMB_USER, "File sharing", "Name", LIST, shareUser()); return MOVED; }
+			if (it.key == "ssh_password") { sshNewPassword.clear(); startEntry(ENTRY_SSH_PASS, "SSH password", "New password", LIST); return MOVED; }
 			if (it.key == "ds_name") { startEntry(ENTRY_DS_NAME, "The DS's name", "10 characters at most", LIST, dsName()); return MOVED; }
 			if (it.key == "bt_devices") { openBluetooth(); return MOVED; }
 			if (const Subpage* s = subpageFrom(it.key)) { message.clear(); openSection(s->section); return MOVED; }
@@ -1360,6 +1363,13 @@ namespace banana
 				return CLOSED;
 			}
 			if (armed != sel) { armed = sel; return MOVED; }
+			if (it.key == "ssh_key_only")
+			{
+				armed = -1;
+				int rc = system("/usr/libexec/banana/ssh clear-password >/dev/null 2>&1");
+				message = rc == 0 ? "Password removed. Use public-key authentication." : "Couldn't change the SSH password.";
+				return MOVED;
+			}
 			if (it.key == "switch")
 			{
 				// the other slot made the default, then a restart; the script says why not when it can't
@@ -2309,8 +2319,8 @@ namespace banana
 		if (cur.kind == Item::INFO && cur.key != "hk") help = about;	// (Hotkeys' rows have their own)
 		if (cur.key == "wifi") help = "Wi-Fi: " + wifiInfo + ". Network, below, joins one; networks can also be written in banana/wifi.conf on a computer (see banana/README.txt).";
 		if (cur.key == "ssh")
-			help = "For working on Banana itself: ssh root@" + (ip.empty() ? std::string("<address>") : ip) +
-				", with the public keys in banana/ssh/authorized_keys on the card (no passwords). Files: scp -O (dropbear has no SFTP), or File sharing.";
+			help = "In WinSCP or FileZilla select SFTP, user root, port 22. Set an SSH password below. Only enable SSH on a trusted network.";
+		if ((cur.key == "ssh_password" || cur.key == "ssh_key_only") && !message.empty()) help = message;
 		if (cur.key == "hs_server")
 		{
 			std::string n = homeServer();
@@ -2557,6 +2567,7 @@ namespace banana
 			else if (it.kind == Item::PAGE && it.key == "bt_devices") v = btRow();
 			else if (it.kind == Item::PAGE && (it.key == "update" || it.key == "sys_updates")) v = updatesWaiting(updatesDir, runDir, version);	// (and on its page's row)
 			else if (it.kind == Item::PAGE && it.key == "share_account") v = fit(shareUser(), true, 19, 300);
+			else if (it.kind == Item::PAGE && it.key == "ssh_password") v = access((data + "/ssh/password.hash").c_str(), F_OK) == 0 ? "Password set" : "Not set";
 			else if (it.kind == Item::PAGE && it.key == "ds_name") { v = dsName().empty() ? "Not set" : dsName(); nameValue = v != "Not set"; }
 			else if (it.kind == Item::PAGE && (it.key == "scrape" || it.key == "sys_boxart")) v = scrapeShort();
 			else if (it.kind == Item::PAGE && (it.key == "homesync" || it.key == "hs_server")) v = hsStep ? "Pairing" : homeServer().empty() ? "Not paired" : fit(homeServer(), true, 19, 300);
@@ -2994,7 +3005,7 @@ namespace banana
 		case Key::A: return keyboardKey(krow, kcol);
 		case Key::B:
 			if (pw.empty() && entry == ENTRY_SEARCH) { close(); return CLOSED; }
-			if (pw.empty()) { page = entryBack; message.clear(); return MOVED; }
+			if (pw.empty()) { sshNewPassword.clear(); page = entryBack; message.clear(); return MOVED; }
 			koreanComposer.erase(pw);
 			return MOVED;
 		case Key::X: layer = layer == 1 ? 0 : 1; return MOVED;
@@ -3005,7 +3016,8 @@ namespace banana
 		case Key::SELECT:
 			// Files' names and its servers' fields: back with nothing changed (B takes a character off, and Rename starts with
 			// the whole name)
-			if (entry != ENTRY_FOLDER && entry != ENTRY_RENAME && entry != ENTRY_SERVER) return NONE;
+			if (entry != ENTRY_FOLDER && entry != ENTRY_RENAME && entry != ENTRY_SERVER && entry != ENTRY_SSH_PASS && entry != ENTRY_SSH_CONFIRM) return NONE;
+			sshNewPassword.clear();
 			pw.clear();
 			page = entryBack;
 			message.clear();
@@ -3410,7 +3422,7 @@ namespace banana
 		if (!pw.empty())	// (what was typed, as it is)
 		{
 			AsNamed named(*this);
-			std::string shown = fitEnd(pw, true, 22, 480);
+			std::string shown = fitEnd(entry == ENTRY_SSH_PASS || entry == ENTRY_SSH_CONFIRM ? std::string(pw.size(), '*') : pw, true, 22, 480);
 			w = text(shown, true, 22, 0, 0, p.ink, false, 0, true);
 			text(shown, true, 22, 70, 165, p.ink);
 		}
@@ -3429,6 +3441,8 @@ namespace banana
 			: entry == ENTRY_WIFI ? "A types the key, B deletes, X capitals, L symbols, Y a space, START joins. Or tap the keys. The password is kept in banana/wifi.conf on the card."
 			: entry == ENTRY_HS_ADDR ? "The home server's address: its name or IP, and :port when it isn't the usual (Romhost 8092, RomM 8080 or 80). A types the key, B deletes, L symbols (the dot and colon), START when it is typed."
 			: entry == ENTRY_BETA_PASS ? "The beta testers' password for BananaOS's test builds. A types the key, B deletes, X capitals, L symbols, Y a space, START checks it with bananaos-cfw.dev. It is kept on the card for the updater only."
+			: entry == ENTRY_SSH_PASS ? "Use 8 to 63 ASCII characters. START to continue. SELECT cancels. Only a salted hash is saved."
+			: entry == ENTRY_SSH_CONFIRM ? "Type the same password again and press START to save. SELECT cancels."
 			: entry == ENTRY_HS_CODE ? "The code Homeport shows under ROMs > Pair a device (or, for RomM, a client token's pairing code). START when it is typed."
 			: entry == ENTRY_DS_NAME ? "A types the key, B deletes, X capitals, L symbols, Y a space, START when it is typed. Kept in both emulators' settings (DraStic's drastic.cfg, BananaDS's bananads.conf)."
 			: entry == ENTRY_GAME_NAME || entry == ENTRY_GAME_SORT ? "A types the key, B deletes, X capitals, L symbols, Y a space, START when it is typed. Kept in banana/game-titles.tsv on the card."
@@ -3459,7 +3473,7 @@ namespace banana
 			else
 			{
 				AsNamed named(*this);	// (what was typed, as it is)
-				std::string t = fitEnd(pw, true, 24, room);
+				std::string t = fitEnd(entry == ENTRY_SSH_PASS || entry == ENTRY_SSH_CONFIRM ? std::string(pw.size(), '*') : pw, true, 24, room);
 				tw = text(t, true, 24, 0, 0, p.ink, false, 0, true);
 				text(t, true, 24, 38, 27, p.ink);
 			}
@@ -3500,7 +3514,7 @@ namespace banana
 		std::vector<Chip> cs = { { Key::B, "B", pw.empty() ? "Back" : "Delete" }, { Key::X, "X", "Shift" } };
 		// Files' names: SELECT leaves it as it was, in Y Space's place (five chips don't fit the 640 px row; Y still types
 		// a space, as the Space key and the help say)
-		if (entry == ENTRY_FOLDER || entry == ENTRY_RENAME) cs.push_back({ Key::SELECT, "SELECT", "Cancel" });
+		if (entry == ENTRY_FOLDER || entry == ENTRY_RENAME || entry == ENTRY_SSH_PASS || entry == ENTRY_SSH_CONFIRM) cs.push_back({ Key::SELECT, "SELECT", "Cancel" });
 		else cs.push_back({ Key::Y, "Y", "Space" });
 		cs.push_back({ Key::START, "START", entry == ENTRY_WIFI ? "Join" : "Done", true });
 		return cs;
@@ -6057,6 +6071,27 @@ namespace banana
 			page = entryBack;
 			message.clear();
 			return CHANGED;
+		case ENTRY_SSH_PASS:
+		{
+			if (pw.size() < 8 || pw.size() > 63) { message = "Use 8 to 63 characters for the SSH password."; return MOVED; }
+			for (unsigned char c : pw) if (c < 32 || c > 126) { message = "Use ASCII characters for the SSH password."; return MOVED; }
+			sshNewPassword = pw;
+			startEntry(ENTRY_SSH_CONFIRM, "SSH password", "Confirm password", entryBack);
+			return MOVED;
+		}
+		case ENTRY_SSH_CONFIRM:
+		{
+			if (pw != sshNewPassword) { pw.clear(); message = "Passwords do not match. Try again."; return MOVED; }
+			FILE* f = popen("/usr/libexec/banana/ssh set-password >/dev/null 2>&1", "w");
+			bool ok = f && fwrite(pw.data(), 1, pw.size(), f) == pw.size() && fputc('\n', f) != EOF;
+			if (f) ok = pclose(f) == 0 && ok;
+			std::fill(pw.begin(), pw.end(), '\0');
+			std::fill(sshNewPassword.begin(), sshNewPassword.end(), '\0');
+			pw.clear(); sshNewPassword.clear();
+			page = entryBack;
+			message = ok ? "SSH password saved. Enable SSH / SFTP above to connect." : "Couldn't change the SSH password.";
+			return MOVED;
+		}
 		case ENTRY_HS_ADDR:
 		{
 			// what answers there: Romhost (then its pairing code) or RomM (then its device code)

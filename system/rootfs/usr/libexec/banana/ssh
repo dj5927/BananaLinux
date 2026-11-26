@@ -1,25 +1,86 @@
 #!/bin/sh
-# SSH (dropbear), for working on Banana itself: off by default (Settings > Network > File sharing > SSH). Root, with the public keys
-# in banana/ssh/authorized_keys on the card and no passwords. The keys are copied to /run (dropbear wants them
-# readable by root alone, and exFAT can't say so), where /root/.ssh points; the host key is made once per card.
-#   ssh up | down
+# SSH and SFTP. Off by default. Root password login is opt-in.
+# Only a salted password hash persists; /etc/shadow stays read-only on disk.
+set -eu
+umask 077
 D=/data/banana/ssh
 R=/run/banana/ssh
-case $1 in
-up)
-    [ -f /run/banana/dropbear.pid ] && kill -0 $(cat /run/banana/dropbear.pid) 2>/dev/null && exit 0
-    mkdir -p $D $R
-    chmod 700 $R
-    [ -f $D/authorized_keys ] || printf '# public keys (one per line) that may log in as root over SSH\n' > $D/authorized_keys
-    cp $D/authorized_keys $R/authorized_keys
-    chmod 600 $R/authorized_keys
-    [ -s $D/host_key_ed25519 ] || dropbearkey -t ed25519 -f $D/host_key_ed25519 >/dev/null 2>&1 || exit 1
-    dropbear -s -r $D/host_key_ed25519 -P /run/banana/dropbear.pid
+HASH=$D/password.hash
+PID=/run/banana/dropbear.pid
+valid_hash() {
+    printf '%s\n' "$1" | grep -Eq '^\$6\$[./A-Za-z0-9]{1,16}\$[./A-Za-z0-9]{86}$'
+}
+running() {
+    [ -s "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null
+}
+configured_on() {
+    [ "$(sed -n 's/^[[:space:]]*ssh[[:space:]]*=[[:space:]]*//p' /data/banana/settings.conf 2>/dev/null | tail -n 1 | tr -d ' \r\t')" = on ]
+}
+drop_shadow() {
+    if [ -e "$R/shadow-mounted" ]; then
+        umount /etc/shadow || return 1
+        rm -f "$R/shadow-mounted" "$R/shadow"
+    fi
+}
+down() {
+    if running; then kill "$(cat "$PID")" 2>/dev/null || true; fi
+    rm -f "$PID"
+    drop_shadow
+}
+up() {
+    running && return 0
+    mkdir -p "$D" "$R"
+    chmod 700 "$R"
+    drop_shadow
+    [ -f "$D/authorized_keys" ] || printf '# public keys (one per line) that may log in as root over SSH\n' > "$D/authorized_keys"
+    cp "$D/authorized_keys" "$R/authorized_keys"
+    chmod 600 "$R/authorized_keys"
+    [ -s "$D/host_key_ed25519" ] || dropbearkey -t ed25519 -f "$D/host_key_ed25519" >/dev/null 2>&1 || return 1
+    # Preserve key-only mode on upgrades and fail closed on a damaged hash.
+    set -- -s
+    if [ -s "$HASH" ]; then
+        hash=$(cat "$HASH")
+        if valid_hash "$hash"; then
+            { printf '%s\n' "$hash"; cat /etc/shadow; } |
+                awk 'BEGIN{FS=OFS=":"} NR==1{h=$0;next} $1=="root"{$2=h;found=1} {print} END{if(!found)exit 1}' > "$R/shadow"
+            chmod 600 "$R/shadow"
+            mount --bind "$R/shadow" /etc/shadow || return 1
+            : > "$R/shadow-mounted"
+            set --
+        fi
+    fi
+    # Never allow empty passwords. Restrict accounts to root.
+    if ! dropbear "$@" -G root -T 5 -r "$D/host_key_ed25519" -P "$PID"; then
+        drop_shadow
+        return 1
+    fi
+}
+restart_if_on() {
+    if running || configured_on; then down; up; fi
+}
+case ${1:-} in
+up) up ;;
+down) down ;;
+set-password)
+    # stdin only; do not persist or pass plaintext through argv.
+    IFS= read -r password || exit 2
+    export LC_ALL=C
+    [ "${#password}" -ge 8 ] && [ "${#password}" -le 63 ] || exit 2
+    printf '%s' "$password" | grep -Eq '^[ -~]+$' || exit 2
+    hash=$(printf '%s\n' "$password" | mkpasswd -m sha512 -P 0) || exit 1
+    unset password
+    valid_hash "$hash" || exit 1
+    mkdir -p "$D"
+    printf '%s\n' "$hash" > "$HASH.new"
+    mv -f "$HASH.new" "$HASH"
+    sync
+    restart_if_on
     ;;
-down)
-    [ -f /run/banana/dropbear.pid ] && kill $(cat /run/banana/dropbear.pid) 2>/dev/null
-    rm -f /run/banana/dropbear.pid
+clear-password)
+    rm -f "$HASH" "$HASH.new"
+    sync
+    restart_if_on
     ;;
-*) echo "usage: ssh up|down" >&2; exit 1 ;;
+*) echo "usage: ssh up|down|set-password|clear-password" >&2; exit 1 ;;
 esac
 exit 0
