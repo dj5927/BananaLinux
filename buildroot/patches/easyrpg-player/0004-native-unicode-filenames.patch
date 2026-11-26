@@ -1,0 +1,175 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Preserve Korean filenames and normalize resource lookup
+
+--- a/src/filesystem_zip.cpp
++++ b/src/filesystem_zip.cpp
+@@ -19,6 +19,7 @@
+ #include "filefinder.h"
+ #include "output.h"
+ #include "utils.h"
++#include "banana_filename.h"
+ 
+ #include <zlib.h>
+ #include <lcf/encoder.h>
+@@ -46,7 +47,7 @@
+ 	if (inner_path.front() == '.') {
+ 		inner_path = inner_path.substr(1, inner_path.size() - 1);
+ 	}
+-	if (inner_path.front() == '/') {
++	if (!inner_path.empty() && inner_path.front() == '/') {
+ 		inner_path = inner_path.substr(1, inner_path.size() - 1);
+ 	}
+ 	return inner_path;
+@@ -70,6 +71,7 @@
+ 	bool is_utf8;
+ 
+ 	encoding = ToString(enc);
++	if (const char* forced=banana_name::preferred()) encoding=forced;
+ 	if (!FindCentralDirectory(zip_is, central_directory_offset, central_directory_size, central_directory_entries)) {
+ 		Output::Debug("ZipFS: {} is not a valid archive", GetPath());
+ 		return;
+@@ -84,7 +86,7 @@
+ 		while (ReadCentralDirectoryEntry(zip_is, filepath, entry, is_utf8)) {
+ 			// Only consider Non-ASCII & Non-UTF8 for encoding detection
+ 			// Directories are skipped as most of them are usually ASCII and do not help with the detection
+-			if (is_utf8 || filepath.back() == '/' || Utils::StringIsAscii(std::get<1>(FileFinder::GetPathAndFilename(filepath)))) {
++			if (is_utf8 || filepath.empty() || banana_name::validUtf8(filepath)) {
+ 				continue;
+ 			}
+ 			// Codepath will be only entered by Windows "compressed folder" ZIPs (uses local encoding) and
+@@ -122,7 +124,6 @@
+ 		}
+ 		Output::Debug("Detected ZIP encoding: {}", encoding);
+ 	}
+-	bool enc_is_utf8 = encoding == "UTF-8";
+ 
+ 	zip_is.clear();
+ 	zip_is.seekg(central_directory_offset);
+@@ -131,14 +132,17 @@
+ 	lcf::Encoder cp437_encoder("437");
+ 	std::vector<std::string> paths;
+ 	while (ReadCentralDirectoryEntry(zip_is, filepath, entry, is_utf8)) {
+-		if (is_utf8 || enc_is_utf8 || Utils::StringIsAscii(filepath)) {
++		if (filepath.empty()) continue;
++		if (is_utf8 || banana_name::validUtf8(filepath)) {
+ 			// No reencoding necessary
+ 			filepath_cp437.clear();
+ 		} else {
+ 			// also store CP437 to ensure files inside 7zip zip archives are found
+ 			filepath_cp437 = filepath;
+ 			cp437_encoder.Encode(filepath_cp437);
+-			detected_encoder.Encode(filepath);
++			std::string decoded;
++			if (banana_name::decode(filepath,encoding.c_str(),decoded)) filepath=decoded;
++			else detected_encoder.Encode(filepath);
+ 		}
+ 
+ 		// Workaround ZIP archives containing invalid "\" paths created by .net or Powershell
+--- a/src/directory_tree.cpp
++++ b/src/directory_tree.cpp
+@@ -22,6 +22,7 @@
+ #include "platform.h"
+ #include "player.h"
+ #include <lcf/reader_util.h>
++#include "banana_filename.h"
+ 
+ //#define EP_DEBUG_DIRECTORYTREE
+ #ifdef EP_DEBUG_DIRECTORYTREE
+@@ -36,7 +37,15 @@
+ 
+ namespace {
+ 	std::string make_key(std::string_view n) {
+-		return lcf::ReaderUtil::Normalize(n);
++		std::string raw(n);
++		if (!banana_name::validUtf8(raw) && !banana_name::preferred()) {
++			auto enc=lcf::ReaderUtil::DetectEncodings(raw);
++			for (const auto& c:enc) {
++				std::string decoded;
++				if (banana_name::decode(raw,c.c_str(),decoded)) return lcf::ReaderUtil::Normalize(decoded);
++			}
++		}
++		return lcf::ReaderUtil::Normalize(banana_name::utf8(raw));
+ 	};
+ }
+ 
+--- /dev/null
++++ b/src/banana_filename.h
+@@ -0,0 +1,78 @@
++#pragma once
++// Keep filenames in UTF-8 for lookup without renaming original files.
++// ICU is already used by EasyRPG; MKXP uses the same library on BananaOS.
++#include <unicode/ucnv.h>
++#include <unicode/ucnv_err.h>
++#include <unicode/unistr.h>
++#include <unicode/normalizer2.h>
++#include <unicode/utf8.h>
++#include <cstdlib>
++#include <cstring>
++#include <string>
++#include <vector>
++
++namespace banana_name {
++inline bool validUtf8(const std::string& s) {
++    const auto* p=reinterpret_cast<const uint8_t*>(s.data());
++    int32_t i=0, n=static_cast<int32_t>(s.size());
++    while(i<n) { UChar32 cp; U8_NEXT(p,i,n,cp); if(cp<0) return false; }
++    return true;
++}
++inline const char* codepage(const char* name) {
++    if (!name || !*name) return nullptr;
++    if (!std::strcmp(name,"949")) return "windows-949";
++    if (!std::strcmp(name,"932")) return "windows-932";
++    if (!std::strcmp(name,"1252")) return "windows-1252";
++    if (!std::strcmp(name,"65001")) return "UTF-8";
++    return name;
++}
++inline const char* preferred() {
++    return codepage(std::getenv("BANANA_RPG_FILENAME_ENCODING"));
++}
++// Strict conversion: a wrong encoding must not silently substitute U+FFFD.
++inline bool decode(const std::string& s,const char* enc,std::string& out) {
++    if (!enc || !*enc) return false;
++    UErrorCode ec=U_ZERO_ERROR;
++    UConverter* cv=ucnv_open(codepage(enc),&ec);
++    if (U_FAILURE(ec) || !cv) return false;
++    ucnv_setToUCallBack(cv,UCNV_TO_U_CALLBACK_STOP,nullptr,nullptr,nullptr,&ec);
++    if (U_FAILURE(ec)) { ucnv_close(cv); return false; }
++    const int32_t cap=static_cast<int32_t>(s.size()*2+2);
++    std::vector<UChar> buf(cap);
++    const int32_t len=ucnv_toUChars(cv,buf.data(),cap,s.data(),static_cast<int32_t>(s.size()),&ec);
++    ucnv_close(cv);
++    if (U_FAILURE(ec)) return false;
++    out.clear();
++    icu::UnicodeString(buf.data(),len).toUTF8String(out);
++    return true;
++}
++inline std::string utf8(const std::string& s,const char* detected=nullptr) {
++    if (validUtf8(s)) return s;
++    std::string converted;
++    const char* p=preferred();
++    if (p && decode(s,p,converted)) return converted;
++    if (detected && decode(s,detected,converted)) return converted;
++    return s;
++}
++// Canonical composition and Unicode case folding, including decomposed Hangul.
++// Never use the folded spelling for physical I/O; use the stored original path.
++inline std::string key(const std::string& raw,const char* detected=nullptr) {
++    auto s=utf8(raw,detected);
++    if (!validUtf8(s)) {
++        for (auto& c:s) if (c>='A' && c<='Z') c=static_cast<char>(c+32);
++        return s;
++    }
++    UErrorCode ec=U_ZERO_ERROR;
++    auto u=icu::UnicodeString::fromUTF8(s);
++    u.foldCase();
++    const auto* n=icu::Normalizer2::getNFCInstance(ec);
++    if (U_SUCCESS(ec)) {
++        icu::UnicodeString normalized;
++        n->normalize(u,normalized,ec);
++        if (U_SUCCESS(ec)) u=normalized;
++    }
++    std::string result;
++    u.toUTF8String(result);
++    return result;
++}
++}

@@ -5699,6 +5699,7 @@ namespace banana
 			sizes(PG_RPG_FONT2_SIZE,"font2_size","Font 2 size");
 			pgRpgChoices.push_back({PG_RPG_ENCODING,"encoding","Text encoding","Select the game's original encoding. Changes apply next launch.",{"Auto","Korean (CP949)","Japanese (CP932)","Western (CP1252)","UTF-8"},{"","949","932","1252","65001"}});
 		}
+		pgRpgChoices.push_back({PG_RPG_FILENAME_ENCODING,"filename_encoding","Filename encoding","Valid UTF-8 names are preserved. Select the original encoding for old Korean or Japanese filenames. Changes apply after restart.",{"Auto","Korean (CP949)","Japanese (CP932)","Western (CP1252)","UTF-8"},{"","949","932","1252","65001"}});
 		files(PG_RPG_MIDI,"soundfont","MIDI SoundFont",mkxp?bios+"/mkxp/soundfonts":bios+"/easyrpg-player/Soundfont",true);
 		for (const auto& c : pgRpgChoices) {
 			const auto v = perGame("rpg-per-game.conf", rpg::key(key) + "." + c.key);

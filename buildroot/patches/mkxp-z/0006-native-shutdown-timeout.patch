@@ -1,0 +1,28 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Avoid destroying GL resources of a stuck RGSS thread
+
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -42,6 +42,7 @@
+ #include "sharedstate.h"
+ #include "eventthread.h"
+ #include "banana_sa_control.h"
++#include <cstdlib>
+ #include "util/debugwriter.h"
+ #include "util/exception.h"
+ #include "display/gl/gl-debug.h"
+@@ -736,7 +737,13 @@
+      * otherwise abandon hope and just end the process as is. */
+     if (rtData.rqTermAck)
+       SDL_WaitThread(rgssThread, 0);
+-    else
++    else if (SDL_getenv("BANANA_RPG_CONFIG")) {
++      // Do not destroy a GL context or audio device still used by a live RGSS
++      // thread. The OS releases the game's resources on process exit.
++      Debug() << "RGSS thread did not acknowledge stop; skipping unsafe teardown.";
++      fflush(nullptr);
++      std::_Exit(1);
++    } else
+       SDL_ShowSimpleMessageBox(
+           SDL_MESSAGEBOX_ERROR, conf.game.title.c_str(),
+           std::string("The RGSS script seems to be stuck. "+conf.game.title+" will now force quit.").c_str(),

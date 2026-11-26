@@ -2901,3 +2901,5 @@ settings		Compatible	호환성 우선
 settings		Native blit	네이티브 블리팅
 settings		Apply / restart	적용 / 재시작
 settings		Settings saved. Apply / restart to use them.	설정 저장 완료. 적용 / 재시작을 눌러 반영하세요.
+settings		Filename encoding	파일명 인코딩
+settings		Valid UTF-8 names are preserved. Select the original encoding for old Korean or Japanese filenames. Changes apply after restart.	UTF-8 파일명은 그대로 사용합니다. 구형 한글·일본어 파일명은 원래 인코딩을 선택하세요. 재시작 후 적용됩니다.

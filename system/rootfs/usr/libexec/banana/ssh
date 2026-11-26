@@ -1,4 +1,5 @@
 #!/bin/sh
+export LANG=C.UTF-8 LC_CTYPE=C.UTF-8
 # SSH and SFTP. Off by default. Root password login is opt-in.
 # Only a salted password hash persists; /etc/shadow stays read-only on disk.
 set -eu

@@ -76,6 +76,20 @@ with connect(password=pw) as c:
         with s.file(d+"/renamed.bin","rb") as f: assert f.read()==payload
         assert s.stat(d+"/renamed.bin").st_size==len(payload)
         s.remove(d+"/renamed.bin")
+        # Real UTF-8 wire paths, including Korean and a case-mixed extension.
+        k=d+"/\ud55c\uae00 \uac8c\uc784"
+        s.mkdir(k)
+        name="\ubc30\uacbd\uadf8\ub9bc.PNG"
+        # The source file is UTF-8; no client-side lossy name conversion.
+        with s.file(k+"/"+name,"wb") as f: f.write(payload)
+        assert name in s.listdir(k)
+        with s.file(k+"/"+name,"rb") as f: assert f.read()==payload
+        renamed="\uc800\uc7a5 \ud30c\uc77c.dat"
+        s.rename(k+"/"+name,k+"/"+renamed)
+        assert renamed in s.listdir(k)
+        s.remove(k+"/"+renamed)
+        s.rmdir(k)
+        print("PASS Korean SFTP directory/file upload, listing, rename and download",flush=True)
         s.rmdir(d)
 print("PASS password, denied wrong password/non-root, shell and 2 MiB SFTP upload/rename/download/delete",flush=True)
 

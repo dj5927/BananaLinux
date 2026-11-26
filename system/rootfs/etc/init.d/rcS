@@ -2,6 +2,7 @@
 # Banana's whole boot. Everything the menu needs is built into the kernel (panels, buttons, touch, sound), so
 # there is nothing to wait for here but the data partition; Wi-Fi and the clock come up in the background.
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export LANG=C.UTF-8 LC_CTYPE=C.UTF-8
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 mount -t devtmpfs devtmpfs /dev 2>/dev/null
@@ -86,7 +87,8 @@ data || {
     fsck.exfat -y ${DISK}p4 >/dev/null 2>&1
     data
 } ||
-    # formatted another way on a computer (FAT32...): whatever the kernel can mount
+    # Explicit UTF-8 on FAT32: the kernel default iocharset is ASCII.
+    mount -t vfat -o noatime,uid=0,gid=0,fmask=0000,dmask=0000,utf8=1 ${DISK}p4 /data 2>/dev/null ||
     mount -o noatime ${DISK}p4 /data 2>/dev/null || {
     # nothing readable: the menu still comes up (and says so), with nothing kept until the next boot
     mount -t tmpfs -o mode=0755 tmpfs /data

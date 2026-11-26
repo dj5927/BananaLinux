@@ -1,0 +1,261 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Preserve Korean filenames and normalize resource lookup
+
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -108,6 +108,7 @@
+     libiconv = subproject('libiconv', default_options: libiconv_options).get_variable('libiconv')
+ endif
+ global_dependencies += libiconv
++global_dependencies += dependency('icu-uc', required: true)
+ 
+ zlib = dependency('zlib', allow_fallback: false, method: 'pkg-config', required: get_option('zlib_system').disable_auto_if(default_system_disabled).enable_auto_if(default_system_enabled))
+ if not zlib.found()
+--- a/src/util/encoding.h
++++ b/src/util/encoding.h
+@@ -15,6 +15,7 @@
+ #include <iconv.h>
+ #include <uchardet.h>
+ #include <errno.h>
++#include "banana_filename.h"
+ 
+ namespace Encoding {
+ 
+@@ -37,7 +38,13 @@
+         return std::string(str);
+     }
+     
++    // ICU conversion also handles legacy CP949/CP932 when the host glibc
++    // converter was stripped. Preserve the original strict error behavior.
++    std::string converted;
++    if (banana_name::decode(str,charset,converted)) return converted;
+     iconv_t cd = iconv_open("UTF-8", charset);
++    if (cd == (iconv_t)-1)
++        throw Exception(Exception::MKXPError, "Unsupported encoding: %s", charset);
+     
+     size_t inLen = str.size();
+     size_t outLen = inLen * 4;
+@@ -62,6 +69,10 @@
+ }
+ 
+ static std::string convertString(std::string &str) {
++    if (banana_name::validUtf8(str)) return str;
++    std::string converted;
++    const char* p=banana_name::preferred();
++    if (p && banana_name::decode(str,p,converted)) return converted;
+     return convertString(str, getCharset(str).c_str());
+ }
+ }
+--- a/src/filesystem/filesystem.cpp
++++ b/src/filesystem/filesystem.cpp
+@@ -34,6 +34,8 @@
+ #include <physfs.h>
+ 
+ #include <algorithm>
++#include "util/banana_filename.h"
++#include "util/encoding.h"
+ #include <dirent.h>
+ #include <map>
+ #include <set>
+@@ -266,8 +268,10 @@
+ }
+ 
+ static void strTolower(std::string &str) {
+-  for (size_t i = 0; i < str.size(); ++i)
+-    str[i] = static_cast<char>(tolower(static_cast<unsigned char>(str[i])));
++  if (!banana_name::validUtf8(str) && !banana_name::preferred()) {
++    try { str=banana_name::key(str,Encoding::getCharset(str).c_str()); return; } catch (...) {}
++  }
++  str=banana_name::key(str);
+ }
+ 
+ const Uint32 SDL_RWOPS_PHYSFS = SDL_RWOPS_UNKNOWN + 10;
+@@ -711,7 +715,7 @@
+ static PHYSFS_EnumerateCallbackResult
+ openReadEnumCB(void *d, const char *dirpath, const char *filename) {
+   OpenReadEnumData &data = *static_cast<OpenReadEnumData *>(d);
+-  char buffer[512];
++  std::string buffer;
+   const char *fullPath;
+ 
+   if (data.stopSearching)
+@@ -724,8 +728,8 @@
+   if (!*dirpath) {
+     fullPath = filename;
+   } else {
+-    snprintf(buffer, sizeof(buffer), "%s/%s", dirpath, filename);
+-    fullPath = buffer;
++    buffer=std::string(dirpath)+"/"+filename;
++    fullPath=buffer.c_str();
+   }
+ 
+   char last = filename[data.filenameN];
+@@ -737,8 +741,10 @@
+ 
+   /* If the path cache is active, translate from lower case
+    * to mixed case path */
+-  if (data.pathTrans)
++  if (data.pathTrans) {
++    if (!data.pathTrans->contains(fullPath)) return PHYSFS_ENUM_OK;
+     fullPath = (*data.pathTrans)[fullPath].c_str();
++  }
+ 
+   PHYSFS_File *phys = PHYSFS_openRead(fullPath);
+ 
+@@ -764,32 +770,13 @@
+ 
+ void FileSystem::openRead(OpenHandler &handler, const char *filename) {
+   std::string filename_nm = normalize(filename, false, false);
+-  char buffer[512];
+-  size_t len = strcpySafe(buffer, filename_nm.c_str(), sizeof(buffer), -1);
+-  char *delim;
+-
+-  if (p->havePathCache)
+-    for (size_t i = 0; i < len; ++i)
+-      buffer[i] = tolower(buffer[i]);
+-
+-  /* Find the deliminator separating directory and file name */
+-  for (delim = buffer + len; delim > buffer; --delim)
+-    if (*delim == '/')
+-      break;
+-
+-  const bool root = (delim == buffer);
+-
+-  const char *file = buffer;
+-  const char *dir = "";
+-
+-  if (!root) {
+-    /* Cut the buffer in half so we can use it
+-     * for both filename and directory path */
+-    *delim = '\0';
+-    file = delim + 1;
+-    dir = buffer;
+-  }
+-  OpenReadEnumData data(handler, file, len + buffer - delim - !root,
++  if (p->havePathCache) strTolower(filename_nm);
++  const auto delim=filename_nm.find_last_of('/');
++  std::string dirName=delim==std::string::npos ? "" : filename_nm.substr(0,delim);
++  std::string fileName=delim==std::string::npos ? filename_nm : filename_nm.substr(delim+1);
++  const char* dir=dirName.c_str();
++  const char* file=fileName.c_str();
++  OpenReadEnumData data(handler, file, fileName.size(),
+                         p->havePathCache ? &p->pathCache : 0);
+ 
+   if (p->havePathCache) {
+@@ -842,13 +829,9 @@
+   return resourceExists(filename);
+ }
+ 
+-/* Lowercase only ASCII bytes. UTF-8 game filenames stay byte-for-byte
+- * unchanged outside ASCII; never pass negative signed chars to tolower(). */
++// Shared Unicode case and normalization key for read-only resource lookups.
+ static std::string resourceLower(std::string text) {
+-  for (size_t i = 0; i < text.size(); ++i) {
+-    const unsigned char c = static_cast<unsigned char>(text[i]);
+-    if (c >= 'A' && c <= 'Z') text[i] = static_cast<char>(c + ('a' - 'A'));
+-  }
++  strTolower(text);
+   return text;
+ }
+ 
+--- a/src/config.cpp
++++ b/src/config.cpp
+@@ -246,6 +246,7 @@
+     SET_STRINGOPT(execName, execName);
+     SET_OPT(allowSymlinks, boolean);
+     SET_OPT(pathCache, boolean);
++    if (SDL_getenv("BANANA_RPG_CONFIG")) pathCache=true;
+     SET_OPT_CUSTOMKEY(jit.enabled, JITEnable, boolean);
+     SET_OPT_CUSTOMKEY(jit.verboseLevel, JITVerboseLevel, integer);
+     SET_OPT_CUSTOMKEY(jit.maxCache, JITMaxCache, integer);
+--- a/binding/binding-mri.cpp
++++ b/binding/binding-mri.cpp
+@@ -1306,6 +1306,7 @@
+     ruby_init();
+     
+     std::vector<const char*> rubyArgsC{"mkxp-z"};
++    rubyArgsC.push_back("-EUTF-8:UTF-8");
+     rubyArgsC.push_back("-e ");
+ #if RAPI_FULL >= 190 && RAPI_FULL < 200
+     // Ruby 1.9's embedded gem prelude is unnecessary for RGSS and is fragile
+--- /dev/null
++++ b/src/util/banana_filename.h
+@@ -0,0 +1,78 @@
++#pragma once
++// Keep filenames in UTF-8 for lookup without renaming original files.
++// ICU is already used by EasyRPG; MKXP uses the same library on BananaOS.
++#include <unicode/ucnv.h>
++#include <unicode/ucnv_err.h>
++#include <unicode/unistr.h>
++#include <unicode/normalizer2.h>
++#include <unicode/utf8.h>
++#include <cstdlib>
++#include <cstring>
++#include <string>
++#include <vector>
++
++namespace banana_name {
++inline bool validUtf8(const std::string& s) {
++    const auto* p=reinterpret_cast<const uint8_t*>(s.data());
++    int32_t i=0, n=static_cast<int32_t>(s.size());
++    while(i<n) { UChar32 cp; U8_NEXT(p,i,n,cp); if(cp<0) return false; }
++    return true;
++}
++inline const char* codepage(const char* name) {
++    if (!name || !*name) return nullptr;
++    if (!std::strcmp(name,"949")) return "windows-949";
++    if (!std::strcmp(name,"932")) return "windows-932";
++    if (!std::strcmp(name,"1252")) return "windows-1252";
++    if (!std::strcmp(name,"65001")) return "UTF-8";
++    return name;
++}
++inline const char* preferred() {
++    return codepage(std::getenv("BANANA_RPG_FILENAME_ENCODING"));
++}
++// Strict conversion: a wrong encoding must not silently substitute U+FFFD.
++inline bool decode(const std::string& s,const char* enc,std::string& out) {
++    if (!enc || !*enc) return false;
++    UErrorCode ec=U_ZERO_ERROR;
++    UConverter* cv=ucnv_open(codepage(enc),&ec);
++    if (U_FAILURE(ec) || !cv) return false;
++    ucnv_setToUCallBack(cv,UCNV_TO_U_CALLBACK_STOP,nullptr,nullptr,nullptr,&ec);
++    if (U_FAILURE(ec)) { ucnv_close(cv); return false; }
++    const int32_t cap=static_cast<int32_t>(s.size()*2+2);
++    std::vector<UChar> buf(cap);
++    const int32_t len=ucnv_toUChars(cv,buf.data(),cap,s.data(),static_cast<int32_t>(s.size()),&ec);
++    ucnv_close(cv);
++    if (U_FAILURE(ec)) return false;
++    out.clear();
++    icu::UnicodeString(buf.data(),len).toUTF8String(out);
++    return true;
++}
++inline std::string utf8(const std::string& s,const char* detected=nullptr) {
++    if (validUtf8(s)) return s;
++    std::string converted;
++    const char* p=preferred();
++    if (p && decode(s,p,converted)) return converted;
++    if (detected && decode(s,detected,converted)) return converted;
++    return s;
++}
++// Canonical composition and Unicode case folding, including decomposed Hangul.
++// Never use the folded spelling for physical I/O; use the stored original path.
++inline std::string key(const std::string& raw,const char* detected=nullptr) {
++    auto s=utf8(raw,detected);
++    if (!validUtf8(s)) {
++        for (auto& c:s) if (c>='A' && c<='Z') c=static_cast<char>(c+32);
++        return s;
++    }
++    UErrorCode ec=U_ZERO_ERROR;
++    auto u=icu::UnicodeString::fromUTF8(s);
++    u.foldCase();
++    const auto* n=icu::Normalizer2::getNFCInstance(ec);
++    if (U_SUCCESS(ec)) {
++        icu::UnicodeString normalized;
++        n->normalize(u,normalized,ec);
++        if (U_SUCCESS(ec)) u=normalized;
++    }
++    std::string result;
++    u.toUTF8String(result);
++    return result;
++}
++}

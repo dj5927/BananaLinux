@@ -1,0 +1,1 @@
+export LANG=C.UTF-8 LC_CTYPE=C.UTF-8

@@ -1,0 +1,15 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Load native read-only resource filename adapter
+
+--- a/binding/binding-mri.cpp
++++ b/binding/binding-mri.cpp
+@@ -1111,6 +1111,9 @@
+     }
+     
+     /* Execute preloaded scripts */
++    if (const char *bananaResourcePreload = std::getenv("BANANA_RPG_RESOURCE_PRELOAD")) {
++        if (*bananaResourcePreload) runCustomScript(bananaResourcePreload);
++    }
+     if (const char *portablePreloadDir = std::getenv("MKXP_PORTABLE_PRELOAD_DIR")) {
+         static const char *portablePreloads[] = {
+             "ruby_classic_wrap.rb",
