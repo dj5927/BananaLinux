@@ -24,7 +24,10 @@ int main(int argc, char** argv)
 		  << "menu\t\t%ldh %02ldm\t%ldt %02ldmin\n"
 		  << "menu\t\t%.1f MB\t%.1f Mt\n"
 		  << "menu\t\tKeep %s\tSäilytä %s\n"
-		  << "menu\t\tHello {name}\tHei {name}\n";
+		  << "menu\t\tHello {name}\tHei {name}\n"
+		  << "menu\t\tFrom {name} to {name}\t{name} - {name}\n"
+		  << "menu\t\tFor {package's handheld}\tDevice {package's handheld}\n"
+		  << "menu\t\t{anything}\tNever capture all text\n";
 	}
 	if (!lang::load(dir, "xx", { "menu" })) { fprintf(stderr, "FAIL the test language didn't load\n"); return 1; }
 	same("a number", lang::tr("Slot 3"), "Paikka 3");
@@ -38,6 +41,9 @@ int main(int argc, char** argv)
 	same("not a decimal", lang::tr("big MB"), "big MB");
 	same("text where text goes", lang::tr("Keep both"), "Säilytä both");
 	same("a named slot", lang::tr("Hello Joar"), "Hei Joar");
+	same("repeated slots", lang::tr("From Alice to Bob"), "Alice - Bob");
+	same("named slot with punctuation", lang::tr("For RG DS Plus"), "Device RG DS Plus");
+	same("no wildcard-only capture", lang::tr("Unrelated game title"), "Unrelated game title");
 	if (!fails) fprintf(stderr, "lang-raw-test: all passed\n");
 	return fails ? 1 : 0;
 }

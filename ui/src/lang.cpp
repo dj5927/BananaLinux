@@ -27,7 +27,9 @@ namespace banana::lang
 				{
 					size_t e = s.find('}', i);
 					bool name = e != std::string::npos && e > i + 1;
-					for (size_t k = i + 1; name && k < e; k++) name = (s[k] >= 'a' && s[k] <= 'z') || s[k] == '_';
+					for (size_t k = i + 1; name && k < e; k++)
+						name = (s[k] >= 'a' && s[k] <= 'z') || (s[k] >= 'A' && s[k] <= 'Z') ||
+							(s[k] >= '0' && s[k] <= '9') || s[k] == '_' || s[k] == ' ' || s[k] == '\'';
 					if (name) { flush(); out.push_back({ s.substr(i, e - i + 1), true, true }); i = e + 1; continue; }
 				}
 				if (s[i] == '%' && i + 1 < s.size())
@@ -86,15 +88,16 @@ namespace banana::lang
 		{
 			// named ones by name, printf's in the order they come (the translator may move them, not swap two)
 			std::vector<std::string> printfCaps;
-			std::unordered_map<std::string, std::string> named;
+			std::unordered_map<std::string, std::vector<std::string>> named;
+			std::unordered_map<std::string, size_t> used;
 			for (size_t i = 0, c = 0; i < p.en.size(); i++)
-				if (p.en[i].slot) { if (p.en[i].named) named[p.en[i].text] = caps[c]; else printfCaps.push_back(caps[c]); c++; }
+				if (p.en[i].slot) { if (p.en[i].named) named[p.en[i].text].push_back(caps[c]); else printfCaps.push_back(caps[c]); c++; }
 			std::string out;
 			size_t next = 0;
 			for (auto& x : p.tr)
 			{
 				if (!x.slot) out += x.text;
-				else if (x.named) { auto it = named.find(x.text); out += it != named.end() ? it->second : x.text; }
+				else if (x.named) { auto it = named.find(x.text); out += it != named.end() ? it->second[std::min(used[x.text]++, it->second.size() - 1)] : x.text; }
 				else out += next < printfCaps.size() ? printfCaps[next++] : x.text;
 			}
 			return out;
@@ -243,9 +246,10 @@ namespace banana::lang
 				if (!fl.second && fl.first->second != tr) fl.first->second.clear();	// (two meanings: no guess)
 			}
 			std::vector<Piece> pe = pieces(en);
-			bool slots = false;
-			for (auto& p : pe) slots = slots || p.slot;
-			if (slots) patterns.push_back({ pe, pieces(tr) });
+			bool slots = false, fixedText = false;
+			for (auto& p : pe) { slots = slots || p.slot; fixedText = fixedText || (!p.slot && !p.text.empty()); }
+			// A placeholder alone must not capture arbitrary file names or labels.
+			if (slots && fixedText) patterns.push_back({ pe, pieces(tr) });
 		}
 		// the most specific first: the longest fixed text
 		auto fixed = [](const Pattern& p) { size_t n = 0; for (auto& x : p.en) if (!x.slot) n += x.text.size(); return n; };

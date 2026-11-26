@@ -9,4 +9,7 @@ mkdir -p $S/data $S/apps $S/tiles
 cd $S
 export DK_DATA=$S/data DK_TOP=${BANANA_TOP:-DSI-2} DK_TOUCH_BOTTOM=${BANANA_TOUCH:-fe5e0000.i2c}
 export RNDS_STORE_CLI=/usr/share/banana/apps/store/rocknixds-store RNDS_STORE_DATA=$S/data RNDS_STORE_PLATFORM=banana
+# Use the menu's language; keep catalog IDs and upstream download URLs intact.
+BANANA_UI_LANG=$(sed -n 's/^[[:space:]]*language[[:space:]]*=[[:space:]]*//p' /data/banana/settings.conf | tail -n 1 | tr -d ' \r\t')
+export BANANA_UI_LANG
 exec /usr/bin/rocknixds-store-ui --backend kms

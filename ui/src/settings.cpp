@@ -1980,6 +1980,7 @@ namespace banana
 		if (!R) return;
 		std::vector<rnds::TextLine> lines = rnds::layoutWrap(rnds::utf8to32(t), st, (int)width, maxLines);
 		float lh = std::round(size * 1.4f);
+		AsNamed named(*this); // the full sentence was translated before wrapping
 		for (size_t i = 0; i < lines.size(); i++) text(toUtf8(lines[i].text), false, size, x, top + i * lh, c);
 	}
 
@@ -2498,8 +2499,15 @@ namespace banana
 		else if (cur.kind == Item::CHOICE && cur.at < (int)cur.hints.size() && !cur.hints[cur.at].empty())
 		{
 			// the row in a sentence, then what the chosen option does, brighter (it changes as the option does)
-			helpText(help, HELP_TOP, HINT_TOP - 12, p.muted);
-			helpText(cur.hints[cur.at], HINT_TOP, HELP_BOTTOM, p.ink);
+			float hintTop = HINT_TOP;
+			if (lang::current().code == "ko")
+			{
+				float z; int n;
+				if (helpFit(help, HELP_TOP, HINT_TOP - 12, z, n))
+					hintTop = std::min(HINT_TOP, HELP_TOP + std::max(1, n) * std::round(z * 1.4f) + 22.0f);
+			}
+			helpText(help, HELP_TOP, hintTop - 12, p.muted);
+			helpText(cur.hints[cur.at], hintTop, HELP_BOTTOM, p.ink);
 		}
 		else helpText(help, HELP_TOP, HELP_BOTTOM, p.muted);
 		be->endScreen();

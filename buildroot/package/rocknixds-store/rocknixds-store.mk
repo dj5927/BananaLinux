@@ -11,7 +11,7 @@ ROCKNIXDS_STORE_VERSION = ed9e3b543e6891ec4d75ceb490f73d37ebe84002
 ROCKNIXDS_STORE_SITE = $(call github,JorreFog,ROCKNIXDS,$(ROCKNIXDS_STORE_VERSION))
 ROCKNIXDS_STORE_LICENSE = MIT
 ROCKNIXDS_STORE_LICENSE_FILES = LICENSE
-ROCKNIXDS_STORE_DEPENDENCIES = libdrm sdl2
+ROCKNIXDS_STORE_DEPENDENCIES = libdrm sdl2 freetype
 
 ROCKNIXDS_STORE_DK_SRC = plat.c plat_kms.c plat_sdl.c plat_headless.c input_evdev.c audio_alsa.c gfx.c font.c png.c
 
@@ -20,8 +20,9 @@ define ROCKNIXDS_STORE_BUILD_CMDS
 	cd $(@D)/store && $(TARGET_CC) $(TARGET_CFLAGS) -O2 -w -DBANANA \
 		-DSTORE_VERSION="\"$$(cat VERSION)-banana\"" -I../dodakvarter/src \
 		-I$(STAGING_DIR)/usr/include/libdrm -I$(STAGING_DIR)/usr/include/SDL2 \
+		-I$(STAGING_DIR)/usr/include/freetype2 -I$(BR2_EXTERNAL_BANANA_PATH)/../ui/src -I$(BR2_EXTERNAL_BANANA_PATH)/../store/ko \
 		-o store src/main.c src/job.c src/catalog.c $(addprefix ../dodakvarter/src/,$(ROCKNIXDS_STORE_DK_SRC)) \
-		-ldrm -lm -lpthread -ldl
+		-ldrm -lm -lpthread -ldl -lfreetype
 endef
 
 # the app and its package manager; BananaOS's catalog beside it (store/ in BananaLinux: the copy used until the one on

@@ -19,7 +19,7 @@ define BANANA_UI_BUILD_CMDS
 		LDFLAGS="$(TARGET_LDFLAGS)" banana-leaseshim.so libasound_module_pcm_banana_eq.so
 	# Activity (store/apps/activity, #213): built here from its source, not the prebuilt binary beside it
 	$(TARGET_CXX) $(TARGET_CXXFLAGS) -O2 -std=c++17 $(TARGET_LDFLAGS) -o $(@D)/banana-activity \
-		$(BR2_EXTERNAL_BANANA_PATH)/../store/apps/activity/banana-activity.cpp
+		-I$(STAGING_DIR)/usr/include/freetype2 $(BR2_EXTERNAL_BANANA_PATH)/../store/apps/activity/banana-activity.cpp -lfreetype
 endef
 
 define BANANA_UI_INSTALL_TARGET_CMDS

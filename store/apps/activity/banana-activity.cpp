@@ -56,6 +56,10 @@
 
 #include "activity-font.h"
 #include "activity-logo.h"
+#include "../../../ui/src/app-fallback-font.h"
+
+static bool gKo = false;
+static const char *L10(const char *en, const char *ko) { return gKo ? ko : en; }
 
 #ifdef _WIN32
 #define MAKE_DIR(p) _mkdir(p)
@@ -751,7 +755,11 @@ public:
 		for (auto cp : cps) {
 			if (up) cp = upperCp(cp);
 			const AFGlyph *g = findGlyph(f, cp);
-			if (!g) g = findGlyph(f, '?');
+			if (!g) {
+				FT_GlyphSlot u = banana_af_glyph(cp, U(px));
+				if (u) { total += banana_af_advance(u); n++; continue; }
+				g = findGlyph(f, '?');
+			}
 			total += g ? g->adv : U(px) / 2;
 			n++;
 		}
@@ -774,7 +782,15 @@ public:
 			int t = 0;
 			for (size_t i = 0; i < v.size(); i++) {
 				const AFGlyph *g = findGlyph(f, v[i]);
-				if (!g) g = findGlyph(f, '?');
+				if (!g) {
+					FT_GlyphSlot u = banana_af_glyph(v[i], U(px));
+					if (u) {
+						t += banana_af_advance(u);
+						if (i + 1 < v.size()) t += lsDev;
+						continue;
+					}
+					g = findGlyph(f, '?');
+				}
 				t += g ? g->adv : U(px) / 2;
 				if (i + 1 < v.size()) t += lsDev;
 			}
@@ -798,7 +814,19 @@ public:
 		int pen = x0;
 		for (size_t i = 0; i < cps.size(); i++) {
 			const AFGlyph *g = findGlyph(f, cps[i]);
-			if (!g) g = findGlyph(f, '?');
+			if (!g) {
+				FT_GlyphSlot u = banana_af_glyph(cps[i], U(px));
+				if (u) {
+					for (unsigned row = 0; row < u->bitmap.rows; row++)
+						for (unsigned col = 0; col < u->bitmap.width; col++)
+							blend(pen + u->bitmap_left + col, y0 + f->asc - u->bitmap_top + row,
+							      color, banana_af_alpha(&u->bitmap, col, row));
+					pen += banana_af_advance(u);
+					if (i + 1 < cps.size()) pen += lsDev;
+					continue;
+				}
+				g = findGlyph(f, '?');
+			}
 			if (!g) continue;
 			if (g->w > 0) {
 				int stride = (g->w + 7) / 8;
@@ -856,12 +884,12 @@ static time_t dayStart(time_t t)
 static std::string fmtDuration(long long secs)
 {
 	if (secs < 0) secs = 0;
-	if (secs < 60) return "<1m";
+	if (secs < 60) return L10("<1m", "1분 미만");
 	long long m = secs / 60;
-	if (m < 60) return std::to_string((long long)m) + "m";
+	if (m < 60) return std::to_string((long long)m) + L10("m", "분");
 	long long hh = m / 60, mm = m % 60;
 	char buf[32];
-	snprintf(buf, sizeof(buf), "%lldh %02lldm", hh, mm);
+	snprintf(buf, sizeof(buf), L10("%lldh %02lldm", "%lld시간 %02lld분"), hh, mm);
 	return buf;
 }
 
@@ -892,7 +920,8 @@ static std::string fmtDateLong(time_t t)
 	struct tm tm;
 	localTime(t, &tm);
 	char buf[32];
-	snprintf(buf, sizeof(buf), "%02d %s", tm.tm_mday, MONTHS[tm.tm_mon]);
+	if (gKo) snprintf(buf, sizeof(buf), "%d월 %d일", tm.tm_mon + 1, tm.tm_mday);
+	else snprintf(buf, sizeof(buf), "%02d %s", tm.tm_mday, MONTHS[tm.tm_mon]);
 	return buf;
 }
 
@@ -900,7 +929,8 @@ static std::string fmtWeekday(time_t t)
 {
 	struct tm tm;
 	localTime(t, &tm);
-	return WEEKDAYS[tm.tm_wday];
+	static const char *ko[] = {"일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"};
+	return gKo ? ko[tm.tm_wday] : WEEKDAYS[tm.tm_wday];
 }
 
 static std::string fmtDateNumeric(time_t t)
@@ -908,7 +938,8 @@ static std::string fmtDateNumeric(time_t t)
 	struct tm tm;
 	localTime(t, &tm);
 	char buf[16];
-	snprintf(buf, sizeof(buf), "%02d.%02d.%04d", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
+	if (gKo) snprintf(buf, sizeof(buf), "%04d.%02d.%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+	else snprintf(buf, sizeof(buf), "%02d.%02d.%04d", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
 	return buf;
 }
 
@@ -948,9 +979,9 @@ static std::string sysName(const std::string &id)
 {
 	static const struct { const char *id, *name; } NAMES[] = {
 		{ "nds", "NDS" }, { "gba", "GBA" }, { "gbc", "GBC" }, { "gb", "GB" }, { "snes", "SNES" },
-		{ "nes", "NES" }, { "n64", "N64" }, { "psx", "PSX" }, { "megadrive", "MD" }, { "arcade", "ARCADE" },
-		{ "ports", "PC" }, { "favorites", "FAV" }, { "recently-played", "RECENT" }, { "storeapps", "APPS" },
-		{ "dodakvarter", "DODA" }, { "rocknixdsstore", "STORE" }, { "rocknixdsbank", "BANK" },
+		{ "nes", "NES" }, { "n64", "N64" }, { "psx", "PSX" }, { "megadrive", "MD" }, { "arcade", L10("ARCADE", "오락실") },
+		{ "ports", "PC" }, { "favorites", L10("FAV", "즐겨찾기") }, { "recently-played", L10("RECENT", "최근") }, { "storeapps", L10("APPS", "앱") },
+		{ "dodakvarter", "DODA" }, { "rocknixdsstore", L10("STORE", "스토어") }, { "rocknixdsbank", L10("BANK", "보관함") },
 	};
 	for (auto &n : NAMES)
 		if (id == n.id) return n.name;
@@ -1433,23 +1464,23 @@ static int dustyCount(const Data &d, long long now)
 
 static const char *periodName(Period p)
 {
-	return p == P_WEEK ? "THIS WEEK" : p == P_MONTH ? "THIS MONTH" : "ALL TIME";
+	return p == P_WEEK ? L10("THIS WEEK", "이번 주") : p == P_MONTH ? L10("THIS MONTH", "이번 달") : L10("ALL TIME", "전체 기간");
 }
 
 static const char *periodShort(Period p)
 {
-	return p == P_WEEK ? "WEEK" : p == P_MONTH ? "MONTH" : "ALL TIME";
+	return p == P_WEEK ? L10("WEEK", "주간") : p == P_MONTH ? L10("MONTH", "월간") : L10("ALL TIME", "전체 기간");
 }
 
 static const char *periodPlayed(Period p)
 {
-	return p == P_WEEK ? "LAST 7 DAYS PLAYED" : p == P_MONTH ? "LAST 30 DAYS PLAYED" : "ALL TIME PLAYED";
+	return p == P_WEEK ? L10("LAST 7 DAYS PLAYED", "최근 7일 플레이 시간") : p == P_MONTH ? L10("LAST 30 DAYS PLAYED", "최근 30일 플레이 시간") : L10("ALL TIME PLAYED", "전체 플레이 시간");
 }
 
 static std::string insightText(const Data &d, const Agg &a, Period p, long long now)
 {
 	if (a.sessions == 0)
-		return std::string("NO SESSIONS IN ") + periodName(p) + " YET";
+		return gKo ? std::string(periodName(p)) + " 기록 없음" : std::string("NO SESSIONS IN ") + periodName(p) + " YET";
 	long long topSys = 0, topGame = 0;
 	std::string ts = topKey(a.sys, &topSys);
 	std::string tg = topKey(a.game, &topGame);
@@ -1463,32 +1494,32 @@ static std::string insightText(const Data &d, const Agg &a, Period p, long long 
 
 	char buf[160];
 	if (sysPct >= 45 && !ts.empty()) {
-		snprintf(buf, sizeof(buf), "%s IS %d%% OF YOUR PLAY TIME", sysName(ts).c_str(), sysPct);
+		snprintf(buf, sizeof(buf), L10("%s IS %d%% OF YOUR PLAY TIME", "%s 플레이 비중 %d%%"), sysName(ts).c_str(), sysPct);
 		return buf;
 	}
 	if (nightPct >= 35) {
-		snprintf(buf, sizeof(buf), "YOU PLAY MOST AT NIGHT (%d%%)", nightPct);
+		snprintf(buf, sizeof(buf), L10("YOU PLAY MOST AT NIGHT (%d%%)", "심야 플레이 비중이 가장 높음(%d%%)"), nightPct);
 		return buf;
 	}
 	if (gamePct >= 25 && !tg.empty()) {
 		auto it = d.gameIndex.find(tg);
 		std::string name = it == d.gameIndex.end() ? tg : d.games[(size_t)it->second].title;
-		snprintf(buf, sizeof(buf), "%s TAKES %d%% OF YOUR TIME", upperStr(name).c_str(), gamePct);
+		snprintf(buf, sizeof(buf), L10("%s TAKES %d%% OF YOUR TIME", "%s 플레이 비중 %d%%"), upperStr(name).c_str(), gamePct);
 		return buf;
 	}
 	if (streak >= 3) {
-		snprintf(buf, sizeof(buf), "%d-DAY PLAY STREAK \xC2\xB7 %d SESSIONS", streak, sessions);
+		snprintf(buf, sizeof(buf), L10("%d-DAY PLAY STREAK \xC2\xB7 %d SESSIONS", "%d일 연속 플레이 · %d회 실행"), streak, sessions);
 		return buf;
 	}
 	if (avg >= 2700) {
-		snprintf(buf, sizeof(buf), "YOUR SESSIONS RUN LONG: %s EACH", fmtDuration(avg).c_str());
+		snprintf(buf, sizeof(buf), L10("YOUR SESSIONS RUN LONG: %s EACH", "평균 플레이 시간: %s"), fmtDuration(avg).c_str());
 		return buf;
 	}
 	if (dusty >= 3) {
-		snprintf(buf, sizeof(buf), "%d GAMES UNTOUCHED FOR A MONTH", dusty);
+		snprintf(buf, sizeof(buf), L10("%d GAMES UNTOUCHED FOR A MONTH", "한 달 동안 실행하지 않은 게임 %d개"), dusty);
 		return buf;
 	}
-	snprintf(buf, sizeof(buf), "%d SESSIONS \xC2\xB7 %s IN %s", sessions, fmtDuration(a.secs).c_str(), periodName(p));
+	snprintf(buf, sizeof(buf), L10("%d SESSIONS \xC2\xB7 %s IN %s", "%d회 플레이 · %s (%s)"), sessions, fmtDuration(a.secs).c_str(), periodName(p));
 	return buf;
 }
 
@@ -1511,13 +1542,13 @@ struct Power {
 
 static std::string relTime(long long last, long long now)
 {
-	if (last <= 0) return "never";
+	if (last <= 0) return L10("never", "기록 없음");
 	long long d = (now - last) / 86400;
-	if (d <= 0) return "today";
-	if (d == 1) return "yesterday";
-	if (d < 30) return std::to_string((long long)d) + "d ago";
-	if (d < 365) return std::to_string((long long)(d / 30)) + "mo ago";
-	return std::to_string((long long)(d / 365)) + "y ago";
+	if (d <= 0) return L10("today", "오늘");
+	if (d == 1) return L10("yesterday", "어제");
+	if (d < 30) return std::to_string((long long)d) + L10("d ago", "일 전");
+	if (d < 365) return std::to_string((long long)(d / 30)) + L10("mo ago", "개월 전");
+	return std::to_string((long long)(d / 365)) + L10("y ago", "년 전");
 }
 
 static int gameScore(const Game &g, long long now)
@@ -1545,14 +1576,14 @@ static Pick pickAmong(const Data &d, const std::vector<int> &list, long long now
 		int days = daysSince(g.last, now);
 		if (days >= 60) {
 			int months = days / 30;
-			best.reason = months < 2 ? std::to_string(days) + " days untouched"
-						 : std::to_string(months) + " months untouched";
+			best.reason = months < 2 ? std::to_string(days) + L10(" days untouched", "일 동안 미실행")
+						 : std::to_string(months) + L10(" months untouched", "개월 동안 미실행");
 		} else if (g.plays <= 2) {
-			best.reason = "You stopped after " + std::to_string(g.plays) + " play" + (g.plays == 1 ? "" : "s");
+			best.reason = gKo ? std::to_string(g.plays) + "회 플레이 후 중단" : "You stopped after " + std::to_string(g.plays) + " play" + (g.plays == 1 ? "" : "s");
 		} else if (g.secs < 3600) {
-			best.reason = "Only " + std::to_string(g.secs / 60) + " min in";
+			best.reason = gKo ? std::to_string(g.secs / 60) + "분만 플레이함" : "Only " + std::to_string(g.secs / 60) + " min in";
 		} else {
-			best.reason = "Not played in " + std::to_string(days) + " days";
+			best.reason = gKo ? std::to_string(days) + "일 동안 미실행" : "Not played in " + std::to_string(days) + " days";
 		}
 	}
 	return best;
@@ -2137,7 +2168,7 @@ void App::drawStatus(Canvas &c)
 	plate.shadowA = 229;
 	c.box(124, 19, 132, 26, plate);
 	drawLogo(c, 132, 22);
-	c.text("ACTIVITY", 157, 24, 16, 0xfffaf0, true, 0, 0, 1.4f);
+	c.text(L10("ACTIVITY", "플레이 기록"), 157, 24, 16, 0xfffaf0, true, 0, 0, 1.4f);
 	int cw = c.text(clock, 622, 20, 20, C_INK, true, 2);
 	c.text(date, 622 - cw - 8, 20, 19, C_INK, false, 2);
 }
@@ -2146,7 +2177,7 @@ void App::drawSheet(Canvas &c) { c.box(18, 60, 604, 406, sheetStyle()); }
 
 void App::drawChips(Canvas &c, int right, int y)
 {
-	const char *names[3] = { "WEEK", "MONTH", "ALL TIME" };
+	const char *names[3] = { L10("WEEK", "주간"), L10("MONTH", "월간"), L10("ALL TIME", "전체 기간") };
 	Period ps[3] = { P_WEEK, P_MONTH, P_ALL };
 	int x = right;
 	for (int i = 2; i >= 0; i--) {
@@ -2167,7 +2198,7 @@ void App::drawBubble(Canvas &c, const std::string &title, const std::string &sub
 	int px = 26;
 	while (px > 19 && c.textWidth(title, px, true, 0.52f, false) > c.U(maxw)) px--;
 	c.text(title, 320, 69 + (26 - px) / 2, px, C_INK, true, 1, maxw, 0.52f);
-	c.text(sub, 320, 105, 14, C_MUTED, false, 1, 0, 1.3f, true);
+	c.text(sub, 320, 105, 14, C_MUTED, false, 1, maxw, gKo ? 0.3f : 1.3f, true);
 	c.tri(304, 138, 336, 138, 320, 154, C_LINE);
 	c.tri(308, 141, 332, 141, 320, 152, C_BUBBLE);
 }
@@ -2292,12 +2323,11 @@ void App::drawLibRow(Canvas &c, int x, int y, int w, int h, bool sel, int rank, 
 	c.text(num, 38, y + 11, 13, sel ? gAccent.base : C_MUTED, true, 0, 0, 0.8f);
 
 	bool dusty = g.last > 0 && now - g.last > 30LL * 86400;
-	std::string sub = std::string(sysName(g.sys)) + " \xC2\xB7 " + std::to_string(g.plays) + " PLAY" +
-			  (g.plays == 1 ? "" : "S");
+	std::string sub = std::string(sysName(g.sys)) + " \xC2\xB7 " + std::to_string(g.plays) + (gKo ? "회 플레이" : (g.plays == 1 ? " PLAY" : " PLAYS"));
 	if (g.achA >= 0 && g.achB > 0)
-		sub += " \xC2\xB7 " + std::to_string(g.achA) + "/" + std::to_string(g.achB) + " ACH";
+		sub += " \xC2\xB7 " + std::to_string(g.achA) + "/" + std::to_string(g.achB) + L10(" ACH", " 도전과제");
 	sub += " \xC2\xB7 " + relTime(g.last, now);
-	if (dusty) sub = "DUSTY \xC2\xB7 " + sub;
+	if (dusty) sub = L10("DUSTY \xC2\xB7 ", "오랜만에 · ") + sub;
 	c.text(g.title, 64, y + 3, 19, C_INK, true, 0, 260);
 	c.text(sub, 64, y + 22, 11, dusty && !sel ? gAccent.base : C_MUTED, false, 0, 0, 1.1f, true);
 	c.text(fmtDuration(g.secs), 596, y + 8, 18, sel ? C_NAVY : C_INK, true, 2);
@@ -2347,13 +2377,13 @@ void App::drawNextCard(Canvas &c, int x, int y, int w, int h)
 	b.fill = mixColor(gAccent.base, 0.14, C_PANEL);
 	c.box(x, y, w, h, b);
 	c.fill(c.U(x), c.U(y + 3), c.U(4), c.U(h - 6), gAccent.base);
-	c.text("NEXT UP", x + 18, y + 4, 11, gAccent.base, false, 0, 0, 1.4f, true);
+	c.text(L10("NEXT UP", "다음 추천"), x + 18, y + 4, 11, gAccent.base, false, 0, 0, 1.4f, true);
 	if (pick.index >= 0 && pick.index < (int)data.games.size()) {
 		const Game &g = data.games[(size_t)pick.index];
 		c.text(g.title, x + 18, y + 16, 18, C_INK, true, 0, w - 200);
 		c.text(pick.reason, x + w - 16, y + 5, 11, C_MUTED, false, 2, 0, 1.1f, true);
 	} else {
-		c.text("Play a few games and this fills in", x + 18, y + 18, 15, C_MUTED, false, 0, w - 40);
+		c.text(L10("Play a few games and this fills in", "게임을 플레이하면 추천을 표시합니다."), x + 18, y + 18, 15, C_MUTED, false, 0, w - 40);
 	}
 	zone(x, y, w, h, ACT_PICK);
 }
@@ -2361,14 +2391,14 @@ void App::drawNextCard(Canvas &c, int x, int y, int w, int h)
 // VIEWS
 static std::string fmtTotal(long long secs)
 {
-	if (secs <= 0) return "0m";
+	if (secs <= 0) return L10("0m", "0분");
 	return fmtDuration(secs);
 }
 
 static const char *sortLabel(int mode, bool trends)
 {
-	static const char *N[4] = { "Time", "Plays", "Last", "Next" };
-	static const char *T[2] = { "Time", "Name" };
+	static const char *N[4] = { L10("Time", "시간"), L10("Plays", "횟수"), L10("Last", "최근"), L10("Next", "추천") };
+	static const char *T[2] = { L10("Time", "시간"), L10("Name", "이름") };
 	if (trends) return T[mode % 2];
 	return N[mode % 4];
 }
@@ -2403,15 +2433,15 @@ void App::drawLibraryTop(Canvas &c)
 
 	if (period == P_ALL) {
 		if (noHist) {
-			c.text("FROM THE MENU \xC2\xB7 HISTORY STARTS NOW", 44, 166, 12, C_MUTED, false, 0, 0, 1.2f, true);
+			c.text(L10("FROM THE MENU \xC2\xB7 HISTORY STARTS NOW", "메뉴 기록 · 지금부터 기록 시작"), 44, 166, 12, C_MUTED, false, 0, 0, 1.2f, true);
 		} else {
-			c.text("SINCE " + fmtDateNumeric((time_t)data.sessions.front().end), 44, 166, 12, C_MUTED, false,
+			c.text(L10("SINCE ", "기록 시작: ") + fmtDateNumeric((time_t)data.sessions.front().end), 44, 166, 12, C_MUTED, false,
 			       0, 0, 1.2f, true);
 		}
 	} else {
 		long long diff = agg.secs - prevAgg.secs;
 		if (diff == 0) {
-			c.text("SAME AS PREVIOUS " + std::string(period == P_WEEK ? "7 DAYS" : "30 DAYS"), 44, 166, 12,
+			c.text(std::string(gKo ? (period == P_WEEK ? "이전 7일과 동일" : "이전 30일과 동일") : (period == P_WEEK ? "SAME AS PREVIOUS 7 DAYS" : "SAME AS PREVIOUS 30 DAYS")), 44, 166, 12,
 			       C_MUTED, false, 0, 0, 1.2f, true);
 		} else {
 			uint32_t col = diff > 0 ? gAccent.base : C_RED;
@@ -2419,7 +2449,7 @@ void App::drawLibraryTop(Canvas &c)
 			else c.tri(44, 166, 52, 166, 48, 172, col);
 			std::string d = fmtDuration(diff > 0 ? diff : -diff);
 			int w = c.text((diff > 0 ? "+" : "-") + d, 58, 164, 14, col, true, 0, 0, 0.6f);
-			c.text(period == P_WEEK ? "VS PREVIOUS 7 DAYS" : "VS PREVIOUS 30 DAYS", 58 + w + 10, 165, 12,
+			c.text(period == P_WEEK ? L10("VS PREVIOUS 7 DAYS", "이전 7일 대비") : L10("VS PREVIOUS 30 DAYS", "이전 30일 대비"), 58 + w + 10, 165, 12,
 			       C_MUTED, false, 0, 0, 1.2f, true);
 		}
 	}
@@ -2432,14 +2462,14 @@ void App::drawLibraryTop(Canvas &c)
 			if (g.plays > 0) fromStats[g.sys] += g.secs;
 		ts = topKey(fromStats, &topSys);
 	}
-	drawStat(c, 330, 118, std::to_string(agg.sessions), "SESSIONS");
-	drawStat(c, 468, 118, agg.sessions > 0 ? fmtTotal(agg.secs / agg.sessions) : std::string("0m"), "AVG SESSION");
-	drawStat(c, 330, 176, std::to_string(agg.days.size()), "ACTIVE DAYS");
-	drawStat(c, 468, 176, ts.empty() ? std::string("-") : sysName(ts), "TOP SYSTEM");
+	drawStat(c, 330, 118, std::to_string(agg.sessions), L10("SESSIONS", "실행 횟수"));
+	drawStat(c, 468, 118, agg.sessions > 0 ? fmtTotal(agg.secs / agg.sessions) : std::string(L10("0m", "0분")), L10("AVG SESSION", "평균 시간"));
+	drawStat(c, 330, 176, std::to_string(agg.days.size()), L10("ACTIVE DAYS", "활동 일수"));
+	drawStat(c, 468, 176, ts.empty() ? std::string("-") : sysName(ts), L10("TOP SYSTEM", "최다 기종"));
 	c.fill(c.U(316), c.U(120), c.U(2), c.U(92), C_LINE, 60);
 	c.fill(c.U(42), c.U(236), c.U(556), c.U(2), C_LINE, 70);
 
-	c.text("LAST 7 DAYS", 42, 248, 13, C_MUTED, false, 0, 0, 1.4f, true);
+	c.text(L10("LAST 7 DAYS", "최근 7일"), 42, 248, 13, C_MUTED, false, 0, 0, 1.4f, true);
 	long long base = dayStart((time_t)now);
 	long long vals[7];
 	long long mx = 0;
@@ -2449,8 +2479,8 @@ void App::drawLibraryTop(Canvas &c)
 		vals[i] = it == weekAgg.days.end() ? 0 : it->second;
 		if (vals[i] > mx) mx = vals[i];
 	}
-	if (mx > 0) c.text("PEAK " + fmtTotal(mx), 598, 248, 12, C_MUTED, false, 2, 0, 1.2f, true);
-	else c.text("NO SESSIONS THIS WEEK", 598, 248, 12, C_MUTED, false, 2, 0, 1.2f, true);
+	if (mx > 0) c.text(L10("PEAK ", "최고 ") + fmtTotal(mx), 598, 248, 12, C_MUTED, false, 2, 0, 1.2f, true);
+	else c.text(L10("NO SESSIONS THIS WEEK", "이번 주 기록 없음"), 598, 248, 12, C_MUTED, false, 2, 0, 1.2f, true);
 
 	int bw = 40, gap = 30;
 	int x0 = 42 + (556 - (7 * bw + 6 * gap)) / 2;
@@ -2478,7 +2508,7 @@ void App::drawLibraryTop(Canvas &c)
 		time_t dt = (time_t)day;
 		localTime(dt, &tm);
 		bool today = i == 6;
-		c.text(WEEKDAYS3[tm.tm_wday], x + bw / 2, bot + 10, 12, today ? C_INK : C_MUTED, today, 1, 0, 1.2f,
+		c.text(gKo ? fmtWeekday(dt).substr(0, 3) : WEEKDAYS3[tm.tm_wday], x + bw / 2, bot + 10, 12, today ? C_INK : C_MUTED, today, 1, 0, 1.2f,
 		       true);
 		if (today) c.fill(c.U(x + bw / 2 - 5), c.U(bot + 28), c.U(10), c.U(3), gAccent.base);
 	}
@@ -2490,7 +2520,7 @@ void App::drawTimelineTop(Canvas &c)
 {
 	drawStatus(c);
 	drawSheet(c);
-	c.text("DAILY TIMELINE", 42, 92, 13, C_MUTED, false, 0, 0, 1.4f, true);
+	c.text(L10("DAILY TIMELINE", "일별 기록"), 42, 92, 13, C_MUTED, false, 0, 0, 1.4f, true);
 
 	long long day = dayStart((time_t)now) + (long long)dayOffset * 86400;
 	Range r;
@@ -2501,11 +2531,11 @@ void App::drawTimelineTop(Canvas &c)
 	if (dayOffset == 0) {
 		BoxStyle b = chipStyle(true);
 		c.box(532, 84, 66, 22, b);
-		c.text("TODAY", 565, 89, 12, C_KBD_INK, true, 1, 0, 0.8f);
+		c.text(L10("TODAY", "오늘"), 565, 89, 12, C_KBD_INK, true, 1, 0, 0.8f);
 	} else if (dayOffset == -1) {
 		BoxStyle b = chipStyle(false);
 		c.box(514, 84, 84, 22, b);
-		c.text("YESTERDAY", 556, 89, 12, C_MUTED, true, 1, 0, 0.8f);
+		c.text(L10("YESTERDAY", "어제"), 556, 89, 12, C_MUTED, true, 1, 0, 0.8f);
 	}
 
 	c.text(fmtWeekday((time_t)day), 42, 116, 13, gAccent.base, false, 0, 0, 1.6f, true);
@@ -2522,19 +2552,19 @@ void App::drawTimelineTop(Canvas &c)
 	time_t ptt = (time_t)(day - 86400), ntt = (time_t)(day + 86400);
 	localTime(ptt, &ptm);
 	localTime(ntt, &ntm);
-	snprintf(pv, sizeof(pv), "%s %02d", WEEKDAYS3[ptm.tm_wday], ptm.tm_mday);
-	snprintf(nx, sizeof(nx), "%s %02d", WEEKDAYS3[ntm.tm_wday], ntm.tm_mday);
+	snprintf(pv, sizeof(pv), "%s %02d", gKo ? fmtWeekday(ptt).substr(0, 3).c_str() : WEEKDAYS3[ptm.tm_wday], ptm.tm_mday);
+	snprintf(nx, sizeof(nx), "%s %02d", gKo ? fmtWeekday(ntt).substr(0, 3).c_str() : WEEKDAYS3[ntm.tm_wday], ntm.tm_mday);
 	c.text(std::string(pv) + " \xC2\xB7 " + nx, 42, 186, 12, C_MUTED, false, 0, 0, 1.2f, true);
 
-	drawStat(c, 330, 118, std::to_string(d.sessions), "SESSIONS");
-	drawStat(c, 468, 118, fmtTotal(d.secs), "TIME");
-	drawStat(c, 330, 176, d.sessions > 0 ? fmtTotal(d.secs / d.sessions) : std::string("0m"), "AVG");
+	drawStat(c, 330, 118, std::to_string(d.sessions), L10("SESSIONS", "실행 횟수"));
+	drawStat(c, 468, 118, fmtTotal(d.secs), L10("TIME", "시간"));
+	drawStat(c, 330, 176, d.sessions > 0 ? fmtTotal(d.secs / d.sessions) : std::string(L10("0m", "0분")), L10("AVG", "평균"));
 	std::string last = d.lastEndTod > 0 ? fmtClock((time_t)d.lastEndTod) : std::string("-");
-	drawStat(c, 468, 176, last, "LAST");
+	drawStat(c, 468, 176, last, L10("LAST", "최근"));
 	c.fill(c.U(316), c.U(120), c.U(2), c.U(92), C_LINE, 60);
 	c.fill(c.U(42), c.U(236), c.U(556), c.U(2), C_LINE, 70);
 
-	c.text("ACTIVITY BY HOUR", 42, 248, 13, C_MUTED, false, 0, 0, 1.4f, true);
+	c.text(L10("ACTIVITY BY HOUR", "시간대별 기록"), 42, 248, 13, C_MUTED, false, 0, 0, 1.4f, true);
 	long long hmax = 0;
 	int hpeak = -1;
 	for (int h = 0; h < 24; h++)
@@ -2544,7 +2574,7 @@ void App::drawTimelineTop(Canvas &c)
 		}
 	if (hpeak >= 0) {
 		char pk[32];
-		snprintf(pk, sizeof(pk), "PEAK %02d:00", hpeak);
+		snprintf(pk, sizeof(pk), L10("PEAK %02d:00", "최고 %02d:00"), hpeak);
 		c.text(pk, 598, 248, 12, C_MUTED, false, 2, 0, 1.2f, true);
 	}
 
@@ -2571,12 +2601,12 @@ void App::drawTimelineTop(Canvas &c)
 		int x = x0 + h * (bw + gap) + bw / 2;
 		c.text(lab, x, bot + 6, 11, C_MUTED, false, 1, 0, 1.0f);
 	}
-	if (d.sessions == 0) c.text("NO SESSIONS RECORDED IN THIS DATE WINDOW", 42, 300, 12, C_MUTED, false, 0, 0, 1.2f, true);
+	if (d.sessions == 0) c.text(L10("NO SESSIONS RECORDED IN THIS DATE WINDOW", "이 날짜의 기록이 없습니다."), 42, 300, 12, C_MUTED, false, 0, 0, 1.2f, true);
 
 	// time of day: one bar, four parts of the day
-	c.text("TIME OF DAY", 42, 388, 12, C_MUTED, false, 0, 0, 1.4f, true);
+	c.text(L10("TIME OF DAY", "시간대"), 42, 388, 12, C_MUTED, false, 0, 0, 1.4f, true);
 	uint32_t tcol[4] = { mixColor(gAccent.dark, 0.75, C_BG), gAccent.low, gAccent.base, gAccent.light };
-	const char *tn[4] = { "NIGHT 0-6", "MORN 6-12", "AFT 12-18", "EVE 18-24" };
+	const char *tn[4] = { L10("NIGHT 0-6", "심야 0-6"), L10("MORN 6-12", "오전 6-12"), L10("AFT 12-18", "오후 12-18"), L10("EVE 18-24", "저녁 18-24") };
 	int bx = 42, bwd = 556, by = 406, bh = 18;
 	BoxStyle track;
 	track.r = 6;
@@ -2613,26 +2643,26 @@ void App::drawTrendsTop(Canvas &c)
 {
 	drawStatus(c);
 	drawSheet(c);
-	c.text("TRENDS", 42, 92, 13, C_MUTED, false, 0, 0, 1.4f, true);
+	c.text(L10("TRENDS", "통계"), 42, 92, 13, C_MUTED, false, 0, 0, 1.4f, true);
 	drawChips(c, 598, 84);
 
 	c.text(period == P_ALL && data.sessions.empty() ? fmtTotal(statsTotal) : fmtTotal(aggAll.secs), 40, 110, 40,
 	       C_NAVY, true, 0, 0, 0.5f);
 	if (data.sessions.empty()) {
-		c.text("FROM THE MENU \xC2\xB7 HISTORY STARTS NOW", 42, 158, 12, C_MUTED, false, 0, 0, 1.2f, true);
+		c.text(L10("FROM THE MENU \xC2\xB7 HISTORY STARTS NOW", "메뉴 기록 · 지금부터 기록 시작"), 42, 158, 12, C_MUTED, false, 0, 0, 1.2f, true);
 	} else {
-		c.text("SINCE " + fmtDateNumeric((time_t)data.sessions.front().end), 42, 158, 12, C_MUTED, false, 0, 0,
+		c.text(L10("SINCE ", "기록 시작: ") + fmtDateNumeric((time_t)data.sessions.front().end), 42, 158, 12, C_MUTED, false, 0, 0,
 		       1.2f, true);
 	}
-	drawStat(c, 330, 118, std::to_string(aggAll.days.size()), "DAYS PLAYED");
-	drawStat(c, 468, 118, std::to_string(aggAll.game.size()), "GAMES");
-	drawStat(c, 330, 176, std::to_string(aggAll.sys.size()), "SYSTEMS");
-	drawStat(c, 468, 176, fmtTotal(aggAll.longest), "LONGEST");
+	drawStat(c, 330, 118, std::to_string(aggAll.days.size()), L10("DAYS PLAYED", "플레이 일수"));
+	drawStat(c, 468, 118, std::to_string(aggAll.game.size()), L10("GAMES", "게임"));
+	drawStat(c, 330, 176, std::to_string(aggAll.sys.size()), L10("SYSTEMS", "기종"));
+	drawStat(c, 468, 176, fmtTotal(aggAll.longest), L10("LONGEST", "최장 시간"));
 	c.fill(c.U(316), c.U(120), c.U(2), c.U(92), C_LINE, 60);
 	c.fill(c.U(42), c.U(228), c.U(556), c.U(2), C_LINE, 70);
 
-	c.text("LAST 18 WEEKS", 42, 240, 13, C_MUTED, false, 0, 0, 1.4f, true);
-	c.text("EACH SQUARE = A DAY", 598, 240, 11, C_MUTED, false, 2, 0, 1.2f, true);
+	c.text(L10("LAST 18 WEEKS", "최근 18주"), 42, 240, 13, C_MUTED, false, 0, 0, 1.4f, true);
+	c.text(L10("EACH SQUARE = A DAY", "한 칸 = 하루"), 598, 240, 11, C_MUTED, false, 2, 0, 1.2f, true);
 
 	std::map<long long, long long> hm;
 	for (auto &s : data.sessions) hm[dayStart((time_t)s.end)] += s.secs;
@@ -2649,7 +2679,7 @@ void App::drawTrendsTop(Canvas &c)
 	levels[3] = gAccent.base;
 	levels[4] = gAccent.light;
 	int gx = 178, gy = 258, cell = 12, step = 4;
-	const char *wd[7] = { "M", "T", "W", "T", "F", "S", "S" };
+	const char *wd[7] = { L10("M","월"), L10("T","화"), L10("W","수"), L10("T","목"), L10("F","금"), L10("S","토"), L10("S","일") };
 	for (int d = 0; d < 7; d++) c.text(wd[d], gx - 14, gy + d * (cell + step) + 1, 9, C_MUTED, false, 0, 0, 0);
 	for (int w = 0; w < 18; w++) {
 		for (int d = 0; d < 7; d++) {
@@ -2668,7 +2698,7 @@ void App::drawTrendsTop(Canvas &c)
 	}
 
 	// by system: one bar, then its legend
-	c.text("BY SYSTEM", 42, 384, 12, C_MUTED, false, 0, 0, 1.4f, true);
+	c.text(L10("BY SYSTEM", "기종별"), 42, 384, 12, C_MUTED, false, 0, 0, 1.4f, true);
 	struct Seg {
 		std::string name;
 		long long secs;
@@ -2686,7 +2716,7 @@ void App::drawTrendsTop(Canvas &c)
 		long long other = 0;
 		for (size_t i = 4; i < sysRows.size(); i++) other += sysRows[i].second;
 		Seg s;
-		s.name = "OTHER";
+		s.name = L10("OTHER", "기타");
 		s.secs = other;
 		s.col = C_MUTED;
 		segs.push_back(s);
@@ -2709,7 +2739,7 @@ void App::drawTrendsTop(Canvas &c)
 		}
 		sx += seg;
 	}
-	if (tot == 0) c.text("NO PLAY TIME YET", 320, 403, 11, C_MUTED, false, 1, 0, 1.2f, true);
+	if (tot == 0) c.text(L10("NO PLAY TIME YET", "플레이 기록 없음"), 320, 403, 11, C_MUTED, false, 1, 0, 1.2f, true);
 	for (size_t i = 0; i < segs.size(); i++) {
 		int lx = 42 + (int)i * 110;
 		BoxStyle sw;
@@ -2731,13 +2761,13 @@ void App::drawLibraryBottom(Canvas &c)
 
 	if (!lib.empty()) {
 		const Game &g = data.games[(size_t)lib[(size_t)cursor]];
-		std::string sub = std::string(sysName(g.sys)) + " \xC2\xB7 " + std::to_string(g.plays) + " PLAYS";
+		std::string sub = std::string(sysName(g.sys)) + " \xC2\xB7 " + std::to_string(g.plays) + L10(" PLAYS", "회 플레이");
 		if (g.achA >= 0 && g.achB > 0)
-			sub += " \xC2\xB7 " + std::to_string(g.achA) + "/" + std::to_string(g.achB) + " ACH";
+			sub += " \xC2\xB7 " + std::to_string(g.achA) + "/" + std::to_string(g.achB) + L10(" ACH", " 도전과제");
 		sub += " \xC2\xB7 " + relTime(g.last, now);
 		drawBubble(c, g.title, sub);
 	} else {
-		drawBubble(c, "NO GAMES", "Nothing to show for this filter");
+		drawBubble(c, L10("NO GAMES", "게임 없음"), L10("Nothing to show for this filter", "이 조건에 맞는 기록이 없습니다."));
 	}
 
 	drawNextCard(c, 24, 158, 588, 44);
@@ -2762,9 +2792,9 @@ void App::drawLibraryBottom(Canvas &c)
 	}
 
 	drawRail(c, 206, 384, cursor, n);
-	drawFooter(c, "X", filter.empty() ? std::string("System") : sysName(filter), ACT_SYSTEM,
-		   { std::make_pair(std::string("SELECT"), std::string("Timeline")),
-		     std::make_pair(std::string("START"), std::string("Exit")) },
+	drawFooter(c, "X", filter.empty() ? std::string(L10("System", "기종")) : sysName(filter), ACT_SYSTEM,
+		   { std::make_pair(std::string("SELECT"), std::string(L10("Timeline", "일별 기록"))),
+		     std::make_pair(std::string("START"), std::string(L10("Exit", "종료"))) },
 		   "Y", sortLabel(sortMode, false), ACT_SORT);
 }
 
@@ -2784,13 +2814,13 @@ void App::drawTimelineBottom(Canvas &c)
 	pr.to = day;
 	Agg pv = aggregate(data, pr, filter);
 
-	std::string sub = std::to_string(d.sessions) + " SESSION" + (d.sessions == 1 ? "" : "S") + " \xC2\xB7 " +
+	std::string sub = std::to_string(d.sessions) + (gKo ? "회 실행" : (d.sessions == 1 ? " SESSION" : " SESSIONS")) + " \xC2\xB7 " +
 			  fmtTotal(d.secs);
 	if (pv.sessions > 0 && d.sessions > 0) {
 		long long diff = d.secs - pv.secs;
 		if (diff != 0) {
 			std::string dd = fmtDuration(diff >= 0 ? diff : -diff);
-			sub += std::string(" \xC2\xB7 ") + (diff >= 0 ? "+" : "-") + dd + " VS " +
+			sub += std::string(" \xC2\xB7 ") + (diff >= 0 ? "+" : "-") + dd + L10(" VS ", " / ") +
 			       fmtWeekday((time_t)(day - 86400)).substr(0, 3);
 		}
 	}
@@ -2817,10 +2847,10 @@ void App::drawTimelineBottom(Canvas &c)
 	}
 
 	drawRail(c, 160, 380, cursor, n);
-	drawFooter(c, "X", filter.empty() ? std::string("System") : sysName(filter), ACT_SYSTEM,
-		   { std::make_pair(std::string("SELECT"), std::string("Trends")),
-		     std::make_pair(std::string("START"), std::string("Exit")) },
-		   "A", "Refresh", ACT_REFRESH);
+	drawFooter(c, "X", filter.empty() ? std::string(L10("System", "기종")) : sysName(filter), ACT_SYSTEM,
+		   { std::make_pair(std::string("SELECT"), std::string(L10("Trends", "통계"))),
+		     std::make_pair(std::string("START"), std::string(L10("Exit", "종료"))) },
+		   "A", L10("Refresh", "새로고침"), ACT_REFRESH);
 }
 
 void App::drawTrendsBottom(Canvas &c)
@@ -2829,8 +2859,8 @@ void App::drawTrendsBottom(Canvas &c)
 	Period prev = period == P_WEEK ? P_ALL : period == P_MONTH ? P_WEEK : P_MONTH;
 	drawShoulders(c, periodShort(prev), periodShort(next));
 
-	drawBubble(c, "BY SYSTEM",
-		   std::to_string(sysRows.size()) + " SYSTEMS \xC2\xB7 " + fmtTotal(aggAll.secs));
+	drawBubble(c, L10("BY SYSTEM", "기종별"),
+		   std::to_string(sysRows.size()) + L10(" SYSTEMS \xC2\xB7 ", "개 기종 · ") + fmtTotal(aggAll.secs));
 
 	int n = (int)sysRows.size();
 	int vis = 5;
@@ -2850,9 +2880,9 @@ void App::drawTrendsBottom(Canvas &c)
 
 	drawRail(c, 160, 380, cursor, n);
 	drawFooter(c, "Y", sortLabel(sortMode, true), ACT_SORT,
-		   { std::make_pair(std::string("SELECT"), std::string("Library")),
-		     std::make_pair(std::string("START"), std::string("Exit")) },
-		   "A", "Refresh", ACT_REFRESH);
+		   { std::make_pair(std::string("SELECT"), std::string(L10("Library", "게임 기록"))),
+		     std::make_pair(std::string("START"), std::string(L10("Exit", "종료"))) },
+		   "A", L10("Refresh", "새로고침"), ACT_REFRESH);
 }
 
 void App::render(Canvas &top, Canvas &bot)
@@ -2921,6 +2951,8 @@ static void loadAccent(const std::string &root, const std::string &forced)
 {
 	std::ifstream f((root + "/banana/settings.conf").c_str());
 	std::string line, tz;
+	const char *language = getenv("BANANA_UI_LANG");
+	gKo = language && !strcmp(language, "ko");
 	while (std::getline(f, line)) {
 		size_t hash = line.find('#');
 		if (hash != std::string::npos) line = line.substr(0, hash);
@@ -2930,6 +2962,7 @@ static void loadAccent(const std::string &root, const std::string &forced)
 		std::string v = trimStr(line.substr(eq + 1));
 		if (key == "accent") setAccentName(v);
 		else if (key == "timezone") tz = v;
+		else if (key == "language" && !language) gKo = v == "ko";
 	}
 	if (!forced.empty()) setAccentName(forced);
 #ifndef _WIN32

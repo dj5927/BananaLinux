@@ -667,11 +667,11 @@ namespace rnds
 		return overflow;
 	}
 
-	// Banana: CJK text has no spaces: a line may break between any two of its characters (each its own word, joined
-	// without a space), but not before closing punctuation nor after an opening one
+	// Chinese/Japanese may break between characters. Korean uses spaces between
+	// eojeol (word groups); keep those intact unless one exceeds the whole line.
 	static bool cjk(char32_t c)
 	{
-		return (c >= 0x2e80 && c <= 0x9fff) || (c >= 0xac00 && c <= 0xd7a3) || (c >= 0x1100 && c <= 0x11ff) || (c >= 0xf900 && c <= 0xfaff) || (c >= 0xff00 && c <= 0xffef) || (c >= 0x20000 && c <= 0x2fa1f);
+		return (c >= 0x2e80 && c <= 0x9fff && !(c >= 0x3130 && c <= 0x318f)) || (c >= 0xf900 && c <= 0xfaff) || (c >= 0xff00 && c <= 0xffef) || (c >= 0x20000 && c <= 0x2fa1f);
 	}
 	static bool closing(char32_t c) { return std::u32string_view(U"，。、；：！？）」』》〉】〕…—,.;:!?)]%").find(c) != std::u32string_view::npos; }
 	static bool opening(char32_t c) { return std::u32string_view(U"（「『《〈【〔([").find(c) != std::u32string_view::npos; }
@@ -679,40 +679,58 @@ namespace rnds
 	std::vector<TextLine> layoutWrap(const std::u32string& text0, const TextStyle& st, int maxWidth, int maxLines, int firstLineIndent)
 	{
 		std::u32string text = prepared(text0, st);
+		// Explicit paragraph boundaries from TSV translations. This marker never
+		// appears as a visible glyph and doesn't require multiline TSV fields.
+		for (size_t at = 0; (at = text.find(U"[[br]]", at)) != std::u32string::npos;)
+			text.replace(at, 6, U"\n");
 		TextStyle plain = st;
 		plain.upper = false;
 
 		std::vector<std::u32string> words;
-		std::vector<bool> spaced;	// a space before the word (CJK characters follow on without one)
+		std::vector<bool> spaced;
 		std::u32string cur;
 		bool curSpaced = false;
+		auto flush = [&] {
+			if (!cur.empty()) { words.push_back(cur); spaced.push_back(curSpaced); cur.clear(); }
+			curSpaced = false;
+		};
 		for (size_t i = 0; i < text.size(); i++)
 		{
 			char32_t c = text[i];
-			if (c == U' ') { words.push_back(cur); spaced.push_back(curSpaced); cur.clear(); curSpaced = true; continue; }
+			if (c == U'\r') continue;
+			if (c == U'\n') { flush(); words.push_back(U"\n"); spaced.push_back(false); continue; }
+			if (c == U' ' || c == U'\t') { flush(); curSpaced = true; continue; }
 			// a break before a CJK character (or after one), unless punctuation holds the two together
 			bool brk = !cur.empty() && (cjk(c) || cjk(cur.back())) && !closing(c) && !opening(cur.back());
-			if (brk) { words.push_back(cur); spaced.push_back(curSpaced); cur.clear(); curSpaced = false; }
+			if (brk) flush();
 			cur.push_back(c);
 		}
-		words.push_back(cur);
-		spaced.push_back(curSpaced);
+		flush();
 
 		std::vector<std::u32string> lines;
 		std::u32string line;
-		size_t w = 0;
-		std::vector<size_t> lineStartWord;
-		for (; w < words.size(); w++)
+		auto width = [&](const std::u32string& s) { return lineOf(s, plain).width + (lines.empty() ? firstLineIndent : 0); };
+		for (size_t w = 0; w < words.size(); w++)
 		{
+			if (words[w] == U"\n") { lines.push_back(line); line.clear(); continue; }
 			std::u32string trial = line.empty() ? words[w] : line + (spaced[w] ? U" " : U"") + words[w];
-			int indent = lines.empty() ? firstLineIndent : 0;
-			if (!line.empty() && lineOf(trial, plain).width + indent > maxWidth + 0.01f)
+			if (!line.empty() && width(trial) > maxWidth + 0.01f)
 			{
 				lines.push_back(line);
 				line = words[w];
 			}
 			else
 				line = trial;
+			// A long URL, filename or single word must still fit. Split only
+			// when it cannot fit on an otherwise empty line.
+			while (line.size() > 1 && width(line) > maxWidth + 0.01f)
+			{
+				size_t cut = 1;
+				while (cut < line.size() && width(line.substr(0, cut + 1)) <= maxWidth + 0.01f) ++cut;
+				if (cut > 1 && cut < line.size() && (closing(line[cut]) || opening(line[cut - 1]))) --cut;
+				lines.push_back(line.substr(0, cut));
+				line.erase(0, cut);
+			}
 		}
 		lines.push_back(line);
 

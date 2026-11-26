@@ -1,0 +1,550 @@
+From: BananaOS Korean localization
+Subject: [PATCH] Store: Korean interface, catalog descriptions and Unicode fallback
+
+--- a/store/src/main.c
++++ b/store/src/main.c
+@@ -10,6 +10,7 @@
+ // the bottom screen, "shot <file>" writes both screens to a PNG, "quit" ends it.
+ #define _GNU_SOURCE
+ #include "store.h"
++#include "store-ko.h"
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -56,6 +57,7 @@
+     int tab, sel[TAB_COUNT], scroll[TAB_COUNT];
+     int view[MAX_APPS], nview;          /* the current tab's apps, as indexes into cat */
+     int about;                          /* the top screen shows the whole description */
++    int about_scroll, about_max;
+     int confirm;                        /* 1: remove the selected app? */
+     int modal;                          /* a job's box on the bottom screen (install, update, remove) */
+     int refreshing, offline;
+@@ -99,22 +101,22 @@
+ 
+ static const char *action_label(const App *a) {
+     switch (a->state) {
+-    case ST_INSTALL: return "INSTALL";
+-    case ST_UPDATE: return "UPDATE";
+-    case ST_INSTALLED: return "INSTALLED";
+-    case ST_UNSUPPORTED: return "NOT FOR THIS";
+-    case ST_NEEDS: return "NEEDS UPDATE";
+-    default: return "SOON";
++    case ST_INSTALL: return K("INSTALL", "설치");
++    case ST_UPDATE: return K("UPDATE", "업데이트");
++    case ST_INSTALLED: return K("INSTALLED", "설치됨");
++    case ST_UNSUPPORTED: return K("NOT FOR THIS", "미지원");
++    case ST_NEEDS: return K("NEEDS UPDATE", "OS 갱신");
++    default: return K("SOON", "출시 예정");
+     }
+ }
+ 
+ static void start_job(const char *verb, App *a) {
+     char args[160], what[96];
+     snprintf(args, sizeof args, "%s %s", verb, a ? a->id : "");
+-    if (!strcmp(verb, "install")) snprintf(what, sizeof what, "Installing %s", a->name);
+-    else if (!strcmp(verb, "update") && a) snprintf(what, sizeof what, "Updating %s", a->name);
+-    else if (!strcmp(verb, "update")) snprintf(what, sizeof what, "Updating everything");
+-    else snprintf(what, sizeof what, "Removing %s", a->name);
++    if (!strcmp(verb, "install")) snprintf(what, sizeof what, K("Installing %s", "%s 설치 중"), a->name);
++    else if (!strcmp(verb, "update") && a) snprintf(what, sizeof what, K("Updating %s", "%s 업데이트 중"), a->name);
++    else if (!strcmp(verb, "update")) snprintf(what, sizeof what, K("Updating everything", "전체 업데이트 중"));
++    else snprintf(what, sizeof what, K("Removing %s", "%s 제거 중"), a->name);
+     if (U.refreshing) {                 /* one job at a time: after the refresh */
+         snprintf(U.pending, sizeof U.pending, "%s", args);
+         snprintf(U.pending_what, sizeof U.pending_what, "%s", what);
+@@ -127,7 +129,7 @@
+ 
+ static void refresh(void) {
+     if (job_state(0, 0, 0, 0) == JOB_RUNNING) return;
+-    job_start("refresh", "Checking for updates");
++    job_start("refresh", K("Checking for updates", "업데이트 확인 중"));
+     U.refreshing = 1;
+ }
+ 
+@@ -139,10 +141,10 @@
+     App *a = cur();
+     if (!a) return;
+     if (a->state == ST_INSTALL || a->state == ST_UPDATE) start_job(a->state == ST_INSTALL ? "install" : "update", a);
+-    else if (a->state == ST_INSTALLED) toast("Installed: its tile is " WHERE_TILE);
+-    else if (a->state == ST_NEEDS) toast("It needs a newer " OS_NAME ": update it from the menu first");
+-    else if (a->state == ST_UNSUPPORTED) toast("It isn't made for this handheld");
+-    else toast(U.offline ? "No network: connect to Wi-Fi, then START" : "No release of it yet");
++    else if (a->state == ST_INSTALLED) toast(K("Installed: its tile is " WHERE_TILE, "설치됨: 홈 화면에서 실행하세요."));
++    else if (a->state == ST_NEEDS) toast(K("It needs a newer " OS_NAME ": update it from the menu first", "최신 BananaOS가 필요합니다. 시스템을 먼저 업데이트하세요."));
++    else if (a->state == ST_UNSUPPORTED) toast(K("It isn't made for this handheld", "이 기종은 지원하지 않습니다."));
++    else toast(U.offline ? K("No network: connect to Wi-Fi, then START", "Wi-Fi 연결 후 START를 누르세요.") : K("No release of it yet", "아직 릴리스가 없습니다."));
+ }
+ 
+ static void handle(uint32_t pressed, const Input *in, const Input *prev) {
+@@ -162,6 +164,11 @@
+         else if (pressed & BIT(B_B)) U.confirm = 0;
+         return;
+     }
++    if (U.about) {
++        if (pressed & BIT(B_B)) { U.about=0; U.about_scroll=0; return; }
++        if (pressed & BIT(B_UP)) { U.about_scroll=MAX(0,U.about_scroll-1); pressed &= ~BIT(B_UP); }
++        if (pressed & BIT(B_DOWN)) { U.about_scroll=MIN(U.about_max,U.about_scroll+1); pressed &= ~BIT(B_DOWN); }
++    }
+     int n = U.nview, *sel = &U.sel[U.tab];
+     if (pressed & BIT(B_UP) && n) *sel = (*sel + n - 1) % n;
+     if (pressed & BIT(B_DOWN) && n) *sel = (*sel + 1) % n;
+@@ -171,13 +178,13 @@
+     if (pressed & BIT(B_X)) {
+         App *a = cur();
+         if (a && a->have[0] && strcmp(a->id, "store")) U.confirm = 1;
+-        else if (a && a->have[0]) toast("The Store stays: it's how apps get here");
++        else if (a && a->have[0]) toast(K("The Store stays: it's how apps get here", "스토어 자체는 제거할 수 없습니다."));
+     }
+     if (pressed & BIT(B_Y)) {
+         if (updates_count(&U.cat)) start_job("update", 0);
+-        else toast("Everything is up to date");
+-    }
+-    if (pressed & BIT(B_SELECT)) U.about = !U.about;
++        else toast(K("Everything is up to date", "모두 최신 상태입니다."));
++    }
++    if (pressed & BIT(B_SELECT)) { U.about = !U.about; U.about_scroll=0; }
+     if (pressed & BIT(B_START)) refresh();
+     if (pressed & BIT(B_B)) stop = 1;
+     /* touch on the bottom screen: a tab, a row, the row's button */
+@@ -188,6 +195,7 @@
+             int row = (y - 22) / 36 + U.scroll[U.tab];
+             if (row < n) {
+                 if (row == *sel && x > U.BW - 78) press_a();
++                if (*sel != row) U.about_scroll=0;
+                 *sel = row;
+             }
+         } else if (y >= U.BH - 16) {
+@@ -202,7 +210,7 @@
+     if (*sel >= U.scroll[U.tab] + rows) U.scroll[U.tab] = *sel - rows + 1;
+ }
+ 
+-static void set_tab(int t) { U.tab = CLAMP(t, 0, TAB_COUNT - 1); build_view(); U.about = 0; }
++static void set_tab(int t) { U.tab = CLAMP(t, 0, TAB_COUNT - 1); build_view(); U.about = 0; U.about_scroll=0; }
+ 
+ /* updates out: the Updates tab, unless the person has already gone somewhere else, and a word about Y */
+ static void updates_found(void) {
+@@ -210,8 +218,8 @@
+     if (!n) return;
+     if (!U.moved) set_tab(TAB_UPDATES);
+     char t[96];
+-    if (n == 1) snprintf(t, sizeof t, "An update is out: A updates it");
+-    else snprintf(t, sizeof t, "%d updates are out: Y updates them all", n);
++    if (n == 1) snprintf(t, sizeof t, K("An update is out: A updates it", "업데이트 1개: A로 업데이트"));
++    else snprintf(t, sizeof t, K("%d updates are out: Y updates them all", "업데이트 %d개: Y로 모두 업데이트"), n);
+     toast(t);
+ }
+ 
+@@ -226,7 +234,7 @@
+         job_ack();
+         reload();
+         if (U.pending[0]) { job_start(U.pending, U.pending_what); U.pending[0] = 0; }
+-        else if (U.offline) toast("No network: showing what the Store knew");
++        else if (U.offline) toast(K("No network: showing what the Store knew", "오프라인: 저장된 목록을 표시합니다."));
+         else updates_found();
+         return;
+     }
+@@ -270,13 +278,13 @@
+ 
+ /* text cut to w pixels, "..." at the end when it doesn't fit */
+ static void text_fit(Surf *s, int font, int x, int y, int w, uint32_t c, const char *str) {
+-    char b[200]; snprintf(b, sizeof b, "%s", str);
++    char b[4096]; snprintf(b, sizeof b, "%s", str);
+     if (text_w(font, b) <= w) { text(s, font, x, y, c, b); return; }
+     size_t n = strlen(b);
+     while (n > 0) {
+-        b[--n] = 0;
+-        while (n > 0 && (b[n - 1] & 0xC0) == 0x80) b[--n] = 0;   /* whole UTF-8 characters */
+-        char t[210]; snprintf(t, sizeof t, "%s...", b);
++        do { --n; } while (n > 0 && ((unsigned char)b[n] & 0xC0) == 0x80);
++        b[n] = 0;
++        char t[4110]; snprintf(t, sizeof t, "%s...", b);
+         if (text_w(font, t) <= w) { text(s, font, x, y, c, t); return; }
+     }
+ }
+@@ -286,19 +294,19 @@
+     fill(s, C_BG);
+     App *a = cur();
+     if (!a) {
+-        text_big(s, 16, 20, 2, C_TEXT, 0, STORE_NAME);
++        text_big(s, 16, 20, 2, C_TEXT, 0, K(STORE_NAME, "스토어"));
+         if (U.tab == TAB_UPDATES && U.cat.n) {
+             int inst = 0; for (int i = 0; i < U.cat.n; i++) inst += U.cat.apps[i].have[0] != 0;
+             char t[160];
+-            if (inst == 1) snprintf(t, sizeof t, "Your app from the Store is up to date.");
+-            else snprintf(t, sizeof t, "All %d apps from the Store are up to date.", inst);
++            if (inst == 1) snprintf(t, sizeof t, K("Your app from the Store is up to date.", "설치한 앱이 최신 상태입니다."));
++            else snprintf(t, sizeof t, K("All %d apps from the Store are up to date.", "설치한 앱 %d개가 모두 최신 상태입니다."), inst);
+             text_wrap(s, FONT_NORMAL, 16, 56, W - 32, U.offline ? C_DIM : C_TEXT,
+-                      U.offline ? "No network: the Store can't check for updates. Connect to Wi-Fi and press START." : t);
++                      U.offline ? K("No network: the Store can't check for updates. Connect to Wi-Fi and press START.", "업데이트를 확인할 수 없습니다. Wi-Fi 연결 후 START를 누르세요.") : t);
+             text_wrap(s, FONT_NORMAL, 16, 84, W - 32, C_DIM,
+-                      AUTO_CHECK);
++                      K(AUTO_CHECK, "START로 지금 업데이트를 확인합니다."));
+         } else
+             text_wrap(s, FONT_NORMAL, 16, 56, W - 32, C_DIM,
+-                      U.cat.n ? "Nothing here yet." : "The catalog isn't here yet. Connect to Wi-Fi and press START.");
++                      U.cat.n ? K("Nothing here yet.", "아직 항목이 없습니다.") : K("The catalog isn't here yet. Connect to Wi-Fi and press START.", "목록이 없습니다. Wi-Fi 연결 후 START를 누르세요."));
+         return;
+     }
+     uint32_t acc = a->accent;
+@@ -314,32 +322,35 @@
+     text_fit(s, FONT_NORMAL, 84, 36, W - 92, C_DIM, line);
+     char sz[24]; fmt_size(sz, sizeof sz, a->size);
+     if (a->have[0] && a->latest[0] && a->state == ST_UPDATE) snprintf(line, sizeof line, "%s  ->  %s", a->have, a->latest);
+-    else if (a->have[0]) snprintf(line, sizeof line, "Version %s", a->have);
+-    else if (a->latest[0]) snprintf(line, sizeof line, "Version %s", a->latest);
+-    else snprintf(line, sizeof line, "Not released yet");
++    else if (a->have[0]) snprintf(line, sizeof line, K("Version %s", "버전 %s"), a->have);
++    else if (a->latest[0]) snprintf(line, sizeof line, K("Version %s", "버전 %s"), a->latest);
++    else snprintf(line, sizeof line, K("Not released yet", "출시 예정"));
+     int x = text(s, FONT_NORMAL, 84, 50, a->state == ST_UPDATE ? C_YELLOW : C_TEXT, line);
+     if (sz[0]) { text(s, FONT_NORMAL, x + 8, 50, C_DIM, sz); }
+     /* the state, as a pill */
+-    const char *st = a->state == ST_UPDATE ? "UPDATE OUT" : a->state == ST_INSTALLED ? "INSTALLED" :
+-                     a->state == ST_INSTALL ? (!strcmp(a->kind, "game") ? "GAME" : "APP") : action_label(a);
++    const char *st = a->state == ST_UPDATE ? K("UPDATE OUT", "업데이트 있음") : a->state == ST_INSTALLED ? K("INSTALLED", "설치됨") :
++                     a->state == ST_INSTALL ? (!strcmp(a->kind, "game") ? K("GAME", "게임") : K("APP", "앱")) : action_label(a);
+     uint32_t pc = a->state == ST_UPDATE ? C_YELLOW : a->state == ST_INSTALLED ? C_GREEN : C_PANEL2;
+     int pw = text_w(FONT_SMALL, st) + 10;
+     panel(s, 84, 64, pw, 11, pc, col_add(pc, 0x202020));
+-    text(s, FONT_SMALL, 89, 67, pc == C_PANEL2 ? C_TEXT : 0x101010, st);
++    text(s, FONT_SMALL, 89, store_ko()?65:67, pc == C_PANEL2 ? C_TEXT : 0x101010, st);
+     /* below: the screenshot and the summary, or the whole description */
+     int y0 = 92;
+     surf_clip(s, 0, y0, W, H - 14 - y0);
+     if (!U.about && a->state == ST_UPDATE) {
+         /* an update out: what's new in it, from its release notes */
+-        char h[96]; snprintf(h, sizeof h, "What's new in %s", a->latest);
++        char h[96]; snprintf(h, sizeof h, K("What's new in %s", "%s 변경 사항(개발자 원문)"), a->latest);
+         text(s, FONT_NORMAL, 10, y0, C_YELLOW, h);
+         text_wrap(s, FONT_NORMAL, 10, y0 + 14, W - 20, C_TEXT,
+-                  a->notes[0] ? a->notes : "Its release says nothing more. A updates it; what it keeps (saves, "
+-                                           "settings) stays.");
++                  a->notes[0] ? a->notes : K("Its release says nothing more. A updates it; what it keeps (saves, settings) stays.", "추가 릴리스 설명이 없습니다. A로 업데이트합니다. 저장 데이터와 설정은 유지됩니다."));
+     } else if (U.about || !a->shot.px) {
+         int y = y0;
+         if (!U.about) { y += text_wrap(s, FONT_NORMAL, 10, y, W - 20, C_TEXT, a->summary) + 4; }
+-        text_wrap(s, FONT_NORMAL, 10, y, W - 20, U.about ? C_TEXT : C_DIM, a->desc[0] ? a->desc : a->summary);
++        const char *desc = a->desc[0] ? a->desc : a->summary;
++        int lh=text_h(FONT_NORMAL);
++        U.about_max=MAX(0,(text_wrap(0,FONT_NORMAL,0,0,W-20,0,desc)-(H-14-y)+lh-1)/lh);
++        U.about_scroll=MIN(U.about_scroll,U.about_max);
++        text_wrap(s,FONT_NORMAL,10,y-(U.about ? U.about_scroll*lh : 0),W-20,U.about?C_TEXT:C_DIM,desc);
+     } else {
+         int sw = a->shot.w, sh = a->shot.h;
+         rectf(s, 9, y0 + 1, sw + 2, sh + 2, 0x000000);
+@@ -351,22 +362,22 @@
+     surf_noclip(s);
+     /* the foot: what the Store knows */
+     rectf(s, 0, H - 13, W, 13, C_PANEL);
+-    char foot[160];
+-    if (U.refreshing) snprintf(foot, sizeof foot, "Checking for updates%.*s", (U.frame / 20) % 4, "...");
+-    else if (U.offline) snprintf(foot, sizeof foot, "No network: what the Store knew last time");
++    char foot[256];
++    if (U.refreshing) snprintf(foot, sizeof foot, K("Checking for updates%.*s", "업데이트 확인 중%.*s"), (U.frame / 20) % 4, "...");
++    else if (U.offline) snprintf(foot, sizeof foot, K("No network: what the Store knew last time", "오프라인: 이전 목록"));
+     else if (U.cat.refreshed) {
+         long ago = (long)time(0) - U.cat.refreshed;
+-        if (ago < 120) snprintf(foot, sizeof foot, "Up to date: checked just now");
+-        else if (ago < 7200) snprintf(foot, sizeof foot, "Checked %ld minutes ago", ago / 60);
+-        else snprintf(foot, sizeof foot, "Checked %ld hours ago", ago / 3600);
+-    } else snprintf(foot, sizeof foot, "Not checked yet: START checks");
+-    text(s, FONT_NORMAL, 6, H - 11, C_DIM, foot);
+-    const char *hint = U.about ? "SELECT: back" : "SELECT: about";
++        if (ago < 120) snprintf(foot, sizeof foot, K("Up to date: checked just now", "방금 확인함"));
++        else if (ago < 7200) snprintf(foot, sizeof foot, K("Checked %ld minutes ago", "%ld분 전 확인"), ago / 60);
++        else snprintf(foot, sizeof foot, K("Checked %ld hours ago", "%ld시간 전 확인"), ago / 3600);
++    } else snprintf(foot, sizeof foot, K("Not checked yet: START checks", "미확인: START로 확인"));
++    const char *hint = U.about ? K("UP/DOWN: scroll  SELECT: back", "위/아래: 스크롤  SELECT: 뒤로") : K("SELECT: about", "SELECT: 상세");
++    text_fit(s,FONT_NORMAL,6,H-11,W-18-text_w(FONT_NORMAL,hint),C_DIM,foot);
+     text(s, FONT_NORMAL, W - 6 - text_w(FONT_NORMAL, hint), H - 11, C_FAINT, hint);
+ }
+ 
+ static void help(Surf *s, int x, int y, const char *items) {   /* "A Install|X Remove": a button glyph and its word */
+-    char b[200]; snprintf(b, sizeof b, "%s", items);
++    char b[512]; snprintf(b, sizeof b, "%s", items);
+     for (char *t = strtok(b, "|"); t; t = strtok(0, "|")) {
+         char key[8]; int k = 0; while (t[k] && t[k] != ' ' && k < 7) { key[k] = t[k]; k++; } key[k] = 0;
+         int kw = MAX(9, text_w(FONT_SMALL, key) + 4);
+@@ -381,7 +392,7 @@
+     int W = s->w, H = s->h;
+     fill(s, C_BG);
+     /* tabs */
+-    static const char *names[TAB_COUNT] = { "Games", "Apps", "Installed", "Updates" };
++    const char *names[TAB_COUNT] = { K("Games", "게임"), K("Apps", "앱"), K("Installed", "설치됨"), K("Updates", "업데이트") };
+     int nup = updates_count(&U.cat);
+     for (int t = 0; t < TAB_COUNT; t++) {
+         int x0 = t * W / TAB_COUNT, x1 = (t + 1) * W / TAB_COUNT;
+@@ -402,11 +413,11 @@
+     int rows = (H - 16 - 22) / 36;
+     if (!U.nview && U.tab == TAB_UPDATES) {
+         text_center(s, FONT_NORMAL, W / 2, H / 2 - 22, C_TEXT, 0,
+-                    U.refreshing ? "Checking for updates..." : U.offline ? "No network: connect to Wi-Fi" : "Everything is up to date.");
+-        text_center(s, FONT_NORMAL, W / 2, H / 2 - 6, C_DIM, 0, "START checks again.");
++                    U.refreshing ? K("Checking for updates...", "업데이트 확인 중...") : U.offline ? K("No network: connect to Wi-Fi", "Wi-Fi에 연결하세요.") : K("Everything is up to date.", "모두 최신 상태입니다."));
++        text_center(s, FONT_NORMAL, W / 2, H / 2 - 6, C_DIM, 0, K("START checks again.", "START로 다시 확인합니다."));
+     } else if (!U.nview) {
+-        const char *e = U.tab == TAB_INSTALLED ? "Nothing installed from the Store yet." :
+-                        U.tab == TAB_GAMES ? "No games in the catalog yet." : "No apps in the catalog yet.";
++        const char *e = U.tab == TAB_INSTALLED ? K("Nothing installed from the Store yet.", "설치한 앱이 없습니다.") :
++                        U.tab == TAB_GAMES ? K("No games in the catalog yet.", "게임 목록이 비어 있습니다.") : K("No apps in the catalog yet.", "앱 목록이 비어 있습니다.");
+         text_center(s, FONT_NORMAL, W / 2, H / 2 - 10, C_DIM, 0, e);
+     }
+     surf_clip(s, 0, 21, W, H - 16 - 21);
+@@ -420,7 +431,7 @@
+         icon_box(s, a, 8, y + 1, 1);
+         int bw = 70;
+         text_fit(s, FONT_NORMAL, 46, y + 6, W - 46 - bw - 12, C_TEXT, a->name);
+-        char sub[160];
++        char sub[512];
+         if (a->state == ST_UPDATE) snprintf(sub, sizeof sub, "%s -> %s", a->have, a->latest);
+         else snprintf(sub, sizeof sub, "%s", a->summary[0] ? a->summary : a->dev);
+         text_fit(s, FONT_NORMAL, 46, y + 19, W - 46 - bw - 12, a->state == ST_UPDATE ? C_YELLOW : C_DIM, sub);
+@@ -430,7 +441,7 @@
+         uint32_t tc = a->state == ST_INSTALL ? C_TEXT : a->state == ST_UPDATE ? 0x101010 : C_DIM;
+         int bx = W - 6 - bw - 4, by = y + 10;
+         panel(s, bx, by, bw, 14, bc, a->state <= ST_UPDATE ? col_add(bc, 0x303030) : C_LINE);
+-        text_center(s, FONT_SMALL, bx + bw / 2, by + 5, tc, 0, lb);
++        text_center(s, FONT_SMALL, bx + bw / 2, by + (store_ko()?3:5), tc, 0, lb);
+     }
+     surf_noclip(s);
+     if (U.nview > rows) {               /* a scroll bar */
+@@ -441,9 +452,9 @@
+     rectf(s, 0, H - 14, W, 14, C_PANEL);
+     App *a = cur();
+     char h[160];
+-    snprintf(h, sizeof h, "%s%s%sB Quit",
+-             a && a->state == ST_INSTALL ? "A Install|" : a && a->state == ST_UPDATE ? "A Update|" : "",
+-             a && a->have[0] && strcmp(a->id, "store") ? "X Remove|" : "", nup ? "Y Update all|" : "");
++    snprintf(h, sizeof h, K("%s%s%sB Quit", "%s%s%sB 종료"),
++             a && a->state == ST_INSTALL ? K("A Install|", "A 설치|") : a && a->state == ST_UPDATE ? K("A Update|", "A 갱신|") : "",
++             a && a->have[0] && strcmp(a->id, "store") ? K("X Remove|", "X 제거|") : "", nup ? K("Y Update all|", "Y 모두 갱신|") : "");
+     help(s, 4, H - 12, h);
+     /* a toast */
+     if (U.toast_t > 0 && !U.modal && !U.confirm) {
+@@ -462,14 +473,14 @@
+         char step[160], what[96], t[200];
+         if (U.confirm) {
+             App *c = cur();
+-            snprintf(t, sizeof t, "Remove %s?", c ? c->name : "");
++            snprintf(t, sizeof t, K("Remove %s?", "%s을(를) 제거할까요?"), c ? c->name : "");
+             text_fit(s, FONT_NORMAL, bx + 10, by + 10, bw - 20, C_TEXT, t);
+             text_wrap(s, FONT_NORMAL, bx + 10, by + 28, bw - 20, C_DIM,
+-                      "Its tile leaves the menu. What it keeps (saves, settings, your bank) stays on the card.");
+-            help(s, bx + 8, by + bh - 14, "A Remove|B Keep it");
++                      K("Its tile leaves the menu. What it keeps (saves, settings, your bank) stays on the card.", "메뉴에서 제거합니다. 저장 데이터와 설정은 카드에 남습니다."));
++            help(s, bx + 8, by + bh - 14, K("A Remove|B Keep it", "A 제거|B 취소"));
+         } else {
+             int st = job_state(step, sizeof step, what, sizeof what);
+-            if (U.pending[0]) { st = JOB_RUNNING; snprintf(what, sizeof what, "%s", U.pending_what); snprintf(step, sizeof step, "Waiting for the check to end"); }
++            if (U.pending[0]) { st = JOB_RUNNING; snprintf(what, sizeof what, "%s", U.pending_what); snprintf(step, sizeof step, K("Waiting for the check to end", "업데이트 확인이 끝날 때까지 대기 중")); }
+             text_fit(s, FONT_NORMAL, bx + 10, by + 10, bw - 20, C_TEXT, what);
+             if (st == JOB_RUNNING) {
+                 text_fit(s, FONT_NORMAL, bx + 10, by + 30, bw - 20, C_DIM, step);
+@@ -477,22 +488,22 @@
+                 int track = bw - 20, seg = track / 4, ph = U.frame % 120, off = ph < 60 ? ph : 120 - ph;
+                 rectf(s, bx + 10, by + 52, track, 6, C_BG);
+                 rectf(s, bx + 10 + (track - seg) * off / 60, by + 52, seg, 6, C_GREEN);
+-                text(s, FONT_NORMAL, bx + 10, by + bh - 16, C_FAINT, "Keep the Store open until it's done.");
++                text(s, FONT_NORMAL, bx + 10, by + bh - 16, C_FAINT, K("Keep the Store open until it's done.", "작업이 끝날 때까지 스토어를 열어 두세요."));
+             } else if (st == JOB_DONE) {
+-                if (U.restart) snprintf(t, sizeof t, "The Store is updated. A starts the new one.");
+-                else if (!strncmp(job_args(), "remove", 6)) snprintf(t, sizeof t, "Removed.");
+-                else if (!strcmp(job_args(), "update ")) snprintf(t, sizeof t, "Everything is up to date.");
+-                else if (!strncmp(job_args(), "update", 6)) snprintf(t, sizeof t, "Updated to version %s. What it keeps (saves, settings) stayed.", step);
+-                else snprintf(t, sizeof t, "Done%s%s. Its tile is " WHERE_TILE " when you leave the Store.",
+-                              step[0] ? ": version " : "", step);
++                if (U.restart) snprintf(t, sizeof t, K("The Store is updated. A starts the new one.", "스토어를 업데이트했습니다. A로 새 버전을 실행하세요."));
++                else if (!strncmp(job_args(), "remove", 6)) snprintf(t, sizeof t, K("Removed.", "제거했습니다."));
++                else if (!strcmp(job_args(), "update ")) snprintf(t, sizeof t, K("Everything is up to date.", "모두 최신 상태입니다."));
++                else if (!strncmp(job_args(), "update", 6)) snprintf(t, sizeof t, K("Updated to version %s. What it keeps (saves, settings) stayed.", "%s 버전으로 업데이트했습니다. 저장 데이터와 설정은 유지됩니다."), step);
++                else snprintf(t, sizeof t, K("Done%s%s. Its tile is " WHERE_TILE " when you leave the Store.", "완료%s%s. 스토어를 나가면 홈 화면에 표시됩니다."),
++                              step[0] ? K(": version ", ": 버전 ") : "", step);
+                 rectf(s, bx + 10, by + 30, 6, 6, C_GREEN);
+                 text_wrap(s, FONT_NORMAL, bx + 22, by + 28, bw - 32, C_TEXT, t);
+-                help(s, bx + 8, by + bh - 14, "A OK");
++                help(s, bx + 8, by + bh - 14, K("A OK", "A 확인"));
+             } else {
+-                snprintf(t, sizeof t, "It didn't work: %s. Nothing was changed.", step);
++                snprintf(t, sizeof t, K("It didn't work: %s. Nothing was changed.", "작업 실패: %s. 변경 사항이 없습니다."), step);
+                 rectf(s, bx + 10, by + 30, 6, 6, C_RED);
+                 text_wrap(s, FONT_NORMAL, bx + 22, by + 28, bw - 32, C_TEXT, t);
+-                help(s, bx + 8, by + bh - 14, "A OK");
++                help(s, bx + 8, by + bh - 14, K("A OK", "A 확인"));
+             }
+         }
+     }
+--- a/store/src/store.h
++++ b/store/src/store.h
+@@ -10,9 +10,9 @@
+ enum { ST_INSTALL, ST_UPDATE, ST_INSTALLED, ST_UNAVAILABLE, ST_UNSUPPORTED, ST_NEEDS };
+ 
+ typedef struct {
+-    char id[40], kind[12], name[72], dev[56], have[24], latest[24], state_s[32], summary[200], genre[56], players[12];
+-    char desc[1600];
+-    char notes[1300];                   /* what's new in the newest release (its notes, as plain text) */
++    char id[40], kind[12], name[72], dev[56], have[24], latest[24], state_s[32], summary[512], genre[96], players[12];
++    char desc[4096];
++    char notes[4096];                   /* what's new in the newest release (its notes, as plain text) */
+     long size;
+     uint32_t accent;
+     int state;
+--- a/store/src/catalog.c
++++ b/store/src/catalog.c
+@@ -3,6 +3,7 @@
+ // width and height, then ARGB words, all little endian; the app has no PNG decoder).
+ #define _GNU_SOURCE
+ #include "store.h"
++#include "store-ko.h"
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -68,7 +69,7 @@
+     char cmd[700]; snprintf(cmd, sizeof cmd, "'%s' list 2>/dev/null", store_cli());
+     FILE *f = popen(cmd, "r");
+     if (!f) return;
+-    static char l[4096];
++    static char l[16384];
+     while (fgets(l, sizeof l, f)) {
+         size_t n = strlen(l); while (n && (l[n - 1] == '\n' || l[n - 1] == '\r')) l[--n] = 0;
+         char *p = l, *tag = field(&p);
+@@ -95,6 +96,7 @@
+         }
+     }
+     pclose(f);
++    for (int i=0;i<c->n;i++) store_localize_catalog(&c->apps[i]);
+ }
+ 
+ int app_tab_has(const App *a, int tab) {
+--- a/store/src/job.c
++++ b/store/src/job.c
+@@ -3,6 +3,7 @@
+ // OFFLINE. The app shows the step while it runs and the result once it's done.
+ #define _GNU_SOURCE
+ #include "store.h"
++#include "store-ko.h"
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -74,7 +75,7 @@
+ int job_state(char *step, int sn, char *what, int wn) {
+     pthread_mutex_lock(&mu);
+     int st = state;
+-    if (step) snprintf(step, (size_t)sn, "%s", cur_step);
++    if (step) { char buf[512]; snprintf(step,(size_t)sn,"%s",st==JOB_DONE?cur_step:store_job_text(cur_step,buf,sizeof buf)); }
+     if (what) snprintf(what, (size_t)wn, "%s", cur_what);
+     pthread_mutex_unlock(&mu);
+     return st;
+--- a/dodakvarter/src/font.c
++++ b/dodakvarter/src/font.c
+@@ -4,6 +4,13 @@
+ #include "gfx.h"
+ #include <stdlib.h>
+ #include <stdio.h>
++#include <string.h>
++#ifdef BANANA
++#include "app-fallback-font.h"
++static int ko_font(void) { const char *l=getenv("BANANA_UI_LANG"); return l && !strcmp(l,"ko"); }
++#else
++static int ko_font(void) { return 0; }
++#endif
+ 
+ typedef struct { uint32_t cp; const char *rows; } GlyphSrc;   /* rows separated by '/', all the same width */
+ 
+@@ -197,7 +204,7 @@
+     return 0;
+ }
+ 
+-int text_h(int font) { font_init(); return fonts[font].line_h; }
++int text_h(int font) { font_init(); return ko_font() ? (font==FONT_SMALL?10:12) : fonts[font].line_h; }
+ 
+ int text_w(int font, const char *s) {
+     font_init(); Font *f = &fonts[font]; int w = 0, line = 0;
+@@ -205,6 +212,9 @@
+         uint32_t cp = utf8_next(&s);
+         if (cp == '\n') { if (line > w) w = line; line = 0; continue; }
+         const Glyph *g = find(f, cp);
++        #ifdef BANANA
++        if (!g) { FT_GlyphSlot u=banana_af_glyph(cp,font==FONT_SMALL?9:11); if(u) {line+=banana_af_advance(u)+1; continue;} }
++#endif
+         line += (g ? g->w : f->space_w) + 1;
+     }
+     if (line > w) w = line;
+@@ -216,8 +226,21 @@
+     font_init(); Font *f = &fonts[font]; int x0 = x;
+     while (*s) {
+         uint32_t cp = utf8_next(&s);
+-        if (cp == '\n') { x = x0; y += f->line_h * k; continue; }
++        if (cp == '\n') { x = x0; y += text_h(font) * k; continue; }
+         const Glyph *g = find(f, cp);
++        #ifdef BANANA
++        if (!g) {
++            FT_GlyphSlot u=banana_af_glyph(cp,font==FONT_SMALL?9:11);
++            if (u) {
++                int base=font==FONT_SMALL?7:10;
++                for(unsigned r=0;r<u->bitmap.rows;r++)
++                    for(unsigned col=0;col<u->bitmap.width;col++)
++                        if (banana_af_alpha(&u->bitmap,col,r)>=96)
++                            rectf(sf,x+(u->bitmap_left+(int)col)*k,y+(base-u->bitmap_top+(int)r)*k,k,k,c);
++                x+=(banana_af_advance(u)+1)*k; continue;
++            }
++        }
++#endif
+         if (!g) { x += (f->space_w + 1) * k; continue; }
+         for (int r = 0; r < g->h; r++) {
+             uint16_t bits = g->rows[r]; if (!bits) continue;
+@@ -257,22 +280,38 @@
+ 
+ /* word wrap within w pixels; returns the height used */
+ int text_wrap(Surf *s, int font, int x, int y, int w, uint32_t c, const char *str) {
+-    font_init(); char line[256]; int n = 0, y0 = y; const char *p = str;
+-    line[0] = 0;
+-    while (*p) {
+-        const char *q = p; while (*q && *q != ' ' && *q != '\n') q++;
+-        char word[128]; int wl = (int)(q - p); if (wl > 127) wl = 127; memcpy(word, p, (size_t)wl); word[wl] = 0;
+-        char trial[384]; snprintf(trial, sizeof trial, "%s%s%s", line, n ? " " : "", word);
+-        if (n && text_w(font, trial) > w) {
+-            if (s) text(s, font, x, y, c, line);
+-            y += fonts[font].line_h; snprintf(line, sizeof line, "%s", word); n = 1;
+-        } else { snprintf(line, sizeof line, "%s", trial); n = 1; }
+-        p = q;
+-        if (*p == '\n') { if (s) text(s, font, x, y, c, line); y += fonts[font].line_h; line[0] = 0; n = 0; p++; }
+-        else if (*p == ' ') p++;
+-    }
+-    if (n) { if (s) text(s, font, x, y, c, line); y += fonts[font].line_h; }
+-    return y - y0;
++    // Word wrapping with whole UTF-8 characters. Only split a word if it
++    // cannot fit on an empty line (URLs, long paths).
++    char line[4096]={0}; size_t n=0;
++    int y0=y, lh=text_h(font);
++    const char *p=str;
++    if(w<1)return 0;
++    while(*p) {
++        if(*p=='\n') { if(s)text(s,font,x,y,c,line); y+=lh; n=0; line[0]=0; p++; continue; }
++        if(*p==' ' || *p=='\r' || *p=='\t') {p++; continue;}
++        const char *q=p;
++        while(*q && *q!=' ' && *q!='\n' && *q!='\r' && *q!='\t') q++;
++        size_t len=(size_t)(q-p);
++        if(n && n+len+2<sizeof line) {
++            line[n]=' '; memcpy(line+n+1,p,len); line[n+len+1]=0;
++            if(text_w(font,line)<=w) {n+=len+1; p=q; continue;}
++            line[n]=0;
++        }
++        if(n) {if(s)text(s,font,x,y,c,line); y+=lh; n=0; line[0]=0;}
++        while(p<q) {
++            const char *next=p+1; while(next<q && ((unsigned char)*next&0xc0)==0x80)next++;
++            len=(size_t)(next-p);
++            if(n+len+1>=sizeof line) {if(s)text(s,font,x,y,c,line); y+=lh; n=0;}
++            memcpy(line+n,p,len); line[n+len]=0;
++            if(n && text_w(font,line)>w) {
++                line[n]=0; if(s)text(s,font,x,y,c,line); y+=lh; n=0;
++                memcpy(line,p,len); line[len]=0;
++            }
++            n+=len; p=next;
++        }
++    }
++    if(n) {if(s)text(s,font,x,y,c,line); y+=lh;}
++    return y-y0;
+ }
+ 
+ void fmt_num(char *out, int n) {
