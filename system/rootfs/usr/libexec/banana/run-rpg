@@ -1,0 +1,36 @@
+#!/bin/sh
+# RPG Maker games: the UI supplies the selected project's real entry file
+# and a stable library key, never an executable from the game folder.
+set -eu
+sys="$1"; entry="$2"
+case "$sys" in
+    easyrpg) core=easyrpg ;;
+    mkxp) core=mkxp-z ;;
+    *) echo "Unknown RPG system: $sys" >&2; exit 2 ;;
+esac
+[ -f "$entry" ] || { echo "Missing RPG project entry: $entry" >&2; exit 2; }
+case "$entry" in /*) ;; *) echo "Project entry must be absolute" >&2; exit 2 ;; esac
+case "$sys" in
+    easyrpg) [ "$(basename "$entry" | tr '[:upper:]' '[:lower:]')" = rpg_rt.ldb ] || exit 2 ;;
+    mkxp) case "$(basename "$entry" | tr '[:upper:]' '[:lower:]')" in game.ini|mkxp.json|*.rxproj|*.rvproj|*.rvproj2) ;; *) exit 2 ;; esac ;;
+esac
+D=/data
+# The two games' settings/state names cannot collide even when both use Game.ini.
+key=${BANANA_GAME_KEY:-$sys/$(dirname "$entry")}
+hex=$(printf '%s' "$key" | od -An -tx1 | tr -d ' \n')
+id=$(printf '%s' "$key" | sha256sum | cut -d ' ' -f1)
+get() {
+    awk -v k="$hex.$1" 'index($0,k " = ")==1 {v=substr($0,length(k)+4)} END{print v}' "$D/banana/rpg-per-game.conf" 2>/dev/null || :
+}
+export BANANA_SYSTEM="$sys" BANANA_RPG_ID="$id"
+export BANANA_RPG_SCALE="$(get scale)" BANANA_RPG_SHADER="$(get shader)"
+export BANANA_RPG_SWAP_AB="$(get swap_ab)" BANANA_RPG_SWAP_XY="$(get swap_xy)"
+export BANANA_RPG_RGSS="$(get rgss)"
+case "$BANANA_RPG_SCALE" in aspect|integer|'') ;; *) BANANA_RPG_SCALE= ;; esac
+case "$BANANA_RPG_SHADER" in none|lcd|crt|sharp|'') ;; *) BANANA_RPG_SHADER= ;; esac
+case "$BANANA_RPG_SWAP_AB" in on|off|'') ;; *) BANANA_RPG_SWAP_AB= ;; esac
+case "$BANANA_RPG_SWAP_XY" in on|off|'') ;; *) BANANA_RPG_SWAP_XY= ;; esac
+case "$BANANA_RPG_RGSS" in 1|2|3|'') ;; *) BANANA_RPG_RGSS= ;; esac
+[ -f "/usr/lib/libretro/${core}_libretro.so" ] || { echo "RPG core not installed: $core" >&2; exit 3; }
+# No RetroArch fallback: the native BananaOS game panel and pause menu are mandatory.
+exec /usr/libexec/banana/run-bananafront "$core" "$entry"

@@ -2850,6 +2850,21 @@ settings		No list	목록 없음
 settings		No description.	설명 없음.
 systems		Game & Watch	Game & Watch
 systems		FinalBurn Neo	파이널번 네오
+systems		EasyRPG	이지 RPG
+systems		MKXP	MKXP
+settings		EasyRPG	이지 RPG
+settings		EasyRPG buttons	이지 RPG 버튼
+settings		MKXP buttons	MKXP 버튼
+settings		This RPG Maker system uses BananaFront and its native game menu.	이 RPG 만들기 게임은 바나나OS 기본 프론트엔드와 일시 정지 메뉴로 실행합니다.
+settings		RGSS version	RGSS 버전
+settings		Automatically detect XP, VX or VX Ace, or select a version for this game only. The setting takes effect next launch.	XP, VX, VX Ace를 자동 인식하거나 이 게임의 버전을 지정합니다. 다음 실행부터 적용합니다.
+settings		RPG screen scale	화면 배율
+settings		Choose the screen scaling for this game. Integer scaling preserves pixel boundaries. Original aspect uses the largest size that fits.	이 게임의 화면 배율을 설정합니다. 정수 배율은 픽셀 경계를 유지하며 원본 비율은 화면에 맞게 확대합니다.
+settings		Original aspect	원본 비율
+settings		Select the display filter for this game only.	이 게임에만 적용할 화면 필터입니다.
+settings		Swap confirm and cancel buttons for this game only.	이 게임의 확인 및 취소 버튼을 바꿉니다.
+settings		Swap X and Y for this game only.	이 게임의 X와 Y 버튼을 바꿉니다.
+menu		Copy game folders to roms/{folder}	roms/{folder} 폴더에 게임 폴더를 복사하세요.
 settings		FinalBurn Neo	파이널번 네오
 settings		FinalBurn Neo buttons	파이널번 네오 버튼
 settings		FBNeo is the installed arcade core. Auto uses BananaFront's pause menu. SELECT and START are the usual arcade coin and start controls (game dependent).	설치된 아케이드 코어는 FBNeo입니다. 자동 모드에서는 바나나OS의 일시 정지 메뉴를 사용합니다. SELECT는 코인 투입, START는 게임 시작에 사용합니다(게임에 따라 다름).

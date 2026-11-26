@@ -1,4 +1,5 @@
 #include "library.h"
+#include "rpg_projects.h"
 #include "theme.h"
 #include <algorithm>
 #include <cerrno>
@@ -663,23 +664,34 @@ namespace banana
 				if (ri > 0 && !def.folder.empty() && def.folder[0] == '/') continue;	// an absolute folder: one place
 				std::string dir = folderPath(rootList[ri], def.folder);
 				std::vector<std::string> rels;
-				listRoms(dir, "", def.exts, rels, 0, def.flat ? 0 : 2);
+				std::map<std::string, rpg::Project> projects;
+				if (rpg::isSystem(def.id))
+				{
+					std::vector<rpg::Project> found;
+					rpg::scan(dir, def.id, found);
+					for (const auto& p : found) { rels.push_back(p.rel); projects.emplace(p.rel, p); }
+				}
+				else listRoms(dir, "", def.exts, rels, 0, def.flat ? 0 : 2);
 				auto gl = readGamelist(dir);
 				for (auto& rel : rels)
 				{
 					Game g;
 					g.rel = (ri > 0 ? "@sd2/" : "") + rel; g.path = dir + "/" + rel;
 					std::string base = rel.substr(rel.rfind('/') == std::string::npos ? 0 : rel.rfind('/') + 1);
-					std::string stem = base.substr(0, base.rfind('.'));
+					const auto project = projects.find(rel);
+					const bool folderGame = project != projects.end();
+					if (folderGame) { g.path = dir + "/" + project->second.entry; g.genre = project->second.engine; }
+					std::string stem = folderGame ? base : base.substr(0, base.rfind('.'));
 					if (lower(stem).size() > 3 && lower(stem).compare(stem.size() - 3, 3, ".p8") == 0) stem.resize(stem.size() - 3);	// a .p8.png cart
-					g.title = cleanTitle(stem);
+					g.title = folderGame ? stem : cleanTitle(stem);
 					auto it = gl.find(rel);
+					if (folderGame && it == gl.end()) it = gl.find(project->second.entry);
 					if (it != gl.end())
 					{
 						if (!it->second.name.empty()) g.title = cleanTitle(it->second.name);
 						std::string genre = it->second.genre;
 						size_t cut = genre.find_first_of(",;/|");
-						g.genre = trim(cut == std::string::npos ? genre : genre.substr(0, cut));
+						if (!genre.empty()) g.genre = trim(cut == std::string::npos ? genre : genre.substr(0, cut));
 						const std::string& d = it->second.date;
 						if (d.size() >= 4 && d.compare(0, 4, "0000") && std::all_of(d.begin(), d.begin() + 4, ::isdigit)) g.year = d.substr(0, 4);
 						g.box = exists(it->second.thumb) ? it->second.thumb : (exists(it->second.image) ? it->second.image : "");
@@ -719,6 +731,7 @@ namespace banana
 				for (auto& g : sh.games) seen[lower(g.title)]++;
 				for (auto& g : sh.games)
 				{
+					if (rpg::isSystem(def.id)) continue;
 					if (seen[lower(g.title)] < 2) continue;
 					size_t sl = g.rel.rfind('/');
 					std::string stem = g.rel.substr(sl == std::string::npos ? 0 : sl + 1);
@@ -1149,6 +1162,7 @@ namespace banana
 		const Shelf& s = shelves[lib];
 		if (s.search) return "SELECT searches again";
 		if (s.favorites) return "Y on a game adds it here";
+		if (rpg::isSystem(s.def.id)) return "Copy game folders to roms/" + s.def.folder;
 		std::string ext = s.def.exts.empty() ? "" : "." + s.def.exts[0] + " ";
 		return "Copy " + ext + "files to roms/" + s.def.folder;
 	}

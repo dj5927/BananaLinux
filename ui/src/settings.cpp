@@ -1,5 +1,6 @@
 #include <ctime>
 #include "settings.h"
+#include "rpg_projects.h"
 #include "settings_draw.h"
 #include "settings_curl.h"
 #include "recorder.h"
@@ -388,6 +389,8 @@ namespace banana
 		{ "psx", "PlayStation", { { "pcsx_rearmed", "PCSX ReARMed" }, { "swanstation", "SwanStation" }, { "mednafen_psx", "Beetle PSX" } } },
 		{ "n64", "Nintendo 64", { { "mupen64plus_next", "Mupen64Plus-Next" }, { "parallel_n64", "ParaLLEl N64" } } },
 		{ "fbneo", "FinalBurn Neo", { { "fbneo", "FBNeo" } } },
+		{ "easyrpg", "EasyRPG", { { "easyrpg", "EasyRPG" } } },
+		{ "mkxp", "MKXP", { { "mkxp-z", "mkxp-z" } } },
 	};
 	static bool coreInstalled(const std::string& core)
 	{
@@ -682,8 +685,11 @@ namespace banana
 				coreChoices(sys, names, values);
 				// FBNeo is intentionally a single-core system; expose it anyway.
 				const bool arcade = std::string(sys.id) == "fbneo";
-				if (names.empty() || (!arcade && names.size() < 2)) continue;
-				const char* help = arcade
+				const bool project = rpg::isSystem(sys.id);
+				if (names.empty() || (!arcade && !project && names.size() < 2)) continue;
+				const char* help = project
+					? "This RPG Maker system uses BananaFront and its native game menu."
+					: arcade
 					? "FBNeo is the installed arcade core. Auto uses BananaFront's pause menu. SELECT and START are the usual arcade coin and start controls (game dependent)."
 					: std::string(sys.id) == "gba"
 					? "The emulator for GBA games. gpSP: the fastest. mGBA: the most accurate, and the one RetroAchievements accepts for hardcore. Cores downloaded with RetroArch's Core Downloader (its Online Updater) are listed here too."
@@ -5657,6 +5663,23 @@ namespace banana
 	std::string Settings::gameEmulator(const std::string& rom) { return perGame("nds-per-game.conf", rom); }
 	void Settings::setGameEmulator(const std::string& rom, const std::string& emu) { setPerGame("nds-per-game.conf", rom, emu); }
 
+	const std::vector<Settings::RpgChoice>& Settings::rpgChoices()
+	{
+		static const std::vector<RpgChoice> choices = {
+			{PG_RPG_RGSS, "rgss", "RGSS version", "Automatically detect XP, VX or VX Ace, or select a version for this game only. The setting takes effect next launch.", {"Auto","RPG Maker XP","RPG Maker VX","RPG Maker VX Ace"}, {"","1","2","3"}},
+			{PG_RPG_SCALE, "scale", "RPG screen scale", "Choose the screen scaling for this game. Integer scaling preserves pixel boundaries. Original aspect uses the largest size that fits.", {"As in Settings","Original aspect","Integer scale"}, {"","aspect","integer"}},
+			{PG_RPG_SHADER, "shader", "Shader", "Select the display filter for this game only.", {"As in Settings","None","LCD","CRT","Sharp"}, {"","none","lcd","crt","sharp"}},
+			{PG_RPG_SWAP_AB, "swap_ab", "Swap A/B", "Swap confirm and cancel buttons for this game only.", {"As in Settings","Off","On"}, {"","off","on"}},
+			{PG_RPG_SWAP_XY, "swap_xy", "Swap X/Y", "Swap X and Y for this game only.", {"As in Settings","Off","On"}, {"","off","on"}}
+		};
+		return choices;
+	}
+	const Settings::RpgChoice* Settings::rpgChoice(PgRow row) const
+	{
+		for (const auto& c : rpgChoices()) if (c.row == row) return &c;
+		return nullptr;
+	}
+
 	void Settings::openGame(const std::string& title, const std::string& romName, bool nds, const std::string& key,
 		const std::string& name, const std::string& sort, const std::string& path, const std::string& scraped, const std::string& system)
 	{
@@ -5667,6 +5690,18 @@ namespace banana
 		gameKey = key; gameName = name; gameSort = sort;
 		pgRows.clear();
 		if (nds) pgRows = { PG_EMU, PG_SHADER, PG_RES, PG_3D, PG_MIC, PG_TIMING, PG_CPU };
+		pgRpg.clear();
+		if (rpg::isSystem(system))
+		{
+			for (const auto& c : rpgChoices())
+			{
+				if (c.row == PG_RPG_RGSS && system != "mkxp") continue;
+				pgRows.push_back(c.row);
+				const std::string v = perGame("rpg-per-game.conf", rpg::key(key) + "." + c.key);
+				auto it = std::find(c.values.begin(), c.values.end(), v);
+				pgRpg[c.row] = it == c.values.end() ? 0 : (int)(it - c.values.begin());
+			}
+		}
 		pg3d = pgMic = pgRes = pgTiming = pgCpu = 0;
 		{
 			std::string v = perGame("nds-per-game-3d.conf", romName), m = perGame("nds-per-game-mic.conf", romName);
@@ -5683,7 +5718,7 @@ namespace banana
 		// each frame
 		if (!path.empty())
 		{
-			if (!nds) pgRows.insert(pgRows.begin(), PG_ACH);
+			if (!nds && !rpg::isSystem(system)) pgRows.insert(pgRows.begin(), PG_ACH);
 			pgAchValue = lang::tr("Show the list");
 			std::string h; uint32_t id = 0; ach::List l;
 			if (!ach::consoleFor(system)) pgAchValue = lang::tr("None for this system");
@@ -5691,10 +5726,10 @@ namespace banana
 				pgAchValue = std::to_string(l.unlocked()) + " / " + std::to_string(l.items.size());
 		}
 		if (!key.empty()) { pgRows.push_back(PG_NAME); pgRows.push_back(PG_SORT); }
-		if (!key.empty() && !path.empty()) pgRows.push_back(PG_ART);
+		if (!key.empty() && !path.empty() && !rpg::isSystem(system)) pgRows.push_back(PG_ART);
 		if (nds && !path.empty()) pgRows.push_back(PG_ACH);
 		pgDelAll = pgDelArmed = pgChanged = false;
-		if (deletableRom(path)) pgRows.push_back(PG_DELETE);	// (last: never the row the page opens on)
+		if (!rpg::isSystem(system) && deletableRom(path)) pgRows.push_back(PG_DELETE); // never delete a project entry on its own
 		std::string cur = gameEmulator(romName);
 		pgEmu = 0;
 		for (int i = 1; i < 3; i++) if (cur == GAME_EMUS[i]) pgEmu = i;
@@ -5748,6 +5783,15 @@ namespace banana
 		case Key::LEFT: case Key::RIGHT:
 		{
 			int d = k == Key::LEFT ? -1 : 1;
+			if (const auto* c = rpgChoice(row))
+			{
+				int n = (int)c->values.size();
+				int& v = pgRpg[row];
+				v = (v + d + n) % n;
+				setPerGame("rpg-per-game.conf", rpg::key(gameKey) + "." + c->key, c->values[v]);
+				pgChanged = true;
+				return MOVED;
+			}
 			if (row == PG_EMU) pgEmu = (pgEmu + d + 3) % 3;
 			else if (row == PG_3D) pg3d = (pg3d + d + 3) % 3;
 			else if (row == PG_RES)
@@ -5832,6 +5876,7 @@ namespace banana
 	// a game page row's help (renderGame's top panel)
 	std::string Settings::gameHelpOf(int row)
 	{
+		if (const auto* c = rpgChoice((PgRow)row)) return c->help;
 		const bool plus = board_() == "rgds-plus";
 		return row == PG_EMU
 				? "SuperDrastic: DraStic onto both panels, the fastest. BananaDS: Banana's own emulator (melonDS's core), the most "
@@ -5903,9 +5948,9 @@ namespace banana
 		const int n = (int)pgRows.size();
 		const PgRow row = n ? pgRows[std::min(pgRow, n - 1)] : PG_NAME;
 		const std::string nameValue = gameName.empty() ? "As scraped" : gameName, sortValue = gameSort.empty() ? "By its name" : gameSort;
-		auto label = [](PgRow r) { return r == PG_EMU ? "Emulator" : r == PG_SHADER ? "Shader" : r == PG_3D ? "Threaded 3D" : r == PG_RES ? "3D resolution" : r == PG_MIC ? "Microphone" : r == PG_TIMING ? "Timing" : r == PG_CPU ? "DS CPU speed"
+		auto label = [&](PgRow r) { if (const auto* c = rpgChoice(r)) return c->label; return r == PG_EMU ? "Emulator" : r == PG_SHADER ? "Shader" : r == PG_3D ? "Threaded 3D" : r == PG_RES ? "3D resolution" : r == PG_MIC ? "Microphone" : r == PG_TIMING ? "Timing" : r == PG_CPU ? "DS CPU speed"
 			: r == PG_NAME ? "Name" : r == PG_SORT ? "Sort title" : r == PG_DELETE ? "Delete game..." : r == PG_ACH ? "Achievements" : "Box art"; };
-		auto value = [&](PgRow r) { return r == PG_EMU ? emuValue : r == PG_SHADER ? shValue : r == PG_3D ? v3d : r == PG_RES ? vres : r == PG_MIC ? vmic : r == PG_TIMING ? vtiming : r == PG_CPU ? vcpu
+		auto value = [&](PgRow r) { if (const auto* c = rpgChoice(r)) return c->names[pgRpg[r]]; return r == PG_EMU ? emuValue : r == PG_SHADER ? shValue : r == PG_3D ? v3d : r == PG_RES ? vres : r == PG_MIC ? vmic : r == PG_TIMING ? vtiming : r == PG_CPU ? vcpu
 			: r == PG_NAME ? nameValue : r == PG_SORT ? sortValue : r == PG_ACH ? pgAchValue
 			: r == PG_DELETE ? std::string(pgDelArmed ? (pgDelAll ? "A again: the game, saves and art" : "A again: the game (saves kept)") : pgDelAll ? "With its saves, states and art" : "Keep its saves and art")
 			: std::string(pgArtDone ? "Fetched" : "Find it by name"); };
@@ -5914,7 +5959,7 @@ namespace banana
 		box("screen", false, 0, 0, 640, 480);
 		box("hero", false, 18, 20, 604, 436);
 		icon(pgNds ? "nds" : "gamepad", 50, HEAD_ICON_Y, 3);
-		text(row == PG_EMU ? "This game's emulator" : row == PG_SHADER ? "This game's shader" : row == PG_3D ? "This game's 3D" : row == PG_RES ? "This game's 3D resolution" : row == PG_MIC ? "This game's microphone" : row == PG_TIMING ? "This game's timing" : row == PG_CPU ? "This game's DS CPU speed" : row == PG_NAME ? "This game's name" : row == PG_SORT ? "This game's sort title" : row == PG_DELETE ? "Delete this game" : row == PG_ACH ? "This game's achievements" : "This game's box art",
+		text(rpgChoice(row) ? label(row) : row == PG_EMU ? "This game's emulator" : row == PG_SHADER ? "This game's shader" : row == PG_3D ? "This game's 3D" : row == PG_RES ? "This game's 3D resolution" : row == PG_MIC ? "This game's microphone" : row == PG_TIMING ? "This game's timing" : row == PG_CPU ? "This game's DS CPU speed" : row == PG_NAME ? "This game's name" : row == PG_SORT ? "This game's sort title" : row == PG_DELETE ? "Delete this game" : row == PG_ACH ? "This game's achievements" : "This game's box art",
 			true, 17, 170, HEAD_SECTION_Y, p.muted, true, 1.4f);
 		{ AsNamed named(*this); textFit(pgTitle, true, 30, 170, HEAD_LABEL_Y, 420, p.ink, true); }
 		textFit(value(row), true, 22, 170, HEAD_VALUE_Y, 420, row == PG_DELETE && pgDelArmed ? Color::hex(0xff8a96) : p.accent, true);

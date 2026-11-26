@@ -1,0 +1,379 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Experimental MKXP GLES2 bridge for BananaFront
+
+--- /dev/null
++++ b/src/rpg_hw.h
+@@ -0,0 +1,27 @@
++#pragma once
++#include "bf.h"
++/* Experimental hardware-core bridge. Only enabled for the MKXP system. */
++bool bf_hw_enter(void);
++void bf_hw_leave(void);
++bool bf_hw_ready(void);
++void bf_hw_notify_destroy(void);
++void bf_hw_close(void);
++const void* bf_hw_pixels(unsigned w, unsigned h);
++static inline void bf_run_core(void) {
++    if (bf_hw_enter()) { g_core.run(); bf_hw_leave(); }
++}
++static inline void bf_reset_core(void) {
++    if (bf_hw_enter()) { g_core.reset(); bf_hw_leave(); }
++}
++static inline size_t bf_core_state_size(void) {
++    if (!bf_hw_enter()) return 0;
++    size_t n = g_core.serialize_size(); bf_hw_leave(); return n;
++}
++static inline bool bf_core_state_write(void* p, size_t n) {
++    if (!bf_hw_enter()) return false;
++    bool ok = g_core.serialize(p,n); bf_hw_leave(); return ok;
++}
++static inline bool bf_core_state_read(const void* p, size_t n) {
++    if (!bf_hw_enter()) return false;
++    bool ok = g_core.unserialize(p,n); bf_hw_leave(); return ok;
++}
+--- /dev/null
++++ b/src/rpg_hw.c
+@@ -0,0 +1,188 @@
++/* MKXP: render GLES2 to a private framebuffer and feed BananaFront's
++ * normal XRGB scanout path. Preserve the shader's EGL context between calls.
++ * No changes to the software cores. */
++#define _GNU_SOURCE
++#include <EGL/egl.h>
++#include <EGL/eglext.h>
++#include <GLES2/gl2.h>
++#include <dlfcn.h>
++#include <stdlib.h>
++#include <string.h>
++#include <stdint.h>
++#include "rpg_hw.h"
++
++#define EGL_FN(f) static __typeof__(f)* p_##f
++EGL_FN(eglGetDisplay); EGL_FN(eglInitialize); EGL_FN(eglChooseConfig);
++EGL_FN(eglBindAPI); EGL_FN(eglCreateContext); EGL_FN(eglCreatePbufferSurface);
++EGL_FN(eglMakeCurrent); EGL_FN(eglGetCurrentDisplay); EGL_FN(eglGetCurrentContext);
++EGL_FN(eglGetCurrentSurface); EGL_FN(eglGetProcAddress); EGL_FN(eglDestroyContext);
++EGL_FN(eglDestroySurface);
++#define GL_FN(f) static __typeof__(f)* p_##f
++GL_FN(glGenFramebuffers); GL_FN(glBindFramebuffer); GL_FN(glDeleteFramebuffers);
++GL_FN(glGenTextures); GL_FN(glBindTexture); GL_FN(glDeleteTextures);
++GL_FN(glTexParameteri); GL_FN(glTexImage2D); GL_FN(glFramebufferTexture2D);
++GL_FN(glCheckFramebufferStatus); GL_FN(glGetIntegerv); GL_FN(glReadPixels);
++GL_FN(glPixelStorei); GL_FN(glGenRenderbuffers); GL_FN(glBindRenderbuffer);
++GL_FN(glRenderbufferStorage); GL_FN(glFramebufferRenderbuffer); GL_FN(glDeleteRenderbuffers);
++static void *egl, *gles;
++static EGLDisplay display, prev_display;
++static EGLContext context, prev_context;
++static EGLSurface surface, prev_draw, prev_read;
++static unsigned nesting;
++static bool active, reset_done;
++static struct retro_hw_render_callback hw;
++static GLuint fbo, texture, depth, stencil;
++static unsigned fw, fh;
++static uint32_t *pixels;
++static size_t pixel_count;
++
++static retro_proc_address_t get_proc(const char* name) {
++    void* ptr = gles ? dlsym(gles,name) : NULL;
++    if (ptr) return (retro_proc_address_t)ptr;
++    return (retro_proc_address_t)p_eglGetProcAddress(name);
++}
++bool bf_hw_enter(void) {
++    if (!active) return true;
++    if (nesting) { nesting++; return true; }
++    prev_display=p_eglGetCurrentDisplay(); prev_context=p_eglGetCurrentContext();
++    prev_draw=p_eglGetCurrentSurface(EGL_DRAW); prev_read=p_eglGetCurrentSurface(EGL_READ);
++    if (!p_eglMakeCurrent(display,surface,surface,context)) return false;
++    nesting=1;
++    return true;
++}
++void bf_hw_leave(void) {
++    if (!active || !nesting || --nesting) return;
++    if (prev_context != EGL_NO_CONTEXT)
++        p_eglMakeCurrent(prev_display,prev_draw,prev_read,prev_context);
++    else p_eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);
++}
++static bool make_buffer(unsigned w,unsigned h) {
++    if (!w || !h || w>2048 || h>2048) return false;
++    if (fbo && fw==w && fh==h) return true;
++    GLint oldfb, oldtex, oldrb;
++    p_glGetIntegerv(GL_FRAMEBUFFER_BINDING,&oldfb);
++    p_glGetIntegerv(GL_TEXTURE_BINDING_2D,&oldtex);
++    p_glGetIntegerv(GL_RENDERBUFFER_BINDING,&oldrb);
++    if (!fbo) p_glGenFramebuffers(1,&fbo);
++    if (!texture) p_glGenTextures(1,&texture);
++    p_glBindTexture(GL_TEXTURE_2D,texture);
++    p_glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
++    p_glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
++    p_glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
++    p_glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
++    p_glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);
++    p_glBindFramebuffer(GL_FRAMEBUFFER,fbo);
++    p_glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,texture,0);
++    if (hw.depth) {
++        if (!depth) p_glGenRenderbuffers(1,&depth);
++        p_glBindRenderbuffer(GL_RENDERBUFFER,depth);
++        p_glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH_COMPONENT16,w,h);
++        p_glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER,depth);
++    }
++    if (hw.stencil) {
++        if (!stencil) p_glGenRenderbuffers(1,&stencil);
++        p_glBindRenderbuffer(GL_RENDERBUFFER,stencil);
++        p_glRenderbufferStorage(GL_RENDERBUFFER,GL_STENCIL_INDEX8,w,h);
++        p_glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_STENCIL_ATTACHMENT,GL_RENDERBUFFER,stencil);
++    }
++    bool ok=p_glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE;
++    p_glBindFramebuffer(GL_FRAMEBUFFER,oldfb);
++    p_glBindTexture(GL_TEXTURE_2D,oldtex);p_glBindRenderbuffer(GL_RENDERBUFFER,oldrb);
++    fw=ok?w:0;fh=ok?h:0;
++    return ok;
++}
++static uintptr_t current_fb(void) {
++    unsigned w=g_core.av.geometry.base_width, h=g_core.av.geometry.base_height;
++    return make_buffer(w?w:640,h?h:480)?fbo:0;
++}
++bool bf_hw_render_request(struct retro_hw_render_callback* cb) {
++    const char* sys=getenv("BANANA_SYSTEM");
++    if (!sys || strcmp(sys,"mkxp") || !cb || active || cb->context_type != RETRO_HW_CONTEXT_OPENGLES2) return false;
++    egl=dlopen("libEGL.so.1",RTLD_NOW|RTLD_LOCAL);
++    gles=dlopen("libGLESv2.so.2",RTLD_NOW|RTLD_LOCAL);
++    if (!egl || !gles) goto fail;
++#define LOAD_E(f) do { *(void**)&p_##f=dlsym(egl,#f); if (!p_##f) goto fail; } while(0)
++    LOAD_E(eglGetDisplay);LOAD_E(eglInitialize);LOAD_E(eglChooseConfig);LOAD_E(eglBindAPI);
++    LOAD_E(eglCreateContext);LOAD_E(eglCreatePbufferSurface);LOAD_E(eglMakeCurrent);
++    LOAD_E(eglGetCurrentDisplay);LOAD_E(eglGetCurrentContext);LOAD_E(eglGetCurrentSurface);
++    LOAD_E(eglGetProcAddress);LOAD_E(eglDestroyContext);LOAD_E(eglDestroySurface);
++    PFNEGLGETPLATFORMDISPLAYEXTPROC platform=(PFNEGLGETPLATFORMDISPLAYEXTPROC)p_eglGetProcAddress("eglGetPlatformDisplayEXT");
++    if (platform) display=platform(0x31DD,EGL_DEFAULT_DISPLAY,NULL);
++    if (display==EGL_NO_DISPLAY || !p_eglInitialize(display,NULL,NULL)) {
++        display=p_eglGetDisplay(EGL_DEFAULT_DISPLAY);
++        if (display==EGL_NO_DISPLAY || !p_eglInitialize(display,NULL,NULL)) goto fail;
++    }
++    if (!p_eglBindAPI(EGL_OPENGL_ES_API)) goto fail;
++    EGLint attrs[]={EGL_SURFACE_TYPE,EGL_PBUFFER_BIT,EGL_RENDERABLE_TYPE,EGL_OPENGL_ES2_BIT,EGL_RED_SIZE,8,EGL_GREEN_SIZE,8,EGL_BLUE_SIZE,8,EGL_ALPHA_SIZE,8,EGL_NONE};
++    EGLConfig config;EGLint count=0;
++    if (!p_eglChooseConfig(display,attrs,&config,1,&count)||!count) goto fail;
++    EGLint ca[]={EGL_CONTEXT_CLIENT_VERSION,2,EGL_NONE};
++    EGLint sa[]={EGL_WIDTH,1,EGL_HEIGHT,1,EGL_NONE};
++    context=p_eglCreateContext(display,config,EGL_NO_CONTEXT,ca);
++    surface=p_eglCreatePbufferSurface(display,config,sa);
++    if (context==EGL_NO_CONTEXT || surface==EGL_NO_SURFACE) goto fail;
++#define LOAD_G(f) do { p_##f=(__typeof__(p_##f))get_proc(#f); if (!p_##f) goto fail; } while(0)
++    LOAD_G(glGenFramebuffers);LOAD_G(glBindFramebuffer);LOAD_G(glDeleteFramebuffers);
++    LOAD_G(glGenTextures);LOAD_G(glBindTexture);LOAD_G(glDeleteTextures);
++    LOAD_G(glTexParameteri);LOAD_G(glTexImage2D);LOAD_G(glFramebufferTexture2D);
++    LOAD_G(glCheckFramebufferStatus);LOAD_G(glGetIntegerv);LOAD_G(glReadPixels);LOAD_G(glPixelStorei);
++    LOAD_G(glGenRenderbuffers);LOAD_G(glBindRenderbuffer);LOAD_G(glRenderbufferStorage);
++    LOAD_G(glFramebufferRenderbuffer);LOAD_G(glDeleteRenderbuffers);
++    hw=*cb;active=true;
++    if (!bf_hw_enter()) goto fail;
++    bool ok=make_buffer(640,480);
++    bf_hw_leave();
++    if (!ok) goto fail;
++    cb->get_current_framebuffer=current_fb;cb->get_proc_address=get_proc;
++    bf_log("MKXP hardware: GLES2 offscreen framebuffer");
++    return true;
++fail:
++    bf_log("MKXP hardware: could not initialize EGL/GLES2");
++    bf_hw_close();return false;
++}
++bool bf_hw_ready(void) {
++    if (!active) return true;
++    if (!bf_hw_enter()) return false;
++    bool ok=current_fb()!=0;
++    if (ok && hw.context_reset) { hw.context_reset();reset_done=true; }
++    bf_hw_leave();return ok;
++}
++const void* bf_hw_pixels(unsigned w,unsigned h) {
++    if (!active || !nesting || w!=fw || h!=fh || !w || !h) return NULL;
++    size_t n=(size_t)w*h;
++    if (n>pixel_count) {
++        uint32_t* p=realloc(pixels,n*4);
++        if (!p) return NULL;
++        pixels=p;pixel_count=n;
++    }
++    GLint old,pack;
++    p_glGetIntegerv(GL_FRAMEBUFFER_BINDING,&old);p_glGetIntegerv(GL_PACK_ALIGNMENT,&pack);
++    p_glBindFramebuffer(GL_FRAMEBUFFER,fbo);p_glPixelStorei(GL_PACK_ALIGNMENT,4);
++    p_glReadPixels(0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
++    p_glPixelStorei(GL_PACK_ALIGNMENT,pack);p_glBindFramebuffer(GL_FRAMEBUFFER,old);
++    for (size_t i=0;i<n;i++) {uint32_t v=pixels[i];pixels[i]=0xff000000u|((v&0xff)<<16)|(v&0xff00)|((v>>16)&0xff);}
++    if (hw.bottom_left_origin)
++        for (unsigned y=0;y<h/2;y++) for(unsigned x=0;x<w;x++) {
++            size_t a=(size_t)y*w+x,b=(size_t)(h-y-1)*w+x;uint32_t t=pixels[a];pixels[a]=pixels[b];pixels[b]=t;
++        }
++    return pixels;
++}
++void bf_hw_notify_destroy(void) {
++    if (active && reset_done && hw.context_destroy) {hw.context_destroy();reset_done=false;}
++}
++void bf_hw_close(void) {
++    if (active && bf_hw_enter()) {
++        if (fbo) p_glDeleteFramebuffers(1,&fbo);
++        if (texture) p_glDeleteTextures(1,&texture);
++        if (depth) p_glDeleteRenderbuffers(1,&depth);
++        if (stencil) p_glDeleteRenderbuffers(1,&stencil);
++        bf_hw_leave();
++    }
++    active=false;nesting=0;reset_done=false;
++    if (context && p_eglDestroyContext) p_eglDestroyContext(display,context);
++    if (surface && p_eglDestroySurface) p_eglDestroySurface(display,surface);
++    context=EGL_NO_CONTEXT;surface=EGL_NO_SURFACE;
++    fbo=texture=depth=stencil=0;fw=fh=0;
++    free(pixels);pixels=NULL;pixel_count=0;
++    /* The shader may share this EGLDisplay; leave eglInitialize alive. */
++}
+--- a/Makefile
++++ b/Makefile
+@@ -6,7 +6,7 @@
+ BOARD ?= rgds-plus
+ VERSION := $(shell git describe --always --dirty 2>/dev/null || echo dev)
+ 
+-SRC_COMMON := src/main.c src/core.c src/util.c src/resample.c src/statefile.c src/unzip.c src/memmap.c src/input.c \
++SRC_COMMON := src/main.c src/core.c src/rpg_hw.c src/util.c src/resample.c src/statefile.c src/unzip.c src/memmap.c src/input.c \
+ 	src/frontend.c src/cpugov.c src/gpufloor.c src/archive.c src/ra.c src/menu.c src/menu_host.c src/lang.c src/third_party/bcomp/bcomp.c
+ SRC_DEVICE := $(SRC_COMMON) src/kms.c src/shader.c src/audio.c
+ SRC_HOST := $(SRC_COMMON) src/video_null.c src/audio_null.c
+--- a/src/bf.h
++++ b/src/bf.h
+@@ -122,6 +122,7 @@
+ bool bf_core_open(const char* so_path);
+ // core options: defaults from the core, then the .opt files (RetroArch's: config/<lib>/<lib>.opt, then the game's)
+ void bf_core_options_load(const char* config_dir, const char* game);
++void bf_core_option_set(const char* key, const char* val);
+ bool bf_core_load_game(const char* rom);
+ void bf_core_close(void);
+ double bf_core_fps(void);
+--- a/src/core.c
++++ b/src/core.c
+@@ -12,6 +12,7 @@
+ #include <unistd.h>
+ 
+ #include "bf.h"
++#include "rpg_hw.h"
+ #include "unzip.h"
+ 
+ __attribute__((weak)) void bf_mmap_changed(void) {}
+@@ -418,8 +419,13 @@
+ void bf_core_close(void)
+ {
+     if (!g_core.dl) return;
+-    g_core.unload_game();
+-    g_core.deinit();
++    if (bf_hw_enter()) {
++        bf_hw_notify_destroy();
++        g_core.unload_game();
++        g_core.deinit();
++        bf_hw_leave();
++    }
++    bf_hw_close();
+     // (no dlclose: some cores' static destructors run after their deinit and expect the library still mapped)
+     free(g_core.rom_data);
+     free(g_core.mmap);
+--- a/src/main.c
++++ b/src/main.c
+@@ -42,6 +42,7 @@
+ #include "cpugov.h"
+ #include "gpufloor.h"
+ #include "bf.h"
++#include "rpg_hw.h"
+ #include "frontend.h"
+ #include "input.h"
+ #include "memmap.h"
+@@ -214,7 +215,13 @@
+ }
+ static void video_frame_(const void* data, unsigned w, unsigned h, size_t pitch)
+ {
+-    if (!data || data == RETRO_HW_FRAME_BUFFER_VALID) { frame_dupe = true; return; }
++    if (data == RETRO_HW_FRAME_BUFFER_VALID) {
++        data = bf_hw_pixels(w,h);
++        if (!data) { frame_dupe = true; return; }
++        pitch = (size_t)w*4;
++        g_core.fmt = RETRO_PIXEL_FORMAT_XRGB8888;
++    }
++    if (!data) { frame_dupe = true; return; }
+     if (data == direct_buf) {  // drawn in place: nothing to copy
+         last.data = data; last.w = w; last.h = h; last.pitch = pitch;
+         direct_buf = NULL;
+@@ -388,13 +395,13 @@
+ 
+ bool bf_state_save(int s)
+ {
+-    size_t n = g_core.serialize_size();
++    size_t n = bf_core_state_size();
+     if (!n) { bf_log("state: the core can't save states"); return false; }
+     bf_cpugov_boost(1000);
+     state_job* j = calloc(1, sizeof *j);
+     if (!j || !(j->core = malloc(n))) { free(j); return false; }
+     j->t0 = bf_now_ms();
+-    if (!g_core.serialize(j->core, n)) { free(j->core); free(j); bf_log("state: the core's save failed"); return false; }
++    if (!bf_core_state_write(j->core, n)) { free(j->core); free(j); bf_log("state: the core's save failed"); return false; }
+     j->n = n;
+     j->slot = s;
+     j->px = bf_frame_rgb(&j->w, &j->h);
+@@ -419,7 +426,7 @@
+     if (!f) { bf_log("state: no %s", p); frontend_event(BF_EV_STATE_MISSING, s); return false; }
+     void* c = bf_state_unpack(f, fs, &cs);
+     free(f);
+-    bool ok = c && g_core.unserialize(c, cs);
++    bool ok = c && bf_core_state_read(c, cs);
+     free(c);
+     if (ok) ra_state_loaded();
+     bf_log("state %s: %s", ok ? "loaded" : "NOT loaded", p);
+@@ -475,7 +482,7 @@
+     else if (!strcmp(w, "MENU_TOGGLE")) frontend_menu();
+     else if (!strcmp(w, "SCREENSHOT")) frontend_screenshot();
+     else if (!strcmp(w, "GRAB_PANEL")) frontend_panel_grab();
+-    else if (!strcmp(w, "RESET")) { g_core.reset(); ra_reset(); }
++    else if (!strcmp(w, "RESET")) { bf_reset_core(); ra_reset(); }
+     else if (!strcmp(w, "READ_CORE_MEMORY")) read_memory(arg);
+     else if (!strcmp(w, "AUDIO_REINIT")) { bf_audio_close(); bf_audio_open(A.audio_dev, A.audio_ms); }
+     else if (w[0]) bf_log("command not known: %s", w);
+@@ -694,7 +701,7 @@
+     }
+     if (A.system && !strcmp(A.system,"easyrpg")) A.resume_load = A.resume_save = false;
+     const double t_core = bf_now_ms();
+-    if (!bf_core_load_game(A.rom)) { bf_core_close(); return 1; }
++    if (!bf_core_load_game(A.rom) || !bf_hw_ready()) { bf_core_close(); return 1; }
+     const double t_game = bf_now_ms();
+     bf_mmap_refresh();
+     sram_load();
+@@ -840,7 +847,7 @@
+             if (now - owed_since > 2000) owed = 0;  // (the sound's rate control takes it from here)
+             else if (catchup_fits(refresh, last_frame_ms)) {
+                 const double t0 = bf_now_ms();
+-                g_core.run();
++                bf_run_core();
+                 frontend_core_frame();
+                 bf_audio_flush();
+                 owed--;
+@@ -879,9 +886,9 @@
+             // as many frames as fit in most of a refresh (the last one shown)
+             const double budget = ff_budget;
+             nrun = 0;
+-            do { g_core.run(); frontend_core_frame(); nrun++; } while (bf_now_ms() - t0 < budget && nrun < 16);
++            do { bf_run_core(); frontend_core_frame(); nrun++; } while (bf_now_ms() - t0 < budget && nrun < 16);
+         } else
+-            for (int i = 0; i < nrun; i++) { g_core.run(); frontend_core_frame(); }
++            for (int i = 0; i < nrun; i++) { bf_run_core(); frontend_core_frame(); }
+         const double t1 = bf_now_ms();
+         frames_run += nrun;
+         S.frames += nrun;
+--- a/src/menu_host.c
++++ b/src/menu_host.c
+@@ -12,6 +12,7 @@
+ 
+ #include "audio.h"
+ #include "bf.h"
++#include "rpg_hw.h"
+ #include "frontend.h"
+ #include "input.h"
+ #include "menu.h"
+@@ -120,7 +121,7 @@
+ }
+ static void quit(void* ctx) { (void)ctx; bf_quit(false); }
+ static void quit_nosave(void* ctx) { (void)ctx; bf_quit(true); }
+-static void restart(void* ctx) { (void)ctx; g_core.reset(); ra_reset(); }
++static void restart(void* ctx) { (void)ctx; bf_reset_core(); ra_reset(); }
+ static void mlog(void* ctx, const char* line) { (void)ctx; bf_log("%s", line); }
+ #include "cpugov.h"
+ static void boost(void* ctx, int ms) { (void)ctx; bf_cpugov_boost(ms); }

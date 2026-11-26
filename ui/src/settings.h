@@ -303,7 +303,11 @@ namespace banana
 		std::string pgTitle, pgRom;
 		int pgRow = 0, pgTop = 0, pgEmu = 0, pgShader = 0, pg3d = 0, pgMic = 0, pgRes = 0, pgTiming = 0, pgCpu = 0;	// (pg3d, pgMic, pgRes, pgTiming, pgCpu: 0 as in Settings)
 		bool pgNds = true;
-		enum PgRow { PG_EMU, PG_SHADER, PG_3D, PG_MIC, PG_NAME, PG_SORT, PG_ART, PG_DELETE, PG_RES, PG_TIMING, PG_CPU, PG_ACH };
+		enum PgRow { PG_EMU, PG_SHADER, PG_3D, PG_MIC, PG_NAME, PG_SORT, PG_ART, PG_DELETE, PG_RES, PG_TIMING, PG_CPU, PG_ACH, PG_RPG_RGSS, PG_RPG_SCALE, PG_RPG_SHADER, PG_RPG_SWAP_AB, PG_RPG_SWAP_XY };
+		struct RpgChoice { PgRow row; const char* key; const char* label; const char* help; std::vector<std::string> names, values; };
+		static const std::vector<RpgChoice>& rpgChoices();
+		const RpgChoice* rpgChoice(PgRow row) const;
+		std::map<PgRow,int> pgRpg;
 		bool pgDelAll = false, pgDelArmed = false;	// Delete game: its saves, states and art too; A pressed once
 		std::string pgPath;	// the game's file (Box art: banana-scrape --match)
 		std::string pgScraped;	// the game's title without its own name (the page's name compares with it)

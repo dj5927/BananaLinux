@@ -2830,6 +2830,7 @@ int main(int argc, char** argv)
 		// BananaFront (run-bananafront) takes the same lease, pipe and tiles: it answers RetroArch's commands
 		bool ra = sd.run.find("run-retroarch") != std::string::npos || sd.run.find("run-ps1") != std::string::npos ||
 			sd.run.find("run-bananafront") != std::string::npos ||
+			sd.run.find("run-rpg") != std::string::npos ||
 			(sd.run.find("run-pico8") != std::string::npos && access("/data/roms/pico-8/pico8_64", F_OK) != 0);
 		bool panel = ra && settings["retroarch_panel"] != "off" && disp.isOpen();
 		int gameScreen = 0, leaseFd = -1, cmdFd = -1, outFd = -1;
@@ -3007,6 +3008,7 @@ int main(int argc, char** argv)
 			sigprocmask(SIG_SETMASK, &none, nullptr);
 			setenv("BANANA_ROM", rom.c_str(), 1);
 			setenv("BANANA_SYSTEM", sd.id.c_str(), 1);
+			setenv("BANANA_GAME_KEY", lib.gameKey(game).c_str(), 1);
 			setenv("BANANA_RA_PROGRESS", PROGRESS, 1);
 			if (panel)
 			{
