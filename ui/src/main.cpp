@@ -1140,6 +1140,19 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 				logf("touch %.0f %.0f: %s", x, y, ui.touch(scr, x * k, y * k, false) ? "used" : "unused");
 			}
 		}
+		else if (op == "rpgpanel")
+		{
+			std::string sys, key;
+			cs >> sys;
+			std::getline(cs >> std::ws, key);
+			if (sys != "mkxp" && sys != "easyrpg") return 2;
+			settings.gameClose();
+			settings.companion = nullptr; settings.gameComp = nullptr; settings.link = nullptr;
+			settings.gameSystem(sys);
+			settings.gameProjectKey(key);
+			settings.gameOpen("RPG test", sys, 1, true);
+			logf("rpgpanel %s: %s", sys.c_str(), key.c_str());
+		}
 		else if (op == "gamepanel")
 		{
 			// gamepanel <screen> <rom>: the game panel for a RetroArch game on the other screen, with the Pokémon
@@ -2849,7 +2862,7 @@ int main(int argc, char** argv)
 			leaseFd = disp.lease(gameScreen);
 			unlink(FIFO);
 			unlink("/run/banana/retroarch.log");	// (the last game's: the panel must not read it as this one's)
-			if (!compLink.create()) logf("companion: no shared memory: %s", strerror(errno));
+			if (!nativeRpg && !compLink.create()) logf("companion: no shared memory: %s", strerror(errno));
 			if (leaseFd >= 0 && mkfifo(FIFO, 0600) == 0) cmdFd = ::open(FIFO, O_RDWR | O_NONBLOCK | O_CLOEXEC);	// (read too: RetroArch never sees an end)
 			if (leaseFd < 0 || cmdFd < 0)
 			{
@@ -2891,7 +2904,7 @@ int main(int argc, char** argv)
 		// (gamecomp.h; the Pokémon games are the Pokémon companion's)
 		bool pkOn = panel && sd.id == "gba" && settings["pokemon_companion"] == "on" && companion.open(rom);
 		// (any system with a definition: the GBA's in the folder itself, another system's in <folder>/<system>/, schema 2)
-		bool gcOn = !pkOn && panel && settings["game_companion"] == "on" &&
+		bool gcOn = !nativeRpg && !pkOn && panel && settings["game_companion"] == "on" &&
 			((access("/data/banana/companions", F_OK) == 0 && gameComp.open(rom, "/data/banana/companions", sd.id)) ||
 				gameComp.open(rom, "/usr/share/banana/companions", sd.id));	// (the card's own first)
 		if (pkOn || gcOn)

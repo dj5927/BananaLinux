@@ -40,6 +40,10 @@ export BANANA_SYSTEM="$sys" BANANA_RPG_ID="$id" BANANA_RPG_CONFIG="$cfg"
 export BANANA_SA_CMD="${BANANA_RA_CMD:-}"
 export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-kmsdrm}"
 export SDL_KMSDRM_FIRST="${BANANA_TOP:-DSI-2}"
+if [ "$SDL_VIDEODRIVER" = kmsdrm ]; then
+    case "${BANANA_DRM_LEASE_FD:-}" in ''|*[!0-9]*) echo "RPG: dedicated display lease unavailable" >&2; exit 4 ;; esac
+    [ -p "${BANANA_SA_CMD:-}" ] || { echo "RPG: dedicated control channel unavailable" >&2; exit 4; }
+fi
 export HOME="$cfg" XDG_DATA_HOME="$cfg" XDG_CONFIG_HOME="$cfg"
 export LD_LIBRARY_PATH="$R/$sys/lib:$R/common/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 cd "$game"
@@ -51,7 +55,9 @@ if [ "$sys" = easyrpg ]; then
     v=$(asset font2 "$fonts"); [ -z "$v" ] || set -- "$@" --font2 "$v"
     v=$(num font1_size); [ -z "$v" ] || set -- "$@" --font1-size "$v"
     v=$(num font2_size); [ -z "$v" ] || set -- "$@" --font2-size "$v"
-    v=$(asset soundfont "$midi"); [ -z "$v" ] || set -- "$@" --soundfont "$v"
+    v=$(asset soundfont "$midi")
+    [ -n "$v" ] || { [ ! -f "$R/assets/TimGM6mb.sf2" ] || v="$R/assets/TimGM6mb.sf2"; }
+    [ -z "$v" ] || set -- "$@" --soundfont "$v"
     v=$(get encoding); case "$v" in 932|949|1252|65001) set -- "$@" --encoding "$v" ;; esac
     export RPG2K_RTP_PATH="$D/bios/rtp/2000" RPG2K3_RTP_PATH="$D/bios/rtp/2003"
     exec "$B" "$@"
@@ -59,6 +65,7 @@ fi
 export BANANA_RPG_RGSS="$(get rgss)" BANANA_RPG_SCALE="$(get scale)"
 export BANANA_RPG_MIDI="$(asset soundfont "$D/bios/mkxp/soundfonts")"
 export MKXP_PORTABLE_RTP_ROOT="$D/bios/mkxp/rtp"
+[ ! -f "$R/assets/TimGM6mb.sf2" ] || export MKXP_PORTABLE_SOUNDFONT="$R/assets/TimGM6mb.sf2"
 if [ -d "$R/mkxp/ruby/stdlib" ] && [ -d "$R/mkxp/ruby/extensions" ]; then
     export MKXP_PORTABLE_RUBY_LOADPATH="$R/mkxp/ruby/stdlib:$R/mkxp/ruby/extensions"
 fi

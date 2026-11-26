@@ -5667,6 +5667,7 @@ namespace banana
 		pgRpgChoices.clear();
 		if (!rpg::isSystem(system)) return;
 		const bool mkxp = system == "mkxp";
+		const std::string bios = (rpg::fs::path(data).parent_path() / "bios").string();
 		if (mkxp) pgRpgChoices.push_back({PG_RPG_RGSS, "rgss", "RGSS version", "Automatically detect XP, VX or VX Ace, or select a version for this game only. The setting takes effect next launch.", {"Auto","RPG Maker XP","RPG Maker VX","RPG Maker VX Ace"}, {"","1","2","3"}});
 		pgRpgChoices.push_back({PG_RPG_SCALE, "scale", "RPG screen scale", "Choose the screen scaling for this game. Integer scaling preserves pixel boundaries. Original aspect uses the largest size that fits.", {"Auto","Original aspect","Integer scale","Smooth"}, {"","aspect","integer","smooth"}});
 		auto files = [&](PgRow row,const char* name,const char* label,const std::string& dir,bool midi) {
@@ -5681,8 +5682,8 @@ namespace banana
 			pgRpgChoices.push_back(std::move(c));
 		};
 		if (!mkxp) {
-			files(PG_RPG_FONT1,"font1","Game font 1","/data/bios/easyrpg-player/Font",false);
-			files(PG_RPG_FONT2,"font2","Game font 2","/data/bios/easyrpg-player/Font",false);
+			files(PG_RPG_FONT1,"font1","Game font 1",bios+"/easyrpg-player/Font",false);
+			files(PG_RPG_FONT2,"font2","Game font 2",bios+"/easyrpg-player/Font",false);
 			auto sizes = [&](PgRow row,const char* name,const char* label) {
 				RpgChoice c{row,name,label,"Choose the font size in pixels. Changes apply next launch.",{"Auto"},{""}};
 				for (int i = 8; i <= 48; i++) { c.names.push_back(std::to_string(i)); c.values.push_back(std::to_string(i)); }
@@ -5692,7 +5693,7 @@ namespace banana
 			sizes(PG_RPG_FONT2_SIZE,"font2_size","Font 2 size");
 			pgRpgChoices.push_back({PG_RPG_ENCODING,"encoding","Text encoding","Select the game's original encoding. Changes apply next launch.",{"Auto","Korean (CP949)","Japanese (CP932)","Western (CP1252)","UTF-8"},{"","949","932","1252","65001"}});
 		}
-		files(PG_RPG_MIDI,"soundfont","MIDI SoundFont",mkxp?"/data/bios/mkxp/soundfonts":"/data/bios/easyrpg-player/Soundfont",true);
+		files(PG_RPG_MIDI,"soundfont","MIDI SoundFont",mkxp?bios+"/mkxp/soundfonts":bios+"/easyrpg-player/Soundfont",true);
 		for (const auto& c : pgRpgChoices) {
 			const auto v = perGame("rpg-per-game.conf", rpg::key(key) + "." + c.key);
 			auto it = std::find(c.values.begin(),c.values.end(),v);

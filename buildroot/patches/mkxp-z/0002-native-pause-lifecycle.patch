@@ -1,0 +1,79 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Keep the RGSS context on its rendering thread during native pause
+
+--- a/src/eventthread.h
++++ b/src/eventthread.h
+@@ -243,6 +243,8 @@
+ 
+ 	/* Set when F12 is released */
+ 	AtomicFlag rqResetFinish;
++	/* Banana native pause: the RGSS thread retains its GL context. */
++	AtomicFlag bananaPaused;
+     
+     // Set when window is being adjusted (resize, reposition)
+     AtomicFlag rqWindowAdjust;
+--- a/src/eventthread.cpp
++++ b/src/eventthread.cpp
+@@ -241,7 +241,8 @@
+     auto bananaResume = [&]() {
+         if (!bananaPaused) return;
+         if (HAVE_ALC_DEVICE_PAUSE) alc.DeviceResume(rtData.alcDev);
+-        rtData.syncPoint.resumeThreads();
++        rtData.bananaPaused.clear();
++        resetInputStates();
+         bananaPaused=false;
+     };
+     while (true)
+@@ -252,7 +253,8 @@
+             if (bananaPaused) bananaResume();
+             else {
+                 if (HAVE_ALC_DEVICE_PAUSE) alc.DevicePause(rtData.alcDev);
+-                rtData.syncPoint.haltThreads(); bananaPaused=true;
++                resetInputStates();
++                rtData.bananaPaused.set(); bananaPaused=true;
+             }
+         }
+         if (cmd==banana_sa::Reset && shState && rtData.config.enableReset) {
+@@ -264,7 +266,14 @@
+             Debug() << "EventThread: Event error";
+             break;
+         }
+-        if (bananaPaused && event.type!=SDL_QUIT) continue;
++        // Keep processing window and internal events while the game is paused.
++        if (bananaPaused && (event.type==SDL_KEYDOWN || event.type==SDL_KEYUP ||
++            event.type==SDL_CONTROLLERBUTTONDOWN || event.type==SDL_CONTROLLERBUTTONUP ||
++            event.type==SDL_CONTROLLERAXISMOTION || event.type==SDL_JOYBUTTONDOWN ||
++            event.type==SDL_JOYBUTTONUP || event.type==SDL_JOYAXISMOTION ||
++            event.type==SDL_MOUSEBUTTONDOWN || event.type==SDL_MOUSEBUTTONUP ||
++            event.type==SDL_MOUSEMOTION || event.type==SDL_FINGERDOWN ||
++            event.type==SDL_FINGERUP || event.type==SDL_FINGERMOTION)) continue;
+ #ifndef __APPLE__
+         if (sMenu && sMenu->onEvent(event))
+         {
+--- a/src/display/graphics.cpp
++++ b/src/display/graphics.cpp
+@@ -1146,6 +1146,11 @@
+     }
+     
+     void checkSyncLock() {
++        if (threadData->bananaPaused) {
++            while (threadData->bananaPaused && !threadData->rqTerm && !threadData->rqReset)
++                SDL_Delay(8);
++            fpsLimiter.resetFrameAdjust();
++        }
+         if (!threadData->syncPoint.mainSyncLocked())
+             return;
+         
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -177,7 +177,10 @@
+ 
+   SharedState::finiInstance();
+ 
++  // Detach contexts on the thread that owns them before main-thread teardown.
++  alcMakeContextCurrent(nullptr);
+   alcDestroyContext(alcCtx);
++  SDL_GL_MakeCurrent(threadData->window, nullptr);
+ 
+   return 0;
+ }

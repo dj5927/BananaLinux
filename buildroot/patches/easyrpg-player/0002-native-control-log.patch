@@ -1,0 +1,20 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Record native control transitions for diagnostics
+
+--- a/src/platform/sdl/sdl2_ui.cpp
++++ b/src/platform/sdl/sdl2_ui.cpp
+@@ -540,11 +540,11 @@
+     static bool paused=false;
+     do {
+         const auto cmd=banana.next();
+-        if (cmd==banana_sa::Quit) { if (paused) Player::Resume(); paused=false; Player::exit_flag=true; return true; }
+-        if (cmd==banana_sa::Reset) { if (paused) Player::Resume(); paused=false; Player::reset_flag=true; return true; }
++        if (cmd==banana_sa::Quit) { if (paused) Player::Resume(); paused=false; Output::Debug("Banana SA: quit"); Player::exit_flag=true; return true; }
++        if (cmd==banana_sa::Reset) { if (paused) Player::Resume(); paused=false; Output::Debug("Banana SA: reset"); Player::reset_flag=true; return true; }
+         if (cmd==banana_sa::TogglePause) {
+             paused=!paused;
+-            if (paused) Player::Pause(); else Player::Resume();
++            if (paused) { Player::Pause(); Output::Debug("Banana SA: paused"); } else { Player::Resume(); Output::Debug("Banana SA: resumed"); }
+         }
+         if (paused) {
+             SDL_Event event;
