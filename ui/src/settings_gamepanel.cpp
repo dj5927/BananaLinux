@@ -363,7 +363,7 @@ namespace banana
 		gFlash = gDown = -1; gSeen = -1; awardsSeen = 0; wake = false;
 		gKeysOpen = false; gKeyPage = 0; gKeyShift = 0; gKeyTyped.clear();
 		if (rpg::isSystem(gSysId)) {
-			raw.reset(); gRpgPage = gRpgConfirm = 0;
+			raw.reset(); gRpgPage = gRpgConfirm = 0; gRpgDirty = false;
 			loadRpgChoices(gSysId,gProjectKey);
 			return;
 		}
@@ -947,7 +947,7 @@ namespace banana
 		if (gRpgConfirm) {
 			const int action = gRpgConfirm;
 			gRpgConfirm = 0;
-			if (y >= 365 && y < 425 && x >= 320) return action == 1 ? G_RESET : G_QUIT;
+			if (y >= 365 && y < 425 && x >= 320) { if (action == 1) gRpgDirty = false; return action == 1 ? G_RESET : G_QUIT; }
 			return G_NONE;
 		}
 		if (y >= 364 && y < 425) {
@@ -969,6 +969,7 @@ namespace banana
 			if (n > 0) {
 				v=(v+(x<475?-1:1)+n)%n;
 				setPerGame("rpg-per-game.conf",rpg::key(gProjectKey)+"."+c.key,c.values[v]);
+				gRpgDirty = true;
 			}
 		}
 		return G_NONE;
@@ -1008,9 +1009,9 @@ namespace banana
 		int pages=std::max(1,int(pgRpgChoices.size()+3)/4);
 		text(std::to_string(gRpgPage+1)+" / "+std::to_string(pages),true,18,290,315,p.muted);
 		button(18,364,190,60,"Pause / Resume");
-		button(224,364,190,60,"Restart");
+		button(224,364,190,60,gRpgDirty?"Apply / restart":"Restart");
 		button(430,364,192,60,"Quit");
-		wrapped("Save in the game. Settings apply next launch.",15,22,438,596,2,p.muted);
+		wrapped(gRpgDirty?"Settings saved. Apply / restart to use them.":"Save in the game. Settings apply next launch.",15,22,438,596,2,p.muted);
 		be->endScreen();
 	}
 

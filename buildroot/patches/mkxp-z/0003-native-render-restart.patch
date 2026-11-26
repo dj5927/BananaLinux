@@ -1,0 +1,245 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Native RPG archive, rendering and settings restart fixes
+
+--- a/src/config.cpp
++++ b/src/config.cpp
+@@ -270,15 +270,37 @@
+     copyObject(optsJ, userConf);
+     if (SDL_getenv("BANANA_RPG_CONFIG")) {
+         opts["fullscreen"] = true;
+-        opts["enableSettings"] = false; // single KMS window; settings live on Banana's other panel
++        opts["enableSettings"] = false;
++        opts["fixedAspectRatio"] = true;
++        // Fit with linear resampling by default (non-integer LCD sizes).
++        // A true integer mode must never apply a fractional last-mile stretch.
++        opts["integerScalingActive"] = false;
++        opts["integerScalingLastMile"] = false;
++        opts["smoothScaling"] = 1;
++        opts["smoothScalingDown"] = 1;
+         if (const char* v=SDL_getenv("BANANA_RPG_SCALE")) {
+-            if (!strcmp(v,"integer") || !strcmp(v,"aspect") || !strcmp(v,"smooth")) {
+-                opts["fixedAspectRatio"] = true;
++            if (!strcmp(v,"integer") || !strcmp(v,"aspect")) {
+                 opts["integerScalingActive"] = !strcmp(v,"integer");
+-                opts["smoothScaling"] = !strcmp(v,"smooth") ? 1 : 0;
+-                opts["smoothScalingDown"] = !strcmp(v,"smooth") ? 1 : 0;
++                opts["smoothScaling"] = 0;
+             }
+         }
++        // Use hinted glyphs at small native resolution, retain an original mode.
++        opts["fontHinting"] = 0;
++        if (const char* v=SDL_getenv("BANANA_RPG_FONT_HINT"))
++            if (!strcmp(v,"original")) opts["fontHinting"] = 3;
++        if (const char* v=SDL_getenv("BANANA_RPG_FONT_SCALE")) {
++            if (!strcmp(v,"90")) opts["fontScale"] = 0.9;
++            else if (!strcmp(v,"100")) opts["fontScale"] = 1.0;
++            else if (!strcmp(v,"110")) opts["fontScale"] = 1.1;
++            else if (!strcmp(v,"120")) opts["fontScale"] = 1.2;
++        }
++        // Avoid driver-dependent FBO blits on GLES Mali. The upstream shader
++        // path preserves the RGSS operations including menu snapshots.
++        opts["enableBlitting"] = false;
++        opts["subImageFix"] = true;
++        if (const char* v=SDL_getenv("BANANA_RPG_RENDER"))
++            if (!strcmp(v,"native")) { opts["enableBlitting"] = true; opts["subImageFix"] = false; }
++
+         if (const char* v=SDL_getenv("BANANA_RPG_MIDI"))
+             if (*v) opts["midiSoundFont"] = v;
+     }
+@@ -368,6 +390,12 @@
+     SET_OPT(fontHinting, integer);
+     SET_OPT(fontHeightReporting, integer);
+     SET_OPT(fontOutlineCrop, boolean);
++    if (SDL_getenv("BANANA_RPG_CONFIG")) {
++        Debug() << "Banana MKXP config: RGSS" << rgssVersion << "resolution" << defScreenW << defScreenH
++                << "integer" << integerScaling.active << "last-mile" << integerScaling.lastMileScaling
++                << "filter" << smoothScaling << smoothScalingDown << "hint" << fontHinting
++                << "font-scale" << fontScale << "native-blit" << enableBlitting << "subimage-fix" << subImageFix;
++    }
+     fillStringVec(opts["rubyLoadpath"], rubyLoadpaths);
+     
+     auto &bnames = opts["bindingNames"].as_object();
+--- a/src/display/graphics.cpp
++++ b/src/display/graphics.cpp
+@@ -882,7 +882,7 @@
+         glResourceLock = SDL_CreateMutex();
+         
+         if (integerScaleActive) {
+-            integerScaleFactor = Vec2i(0, 0);
++            integerScaleFactor = Vec2i(1, 1);
+             rebuildIntegerScaleBuffer();
+         }
+         
+@@ -925,7 +925,7 @@
+             }
+         }
+         
+-        if (integerScaleActive && !integerLastMileScaling) {
++        if (integerScaleStepApplicable() && !integerLastMileScaling) {
+             scOffset.x = ((winSize.x / 2) - (scRes.x / 2) * integerScaleFactor.x);
+             scOffset.y = ((winSize.y / 2) - (scRes.y / 2) * integerScaleFactor.y);
+             
+@@ -946,12 +946,7 @@
+     }
+     
+     static int findHighestFittingScale(int base, int target) {
+-        int scale = 1;
+-        
+-        while (base * scale <= target)
+-            scale++;
+-        
+-        return std::max(scale - 1, 1);
++        return base > 0 && target > 0 ? std::max(target / base, 1) : 1;
+     }
+     
+     /* Returns whether a new scale was found */
+@@ -984,7 +979,7 @@
+     
+     bool integerScaleStepApplicable() const
+     {
+-        if (!integerScaleActive)
++        if (!integerScaleActive || scRes.x > winSize.x || scRes.y > winSize.y || scRes.x <= 0 || scRes.y <= 0)
+             return false;
+         
+         if (integerScaleFactor.x < 1 || integerScaleFactor.y < 1) // XXX should be < 2, this is for testing only
+@@ -999,6 +994,7 @@
+             Vec2i drawableSize(winSize);
+             threadData->drawableSizeMsg.poll(drawableSize);
+             
++            if (drawableSize.x <= 0 || drawableSize.y <= 0 || winSize.x <= 0 || winSize.y <= 0) return;
+             backingScaleFactor = drawableSize.x / winSize.x;
+             winSize = drawableSize;
+             
+@@ -1129,7 +1125,7 @@
+ 
+         Vec2i sourceSize;
+ 
+-        if (integerScaleActive)
++        if (integerScaleStepApplicable())
+         {
+             sourceSize = Vec2i(integerScaleBuffer.width, integerScaleBuffer.height);
+         }
+@@ -1138,9 +1134,9 @@
+             sourceSize = scRes;
+         }
+ 
+-        int scaleIsSpecial = GLMeta::blitScaleIsSpecial(integerScaleBuffer, false, IntRect(0, 0, scSize.x, scSize.y), integerScaleActive ? integerScaleBuffer : screen.getPP().frontBuffer(), IntRect(0, 0, sourceSize.x, sourceSize.y));
+-
+-        swapGLBuffer(winSize, integerScaleActive ? integerScaleBuffer : screen.getPP().frontBuffer(), sourceSize, scaleIsSpecial);
++        int scaleIsSpecial = GLMeta::blitScaleIsSpecial(integerScaleBuffer, false, IntRect(0, 0, scSize.x, scSize.y), integerScaleStepApplicable() ? integerScaleBuffer : screen.getPP().frontBuffer(), IntRect(0, 0, sourceSize.x, sourceSize.y));
++
++        swapGLBuffer(winSize, integerScaleStepApplicable() ? integerScaleBuffer : screen.getPP().frontBuffer(), sourceSize, scaleIsSpecial);
+         
+         updateAvgFPS();
+     }
+--- a/src/display/font.cpp
++++ b/src/display/font.cpp
+@@ -72,6 +72,22 @@
+ 
+ static SDL_RWops *openBundledFont()
+ {
++    // Only replace the fallback font, never a font supplied by the game.
++    static const std::string external = [] {
++        const char *v = SDL_getenv("BANANA_RPG_FONT");
++        if (v && *v) {
++            TTF_Font *probe = TTF_OpenFont(v, 16);
++            if (probe) {
++                TTF_CloseFont(probe);
++                Debug() << "Banana MKXP fallback font:" << v;
++                return std::string(v);
++            }
++            Debug() << "Invalid fallback font, using bundled font:" << v;
++        }
++        return std::string();
++    }();
++    if (!external.empty())
++        if (SDL_RWops *ops=SDL_RWFromFile(external.c_str(),"rb")) return ops;
+     return SDL_RWFromConstMem(BNDL_F_D(BUNDLED_FONT), BNDL_F_L(BUNDLED_FONT));
+ }
+ 
+@@ -200,8 +216,11 @@
+ 	if (!font)
+ 		return;
+ 
+-	std::string family = TTF_FontFaceFamilyName(font);
+-	std::string style = TTF_FontFaceStyleName(font);
++	const char *familyName = TTF_FontFaceFamilyName(font);
++	const char *styleName = TTF_FontFaceStyleName(font);
++	if (!familyName || !*familyName) { TTF_CloseFont(font); return; }
++	std::string family = familyName;
++	std::string style = styleName ? styleName : "";
+ 
+ 	std::transform(family.begin(), family.end(), family.begin(),
+ 		[](unsigned char c){ return std::tolower(c); });
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -41,6 +41,7 @@
+ #include "binding.h"
+ #include "sharedstate.h"
+ #include "eventthread.h"
++#include "banana_sa_control.h"
+ #include "util/debugwriter.h"
+ #include "util/exception.h"
+ #include "display/gl/gl-debug.h"
+@@ -743,8 +744,9 @@
+ 
+     if (!rtData.rgssErrorMsg.empty()) {
+       Debug() << rtData.rgssErrorMsg;
+-      SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, conf.game.title.c_str(),
+-                               rtData.rgssErrorMsg.c_str(), win);
++      if (!SDL_getenv("BANANA_RPG_CONFIG"))
++        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, conf.game.title.c_str(),
++                                 rtData.rgssErrorMsg.c_str(), win);
+     }
+ 
+     if (rtData.glContext)
+@@ -771,7 +773,7 @@
+     IMG_Quit();
+     SDL_Quit();
+ 
+-    return 0;
++    return banana_sa::finish(rtData.rgssErrorMsg.empty() ? 0 : 1);
+ }
+ 
+ static SDL_GLContext initGL(SDL_Window *win, Config &conf,
+--- a/src/eventthread.cpp
++++ b/src/eventthread.cpp
+@@ -257,6 +257,7 @@
+                 rtData.bananaPaused.set(); bananaPaused=true;
+             }
+         }
++        if (cmd==banana_sa::Reset && banana_sa::requestRestart()) { bananaResume(); terminate=true; break; }
+         if (cmd==banana_sa::Reset && shState && rtData.config.enableReset) {
+             bananaResume();
+             rtData.rqResetFinish.clear(); rtData.rqReset.set(); rtData.rqResetFinish.set();
+--- a/src/banana_sa_control.h
++++ b/src/banana_sa_control.h
+@@ -7,6 +7,28 @@
+ #include <sys/stat.h>
+ #include <unistd.h>
+ namespace banana_sa {
++// Re-execute the launcher after clean engine shutdown. The process ID and
++// inherited display lease stay unchanged; the launcher reads new options.
++inline bool& restartRequested() { static bool requested=false; return requested; }
++inline bool requestRestart() {
++    const char *launcher=std::getenv("BANANA_SA_LAUNCHER");
++    const char *entry=std::getenv("BANANA_SA_ENTRY");
++    const char *sys=std::getenv("BANANA_SYSTEM");
++    if (!launcher || launcher[0]!='/' || !entry || entry[0]!='/' || !sys ||
++        (std::strcmp(sys,"mkxp") && std::strcmp(sys,"easyrpg"))) return false;
++    restartRequested()=true;
++    return true;
++}
++inline int finish(int status) {
++    if (status || !restartRequested()) return status;
++    setenv("BANANA_SA_RESTARTING","1",1);
++    const char *launcher=std::getenv("BANANA_SA_LAUNCHER");
++    const char *entry=std::getenv("BANANA_SA_ENTRY");
++    const char *sys=std::getenv("BANANA_SYSTEM");
++    char *const args[]={const_cast<char*>(launcher),const_cast<char*>(sys),const_cast<char*>(entry),nullptr};
++    execv(launcher,args);
++    return 125;
++}
+ enum Command { None, TogglePause, Reset, Quit };
+ class Channel {
+     int fd_ = -1;

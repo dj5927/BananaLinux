@@ -10,7 +10,7 @@ esac
 [ -f "$entry" ] || { echo "Missing RPG project entry: $entry" >&2; exit 2; }
 case "$entry" in /*) ;; *) echo "Project entry must be absolute" >&2; exit 2 ;; esac
 case "$sys" in
-    easyrpg) [ "$(basename "$entry" | tr '[:upper:]' '[:lower:]')" = rpg_rt.ldb ] || exit 2 ;;
+    easyrpg) case "$(basename "$entry" | tr '[:upper:]' '[:lower:]')" in rpg_rt.ldb|*.zip|*.easyrpg) ;; *) exit 2 ;; esac ;;
     mkxp) case "$(basename "$entry" | tr '[:upper:]' '[:lower:]')" in game.ini|mkxp.json|*.rxproj|*.rvproj|*.rvproj2) ;; *) exit 2 ;; esac ;;
 esac
 D=${BANANA_RPG_DATA:-/data}
@@ -20,7 +20,7 @@ key=${BANANA_GAME_KEY:-$sys/$game}
 hex=$(printf '%s' "$key" | od -An -tx1 | tr -d ' \n')
 id=$(printf '%s' "$key" | sha256sum | cut -d ' ' -f1)
 cfg="$D/banana/rpg/$sys/$id"
-mkdir -p "$cfg" "$D/bios/easyrpg-player/Font" "$D/bios/easyrpg-player/Soundfont" "$D/bios/mkxp/fonts" "$D/bios/mkxp/soundfonts" "$D/bios/mkxp/rtp"
+mkdir -p "$cfg" "$D/banana/logs" "$D/bios/easyrpg-player/Font" "$D/bios/easyrpg-player/Soundfont" "$D/bios/mkxp/fonts" "$D/bios/mkxp/soundfonts" "$D/bios/mkxp/rtp"
 get() {
     awk -v k="$hex.$1" 'index($0,k " = ")==1 {v=substr($0,length(k)+4)} END{print v}' "$D/banana/rpg-per-game.conf" 2>/dev/null || :
 }
@@ -38,6 +38,19 @@ B="$R/$sys/$exe"
 [ -x "$B" ] || { echo "Standalone RPG runtime not installed: $B" >&2; exit 3; }
 export BANANA_SYSTEM="$sys" BANANA_RPG_ID="$id" BANANA_RPG_CONFIG="$cfg"
 export BANANA_SA_CMD="${BANANA_RA_CMD:-}"
+export BANANA_SA_LAUNCHER="${BANANA_SA_LAUNCHER:-/usr/libexec/banana/run-rpg}"
+export BANANA_SA_ENTRY="$entry"
+# Retain one complete session log for diagnostics, including a settings restart.
+if [ "${BANANA_SA_RESTARTING:-}" != 1 ]; then
+    [ ! -f "$cfg/last-run.log" ] || mv -f "$cfg/last-run.log" "$cfg/previous-run.log"
+    : > "$cfg/last-run.log"
+fi
+# The global log is convenient for SSH/SFTP; each game's log is kept separately.
+printf '%s\n' "$cfg/last-run.log" > "$D/banana/logs/rpg-last-log-path.txt"
+if [ "${BANANA_RPG_LOG:-1}" != 0 ]; then
+    exec >> "$cfg/last-run.log" 2>&1
+fi
+printf 'RPG %s launch %s restart=%s\n' "$sys" "$entry" "${BANANA_SA_RESTARTING:-0}"
 export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-kmsdrm}"
 export SDL_KMSDRM_FIRST="${BANANA_TOP:-DSI-2}"
 if [ "$SDL_VIDEODRIVER" = kmsdrm ]; then
@@ -45,11 +58,20 @@ if [ "$SDL_VIDEODRIVER" = kmsdrm ]; then
     [ -p "${BANANA_SA_CMD:-}" ] || { echo "RPG: dedicated control channel unavailable" >&2; exit 4; }
 fi
 export HOME="$cfg" XDG_DATA_HOME="$cfg" XDG_CONFIG_HOME="$cfg"
-export LD_LIBRARY_PATH="$R/$sys/lib:$R/common/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="$R/$sys/lib:$R/common/lib"
 cd "$game"
 if [ "$sys" = easyrpg ]; then
     fonts="$D/bios/easyrpg-player/Font"; midi="$D/bios/easyrpg-player/Soundfont"
-    set -- --project-path "$game" --save-path "$game" --config-path "$cfg" --fullscreen --font-path "$fonts" --soundfont-path "$midi"
+    project="$game"; save="$game"
+    case "$(basename "$entry" | tr '[:upper:]' '[:lower:]')" in
+        *.zip|*.easyrpg)
+            project="$entry"
+            # Writable saves never go into the read-only archive or share another game's path.
+            save="$entry.save"
+            if [ ! -d "$save" ]; then mkdir -p "$save"; fi
+            ;;
+    esac
+    set -- --project-path "$project" --save-path "$save" --config-path "$cfg" --fullscreen --font-path "$fonts" --soundfont-path "$midi"
     v=$(get scale); case "$v" in integer) set -- "$@" --scaling integer ;; aspect) set -- "$@" --scaling nearest ;; smooth) set -- "$@" --scaling bilinear ;; esac
     v=$(asset font1 "$fonts"); [ -z "$v" ] || set -- "$@" --font1 "$v"
     v=$(asset font2 "$fonts"); [ -z "$v" ] || set -- "$@" --font2 "$v"
@@ -64,6 +86,10 @@ if [ "$sys" = easyrpg ]; then
 fi
 export BANANA_RPG_RGSS="$(get rgss)" BANANA_RPG_SCALE="$(get scale)"
 export BANANA_RPG_MIDI="$(asset soundfont "$D/bios/mkxp/soundfonts")"
+export BANANA_RPG_FONT="$(asset mkxp_font "$D/bios/mkxp/fonts")"
+export BANANA_RPG_FONT_HINT="$(get font_hint)"
+export BANANA_RPG_FONT_SCALE="$(get font_scale)"
+export BANANA_RPG_RENDER="$(get render)"
 export MKXP_PORTABLE_RTP_ROOT="$D/bios/mkxp/rtp"
 [ ! -f "$R/assets/TimGM6mb.sf2" ] || export MKXP_PORTABLE_SOUNDFONT="$R/assets/TimGM6mb.sf2"
 if [ -d "$R/mkxp/ruby/stdlib" ] && [ -d "$R/mkxp/ruby/extensions" ]; then

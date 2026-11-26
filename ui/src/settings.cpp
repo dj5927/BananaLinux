@@ -5681,6 +5681,12 @@ namespace banana
 			}
 			pgRpgChoices.push_back(std::move(c));
 		};
+		if (mkxp) {
+			files(PG_RPG_MKXP_FONT,"mkxp_font","MKXP fallback font",bios+"/mkxp/fonts",false);
+			pgRpgChoices.push_back({PG_RPG_FONT_HINT,"font_hint","Font rendering","Choose sharper hinted text or the original RGSS font rendering.",{"Auto","Sharp","Original"},{"","sharp","original"}});
+			pgRpgChoices.push_back({PG_RPG_FONT_SCALE,"font_scale","Font size adjustment","Adjust MKXP font size relative to the game's original size.",{"Auto","90%","100%","110%","120%"},{"","90","100","110","120"}});
+			pgRpgChoices.push_back({PG_RPG_RENDER,"render","Graphics compatibility","Use the safer shader rendering path by default. Native blitting is optional.",{"Auto","Compatible","Native blit"},{"","compat","native"}});
+		}
 		if (!mkxp) {
 			files(PG_RPG_FONT1,"font1","Game font 1",bios+"/easyrpg-player/Font",false);
 			files(PG_RPG_FONT2,"font2","Game font 2",bios+"/easyrpg-player/Font",false);

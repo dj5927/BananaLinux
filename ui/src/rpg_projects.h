@@ -11,7 +11,7 @@
 
 namespace banana::rpg {
 namespace fs = std::filesystem;
-struct Project { std::string rel, entry, engine; };
+struct Project { std::string rel, entry, engine; bool archive=false; };
 inline bool isSystem(const std::string& id) { return id=="mkxp" || id=="easyrpg"; }
 inline std::string lower(std::string s) {
     for (auto& c:s) c=static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
@@ -89,7 +89,7 @@ inline Project inspect(const fs::path& dir,const std::string& id) {
     if(id!="mkxp") return {};
     if(types.empty() || types.size()!=1 || (explicitType && !types.count(explicitType))) return {};
     int v=*types.begin();
-    // A project entry is necessary for the Libretro core. Never manufacture
+    // A project entry is necessary for the standalone launcher. Never manufacture
     // Game.ini or a project marker in the user's folder.
     p.entry=!project.empty()?project:!ini.empty()?ini:json;
     if(p.entry.empty()) return {};
@@ -101,8 +101,14 @@ inline void scan(const fs::path& root,const std::string& id,std::vector<Project>
     if(depth>=3) return; // one game folder, with up to two grouping directories
     for(const auto& e:entries(rel.empty()?root:root/fs::path(rel))) {
         const auto n=e.path().filename().string();
-        if(!directory(e) || ignored(n)) continue;
+        if(ignored(n)) continue;
         const auto next=rel.empty()?n:rel+"/"+n;
+        const auto ext=lower(e.path().extension().string());
+        if(id=="easyrpg" && regular(e) && (ext==".zip" || ext==".easyrpg")) {
+            result.push_back({next,next,"RPG Maker 2000/2003",true});
+            continue;
+        }
+        if(!directory(e) || ext==".save") continue;
         auto p=inspect(e.path(),id);
         if(!p.entry.empty()) {
             p.rel=next;

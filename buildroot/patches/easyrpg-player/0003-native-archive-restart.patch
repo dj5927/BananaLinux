@@ -1,0 +1,81 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Native RPG archive, rendering and settings restart fixes
+
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -551,6 +551,13 @@
+ 				auto gamefs = FileFinder::Root().Create(FileFinder::MakeCanonical(arg.Value(0), 0));
+ 				if (!gamefs) {
+ 					Output::Error("Invalid --project-path {}", arg.Value(0));
++				}
++				// Standalone archives with a unique nested project are launchable
++				// without extraction, even if the archive contains extra files.
++				if (FileFinder::IsSupportedArchiveExtension(arg.Value(0)) &&
++				    !FileFinder::IsRPG2kProject(gamefs) && !FileFinder::IsRPG2kProjectWithRenames(gamefs)) {
++					auto games=FileFinder::FindGames(gamefs,5,2);
++					if (games.size()==1) gamefs=games.front().fs;
+ 				}
+ 				FileFinder::SetGameFilesystem(gamefs);
+ 			}
+--- a/src/platform/sdl/main.cpp
++++ b/src/platform/sdl/main.cpp
+@@ -19,6 +19,7 @@
+ #include <string>
+ #include <vector>
+ #include "player.h"
++#include "banana_sa_control.h"
+ #include "utils.h"
+ #include "output.h"
+ 
+@@ -85,5 +86,9 @@
+ 	Player::Run();
+ 
+ 	// Close
++	#if !defined(_WIN32) && !defined(__ANDROID__)
++	return banana_sa::finish(Player::exit_code);
++#else
+ 	return Player::exit_code;
++#endif
+ }
+--- a/src/platform/sdl/sdl2_ui.cpp
++++ b/src/platform/sdl/sdl2_ui.cpp
+@@ -541,7 +541,7 @@
+     do {
+         const auto cmd=banana.next();
+         if (cmd==banana_sa::Quit) { if (paused) Player::Resume(); paused=false; Output::Debug("Banana SA: quit"); Player::exit_flag=true; return true; }
+-        if (cmd==banana_sa::Reset) { if (paused) Player::Resume(); paused=false; Output::Debug("Banana SA: reset"); Player::reset_flag=true; return true; }
++        if (cmd==banana_sa::Reset) { if (paused) Player::Resume(); paused=false; Output::Debug("Banana SA: reset"); if (banana_sa::requestRestart()) Player::exit_flag=true; else Player::reset_flag=true; return true; }
+         if (cmd==banana_sa::TogglePause) {
+             paused=!paused;
+             if (paused) { Player::Pause(); Output::Debug("Banana SA: paused"); } else { Player::Resume(); Output::Debug("Banana SA: resumed"); }
+--- a/src/platform/sdl/banana_sa_control.h
++++ b/src/platform/sdl/banana_sa_control.h
+@@ -7,6 +7,28 @@
+ #include <sys/stat.h>
+ #include <unistd.h>
+ namespace banana_sa {
++// Re-execute the launcher after clean engine shutdown. The process ID and
++// inherited display lease stay unchanged; the launcher reads new options.
++inline bool& restartRequested() { static bool requested=false; return requested; }
++inline bool requestRestart() {
++    const char *launcher=std::getenv("BANANA_SA_LAUNCHER");
++    const char *entry=std::getenv("BANANA_SA_ENTRY");
++    const char *sys=std::getenv("BANANA_SYSTEM");
++    if (!launcher || launcher[0]!='/' || !entry || entry[0]!='/' || !sys ||
++        (std::strcmp(sys,"mkxp") && std::strcmp(sys,"easyrpg"))) return false;
++    restartRequested()=true;
++    return true;
++}
++inline int finish(int status) {
++    if (status || !restartRequested()) return status;
++    setenv("BANANA_SA_RESTARTING","1",1);
++    const char *launcher=std::getenv("BANANA_SA_LAUNCHER");
++    const char *entry=std::getenv("BANANA_SA_ENTRY");
++    const char *sys=std::getenv("BANANA_SYSTEM");
++    char *const args[]={const_cast<char*>(launcher),const_cast<char*>(sys),const_cast<char*>(entry),nullptr};
++    execv(launcher,args);
++    return 125;
++}
+ enum Command { None, TogglePause, Reset, Quit };
+ class Channel {
+     int fd_ = -1;

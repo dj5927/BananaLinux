@@ -7,6 +7,28 @@
 #include <sys/stat.h>
 #include <unistd.h>
 namespace banana_sa {
+// Re-execute the launcher after clean engine shutdown. The process ID and
+// inherited display lease stay unchanged; the launcher reads new options.
+inline bool& restartRequested() { static bool requested=false; return requested; }
+inline bool requestRestart() {
+    const char *launcher=std::getenv("BANANA_SA_LAUNCHER");
+    const char *entry=std::getenv("BANANA_SA_ENTRY");
+    const char *sys=std::getenv("BANANA_SYSTEM");
+    if (!launcher || launcher[0]!='/' || !entry || entry[0]!='/' || !sys ||
+        (std::strcmp(sys,"mkxp") && std::strcmp(sys,"easyrpg"))) return false;
+    restartRequested()=true;
+    return true;
+}
+inline int finish(int status) {
+    if (status || !restartRequested()) return status;
+    setenv("BANANA_SA_RESTARTING","1",1);
+    const char *launcher=std::getenv("BANANA_SA_LAUNCHER");
+    const char *entry=std::getenv("BANANA_SA_ENTRY");
+    const char *sys=std::getenv("BANANA_SYSTEM");
+    char *const args[]={const_cast<char*>(launcher),const_cast<char*>(sys),const_cast<char*>(entry),nullptr};
+    execv(launcher,args);
+    return 125;
+}
 enum Command { None, TogglePause, Reset, Quit };
 class Channel {
     int fd_ = -1;

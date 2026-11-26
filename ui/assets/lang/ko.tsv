@@ -2890,3 +2890,14 @@ settings		Pause / Resume	일시 정지 / 계속
 settings		Restart this game? Unsaved progress will be lost.	게임을 다시 시작할까요? 저장하지 않은 진행 내용은 사라집니다.
 settings		Quit this game? Unsaved progress will be lost.	게임을 종료할까요? 저장하지 않은 진행 내용은 사라집니다.
 settings		Save in the game. Settings apply next launch.	게임 안에서 저장하세요. 설정은 다음 실행부터 적용됩니다.
+settings		MKXP fallback font	MKXP 대체 글꼴
+settings		Font rendering	글꼴 렌더링
+settings		Choose sharper hinted text or the original RGSS font rendering.	글꼴을 선명하게 보정하거나 원래 RGSS 방식으로 그립니다.
+settings		Font size adjustment	글꼴 크기 보정
+settings		Adjust MKXP font size relative to the game's original size.	게임 원래 글꼴 크기를 기준으로 크기를 조정합니다.
+settings		Graphics compatibility	그래픽 호환성
+settings		Use the safer shader rendering path by default. Native blitting is optional.	기본값은 호환성 중심의 셰이더 렌더링입니다. 네이티브 블리팅은 선택 사항입니다.
+settings		Compatible	호환성 우선
+settings		Native blit	네이티브 블리팅
+settings		Apply / restart	적용 / 재시작
+settings		Settings saved. Apply / restart to use them.	설정 저장 완료. 적용 / 재시작을 눌러 반영하세요.

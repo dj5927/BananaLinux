@@ -681,7 +681,7 @@ namespace banana
 					const auto project = projects.find(rel);
 					const bool folderGame = project != projects.end();
 					if (folderGame) { g.path = dir + "/" + project->second.entry; g.genre = project->second.engine; }
-					std::string stem = folderGame ? base : base.substr(0, base.rfind('.'));
+					std::string stem = folderGame && !project->second.archive ? base : base.substr(0, base.rfind('.'));
 					if (lower(stem).size() > 3 && lower(stem).compare(stem.size() - 3, 3, ".p8") == 0) stem.resize(stem.size() - 3);	// a .p8.png cart
 					g.title = folderGame ? stem : cleanTitle(stem);
 					auto it = gl.find(rel);
