@@ -1,7 +1,7 @@
 {
-  "version": "0.5.3.6.21",
-  "ota_version": "0.5.3.6.22",
-  "size": 55957465,
-  "sha256": "ea25ee5c50c51f903407213af288fcc1fd0bda64d8072b09ab9c588a631f2ab5",
-  "url": "https://github.com/dj5927/BananaLinux/releases/download/v0.5.3.6.21/banana-easyemu-0.5.3.6.21.tar.gz"
+  "version": "0.5.3.6.23",
+  "ota_version": "0.5.3.6.23",
+  "size": 56368777,
+  "sha256": "67a446ba3501002973f40201e92512a49dcc95b38ba2e9dd76c494cd0a544a28",
+  "url": "https://github.com/dj5927/BananaLinux/releases/download/v0.5.3.6.23/banana-easyemu-0.5.3.6.23.tar.gz"
 }

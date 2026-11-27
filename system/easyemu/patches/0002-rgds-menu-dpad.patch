@@ -1,0 +1,262 @@
+--- a/core/sdl/sdl.cpp
++++ b/core/sdl/sdl.cpp
+@@ -211,6 +211,7 @@
+ 
+ void input_sdl_init()
+ {
++	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+ 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
+ 	{
+ 		// We want joystick events even if we loose focus
+@@ -621,6 +622,7 @@
+ 				break;
+ 		}
+ 	}
++	SDLGamepad::PollBananaMenu();
+ }
+ 
+ void sdlReceiveSlaveKeyboardEvent(u16 scancode, bool pressed)
+--- a/core/sdl/sdl_gamepad.h
++++ b/core/sdl/sdl_gamepad.h
+@@ -61,6 +61,7 @@
+ 		while (!sdl_gamepads.empty())
+ 			sdl_gamepads.begin()->second->close();
+ 	}
++	static void PollBananaMenu();
+ 	static void UpdateRumble() {
+ 		for (auto &[k, gamepad] : sdl_gamepads)
+ 			gamepad->update_rumble();
+--- a/core/sdl/sdl_gamepad.cpp
++++ b/core/sdl/sdl_gamepad.cpp
+@@ -22,6 +22,31 @@
+ 
+ std::map<SDL_JoystickID, std::shared_ptr<SDLGamepad>> SDLGamepad::sdl_gamepads;
+ 
++#include "input/banana_input.h"
++void SDLGamepad::PollBananaMenu()
++{
++	uint32_t buttons = 0;
++	for (const auto& entry : sdl_gamepads)
++	{
++		const auto& pad = entry.second;
++		if (pad->name() != "retrogame_joypad" || SDL_JoystickNumButtons(pad->sdl_joystick) < 17)
++			continue;
++		buttons = banana_input::Present;
++		if (pad->is_input_detecting())
++			break;
++		auto down = [&](int button) { return SDL_JoystickGetButton(pad->sdl_joystick,button)!=0; };
++		if (down(13)) buttons |= banana_input::Up;
++		if (down(14)) buttons |= banana_input::Down;
++		if (down(15)) buttons |= banana_input::Left;
++		if (down(16)) buttons |= banana_input::Right;
++		if (down(1)) buttons |= banana_input::Confirm; // printed A (east)
++		if (down(0)) buttons |= banana_input::Back;    // printed B (south)
++		if (down(2)) buttons |= banana_input::FaceUp;
++		break;
++	}
++	banana_input::menuButtons.store(buttons,std::memory_order_relaxed);
++}
++
+ template<bool Arcade = false, bool Gamepad = false>
+ class DefaultInputMapping : public InputMapping
+ {
+--- a/core/ui/gui.cpp
++++ b/core/ui/gui.cpp
+@@ -25,6 +25,7 @@
+ #include "network/net_handshake.h"
+ #include "network/ice.h"
+ #include "input/gamepad_device.h"
++#include "input/banana_input.h"
+ #include "gui_util.h"
+ #include "imgread/common.h"
+ #include "emulator.h"
+@@ -71,6 +72,8 @@
+ 
+ static bool inited = false;
+ GuiState gui_state = GuiState::Main;
++static bool bananaMenuFocusPending = false;
++static bool bananaMenuResetPending = false;
+ static bool commandLineStart;
+ std::string launchOnExitUri;
+ static u32 mouseButtons;
+@@ -338,13 +341,30 @@
+ 
+ 	// shows a popup navigation window even in game because of the OSD
+ 	//io.AddKeyEvent(ImGuiKey_GamepadFaceLeft, ((kcode[0] & DC_BTN_X) == 0));
+-	io.AddKeyEvent(ImGuiKey_GamepadFaceRight, ((kcode[0] & DC_BTN_B) == 0));
+-	io.AddKeyEvent(ImGuiKey_GamepadFaceUp, ((kcode[0] & DC_BTN_Y) == 0));
+-	io.AddKeyEvent(ImGuiKey_GamepadFaceDown, ((kcode[0] & DC_BTN_A) == 0));
+-	io.AddKeyEvent(ImGuiKey_GamepadDpadLeft, ((kcode[0] & DC_DPAD_LEFT) == 0));
+-	io.AddKeyEvent(ImGuiKey_GamepadDpadRight, ((kcode[0] & DC_DPAD_RIGHT) == 0));
+-	io.AddKeyEvent(ImGuiKey_GamepadDpadUp, ((kcode[0] & DC_DPAD_UP) == 0));
+-	io.AddKeyEvent(ImGuiKey_GamepadDpadDown, ((kcode[0] & DC_DPAD_DOWN) == 0));
++	static GuiState previousMenuState = GuiState::Closed;
++	static uint32_t blocked = 0;
++	uint32_t raw = banana_input::menuButtons.load(std::memory_order_relaxed);
++	bool native = (raw & banana_input::Present) && gui_is_open();
++	if (native && (previousMenuState != gui_state || bananaMenuResetPending))
++		blocked = raw; // don't activate a menu item using a key held during entry
++	bananaMenuResetPending = false;
++	previousMenuState = gui_state;
++	blocked &= raw;
++	raw &= ~blocked;
++	if (native) {
++		io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
++		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
++	}
++	auto pressed = [&](uint32_t physical, uint32_t emulated) {
++		return native ? (raw & physical) != 0 : (kcode[0] & emulated) == 0;
++	};
++	io.AddKeyEvent(ImGuiKey_GamepadFaceRight, pressed(banana_input::Back, DC_BTN_B));
++	io.AddKeyEvent(ImGuiKey_GamepadFaceUp, pressed(banana_input::FaceUp, DC_BTN_Y));
++	io.AddKeyEvent(ImGuiKey_GamepadFaceDown, pressed(banana_input::Confirm, DC_BTN_A));
++	io.AddKeyEvent(ImGuiKey_GamepadDpadLeft, pressed(banana_input::Left, DC_DPAD_LEFT));
++	io.AddKeyEvent(ImGuiKey_GamepadDpadRight, pressed(banana_input::Right, DC_DPAD_RIGHT));
++	io.AddKeyEvent(ImGuiKey_GamepadDpadUp, pressed(banana_input::Up, DC_DPAD_UP));
++	io.AddKeyEvent(ImGuiKey_GamepadDpadDown, pressed(banana_input::Down, DC_DPAD_DOWN));
+ 
+ 	float analog;
+ 	analog = joyx[0] < 0 ? -(float)joyx[0] / 32768.f : 0.f;
+@@ -591,11 +611,14 @@
+ 		ImguiStyleVar _1{ImGuiStyleVar_FramePadding, ScaledVec2(12.f, 3.f)};
+ 
+ 		// Resume
+-		if (IconButton(ICON_FA_PLAY, T("Resume"), ScaledVec2(buttonWidth, 50)).realize())
++		if (IconButton(ICON_FA_PLAY, T("Resume"), ScaledVec2(buttonWidth, 50)).realize()
++				|| (banana_input::menuPresent() && ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight,false)
++					&& !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId|ImGuiPopupFlags_AnyPopupLevel)))
+ 		{
+ 			GamepadDevice::load_system_mappings();
+ 			gui_setState(GuiState::Closed);
+ 		}
++		ImGui::SetItemDefaultFocus();
+ 		// Cheats
+ 		{
+ 			DisabledScope _{settings.network.online || settings.raHardcoreMode};
+@@ -1359,6 +1382,9 @@
+ 
+ 	gui_newFrame();
+ 	ImGui::NewFrame();
++	if (banana_input::menuPresent() && bananaMenuFocusPending)
++		ImGui::SetNextWindowFocus();
++	bananaMenuFocusPending = false;
+ 	error_msg_shown = false;
+ 	bool gui_open = gui_is_open();
+ 
+@@ -1683,6 +1709,10 @@
+ 
+ void gui_setState(GuiState newState)
+ {
++	if (newState != gui_state) {
++		bananaMenuFocusPending = newState != GuiState::Closed;
++		bananaMenuResetPending = true;
++	}
+ 	gui_state = newState;
+ 	if (newState == GuiState::Closed)
+ 	{
+--- a/core/ui/settings.cpp
++++ b/core/ui/settings.cpp
+@@ -24,6 +24,7 @@
+ #include "hw/maple/maple_if.h"
+ #include "imgui_stdlib.h"
+ #include "input/dreampotato.h"
++#include "input/banana_input.h"
+ 
+ #ifdef GDB_SERVER
+ #include "hw/mem/addrspace.h"
+@@ -216,7 +217,10 @@
+     		| ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+ 	ImVec2 normal_padding = ImGui::GetStyle().FramePadding;
+ 
+-    if (ImGui::Button(T("Done"), ScaledVec2(100, 30)))
++    if (ImGui::Button(T("Done"), ScaledVec2(100, 30))
++		|| (banana_input::menuPresent() && ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight,false)
++			&& !ImGui::GetIO().WantTextInput
++			&& !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId|ImGuiPopupFlags_AnyPopupLevel)))
+     {
+     	if (uiUserScaleUpdated)
+     	{
+@@ -252,6 +256,7 @@
+     	expDevicesChanges = {};
+        	SaveSettings();
+     }
++	ImGui::SetItemDefaultFocus();
+ 	if (game_started)
+ 	{
+ 	    ImGui::SameLine();
+--- a/core/ui/settings_controls.cpp
++++ b/core/ui/settings_controls.cpp
+@@ -25,6 +25,7 @@
+ #include "hw/maple/maple_devs.h"
+ #include "vgamepad.h"
+ #include "oslib/storage.h"
++namespace config { extern Option<bool> DpadAnalogMirror; }
+ 
+ #if defined(USE_SDL)
+ #include "sdl/dreamlink.h" // For USE_DREAMCASTCONTROLLER
+@@ -1218,6 +1219,11 @@
+ 		OptionCheckbox(T("Swap D-Pad and analog stick"), config::StickDpadSwap,
+ 				T("The analog stick works as the D-Pad and the D-Pad as the analog stick (full tilt). Use per-game settings to enable it for one game."));
+ 		{
++			DisabledScope scope(config::StickDpadSwap);
++			OptionCheckbox(T("D-Pad also controls analog stick"), config::DpadAnalogMirror,
++				T("Keep digital directions and mirror them to the left analog stick when it is centered. Disable for games that use both separately."));
++		}
++		{
+ 			DisabledScope scope(game_started);
+ 			OptionCheckbox(T("Use Physical VMU Storage"), config::UsePhysicalVmuMemory,
+ 					T("Enables read and write access to physical VMU storage via DreamPicoPort or DreamPotato. "
+--- a/core/cfg/option.cpp
++++ b/core/cfg/option.cpp
+@@ -233,6 +233,7 @@
+ }};
+ Option<bool> PerGameVmu("PerGameVmu", true, "config");
+ Option<bool> StickDpadSwap("StickDpadSwap", false, "config");	// EasyCast 0.2.4 update 2
++Option<bool> DpadAnalogMirror("DpadAnalogMirror", true, "config"); // BananaOS
+ #ifdef _WIN32
+ Option<bool, false> UseRawInput("RawInput", false, "input");
+ #endif
+--- a/core/hw/maple/maple_devs.cpp
++++ b/core/hw/maple/maple_devs.cpp
+@@ -10,6 +10,8 @@
+ #include "hw/aica/sgc_if.h"
+ #include "cfg/option.h"
+ #include "input/maplelink.h"
++#include "input/banana_input.h"
++namespace config { extern Option<bool> DpadAnalogMirror; }
+ #include <zlib.h>
+ #include <cerrno>
+ #include <ctime>
+@@ -115,6 +117,8 @@
+ 				xaxis = (s8)(((int)!(k & DC_DPAD_RIGHT) - (int)!(k & DC_DPAD_LEFT)) * 127);
+ 				yaxis = (s8)(((int)!(k & DC_DPAD_DOWN) - (int)!(k & DC_DPAD_UP)) * 127);
+ 			}
++			else if (config::DpadAnalogMirror)
++				banana_input::mirrorDpad(xaxis, yaxis, pjs.kcode);
+ 			limit_joystick_magnitude<128>(xaxis, yaxis);
+ 			if (index == 2)
+ 				return xaxis + 128;
+--- /dev/null
++++ b/core/input/banana_input.h
+@@ -0,0 +1,21 @@
++#pragma once
++#include <atomic>
++#include <cstdint>
++
++// Independent native menu navigation for the RG DS built-in controller.
++namespace banana_input {
++enum Menu : uint32_t { Up=1, Down=2, Left=4, Right=8, Confirm=16,
++                       Back=32, FaceUp=64, Present=128 };
++inline std::atomic<uint32_t> menuButtons{0};
++inline bool menuPresent() { return (menuButtons.load(std::memory_order_relaxed)&Present)!=0; }
++constexpr int direction(bool negative, bool positive) {
++    return (int(positive)-int(negative))*127;
++}
++// Active-low Dreamcast D-pad bits. Physical stick wins whenever it is in use.
++template<typename Axis>
++inline void mirrorDpad(Axis& x, Axis& y, uint32_t kcode) {
++    if (x != 0 || y != 0) return;
++    x = direction(!(kcode & (1u<<6)), !(kcode & (1u<<7)));
++    y = direction(!(kcode & (1u<<4)), !(kcode & (1u<<5)));
++}
++}

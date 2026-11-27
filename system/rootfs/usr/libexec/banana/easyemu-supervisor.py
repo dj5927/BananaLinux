@@ -225,6 +225,76 @@ def ini_set(path, updates):
     os.replace(tmp, path)
 
 
+def psp_korean_defaults(ini, ctrl, fresh_ini=False, fresh_ctrl=False):
+    """Migrate only the requested defaults, once; later native edits are kept."""
+    marker = ini.parent / ".banana-korean-defaults-1"
+    migrate = not marker.is_file()
+    if not (migrate or fresh_ini or fresh_ctrl):
+        return
+    # The shipped SDL DB exposes the printed Nintendo layout:
+    # A:b1 B:b0 X:b2 Y:b3. PPSSPP's SDL keycodes are 189,190,191,188.
+    # Keep unrelated keyboard/pad bindings, and remove the four old pad-face
+    # bindings before assigning their requested PSP counterparts.
+    if migrate or fresh_ctrl:
+        cfg = configparser.ConfigParser(interpolation=None, strict=False)
+        cfg.optionxform = str
+        cfg.read(ctrl, encoding="utf-8-sig")
+        face = {"Circle": "10-189", "Cross": "10-190",
+                "Triangle": "10-191", "Square": "10-188"}
+        old = set(face.values())
+        updates = {}
+        for key, mapping in face.items():
+            others = [s.strip() for s in cfg.get("ControlMapping", key, fallback="").split(",")
+                      if s.strip() and s.strip() not in old]
+            updates[key] = ",".join([mapping, *others])
+        ini_set(ctrl, {"ControlMapping": updates})
+    if migrate or fresh_ini:
+        ini_set(ini, {"General": {"Language": "ko_KR", "UIScaleFactor": "-5"},
+                      "SystemParam": {"ButtonPreference": "0"}})
+    temp = marker.with_suffix(".new")
+    temp.write_text("1\n", encoding="utf-8")
+    os.replace(temp, marker)
+
+
+def repair_dc_mapping(path):
+    """Flycast stops reading a bind list at the first missing index."""
+    text = path.read_text(encoding="utf-8-sig")
+    lines = text.splitlines()
+    cfg = configparser.ConfigParser(interpolation=None, strict=False)
+    cfg.optionxform = str
+    cfg.read_string(text)
+    if cfg.getint("emulator", "version", fallback=1) < 3:
+        return
+    start = next((i for i, line in enumerate(lines) if line.strip() == "[digital]"), -1)
+    if start < 0:
+        return
+    end = next((i for i in range(start+1,len(lines)) if lines[i].strip().startswith("[")), len(lines))
+    binds = []
+    extra = []
+    for line in lines[start+1:end]:
+        match = re.match(r"\s*bind(\d+)\s*=\s*(.+?)\s*$", line)
+        if match:
+            binds.append((int(match.group(1)), match.group(2)))
+        else:
+            extra.append(line)
+    values = [v for _,v in sorted(binds)]
+    # The shipped v20-v22 mapping omitted bind5. If Flycast saved the
+    # incomplete mapping, recover only the exact stock prefix.
+    stock = {"0:btn_a","1:btn_b","2:btn_y","3:btn_x","9:btn_start"}
+    backup = path.with_suffix(path.suffix + ".banana-v22-backup")
+    if not backup.exists() and cfg.get("emulator","mapping_name",fallback="") == "RG DS Plus EasyCast" and set(values) == stock and len(values) == len(stock):
+        values += ["13:btn_dpad1_up","14:btn_dpad1_down","15:btn_dpad1_left","16:btn_dpad1_right",
+                   "4:btn_trigger_left","5:btn_trigger_right"]
+    if sorted(binds) == list(enumerate(values)):
+        return
+    if not backup.exists():
+        shutil.copyfile(path, backup)
+    lines[start+1:end] = [f"bind{i} = {v}" for i,v in enumerate(values)] + extra
+    temp = path.with_suffix(path.suffix + ".banana-new")
+    temp.write_text("\n".join(lines)+"\n", encoding="utf-8")
+    os.replace(temp,path)
+
+
 def configure(runtime, user, system, opts, leased):
     env = os.environ.copy()
     env.update(HOME=str(user / "home"), XDG_CONFIG_HOME=str(user / "config"),
@@ -248,11 +318,14 @@ def configure(runtime, user, system, opts, leased):
         ini = user / "config/ppsspp/PSP/SYSTEM/ppsspp.ini"
         ctrl = ini.with_name("controls.ini")
         ini.parent.mkdir(parents=True, exist_ok=True)
-        if not ini.exists():
+        fresh_ini = not ini.exists()
+        fresh_ctrl = not ctrl.exists()
+        if fresh_ini:
             ini_set(ini, {"General": {"CurrentDirectory": "/data/roms/psp"},
                           "Graphics": {"InternalResolution": "1", "FrameSkip": "0"}})
-        if not ctrl.exists():
+        if fresh_ctrl:
             shutil.copyfile(runtime / "psp/controls.ini", ctrl)
+        psp_korean_defaults(ini, ctrl, fresh_ini, fresh_ctrl)
         # Ensure the panel menu event can be routed even with the default pad mapping.
         cfg = configparser.ConfigParser(interpolation=None, strict=False)
         cfg.optionxform = str
@@ -276,6 +349,12 @@ def configure(runtime, user, system, opts, leased):
     m = mappings / "SDL_retrogame_joypad.cfg"
     if not m.exists():
         shutil.copyfile(runtime / "dreamcast/defaults/SDL_retrogame_joypad.cfg", m)
+    for mapping in mappings.glob("SDL_retrogame_joypad*.cfg"):
+        try:
+            repair_dc_mapping(mapping)
+        except (OSError, ValueError, configparser.Error) as e:
+            print("Dreamcast mapping repair skipped:", mapping.name, e, flush=True)
+    env["SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS"] = "1"
     cfg = configparser.ConfigParser(interpolation=None, strict=False)
     cfg.optionxform = str
     cfg.read(ini, encoding="utf-8-sig")
