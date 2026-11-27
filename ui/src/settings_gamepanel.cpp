@@ -365,6 +365,7 @@ namespace banana
 		if (rpg::isSystem(gSysId)) {
 			raw.reset(); gRpgPage = gRpgConfirm = 0; gRpgDirty = false;
 			gRpgMenu = gRpgPaused = gRpgTopMenu = false; gRpgRow = 0;
+			gRpgFHeld = false; gRpgHeld.clear();
 			gRpgPhase=gSysId=="mkxp"?"preflight":"running"; gRpgRuntime.clear();
 			loadRpgChoices(gSysId,gProjectKey);
 			return;
@@ -943,6 +944,46 @@ namespace banana
 	}
 
 	// Independent SA panel. No RetroAchievements or Libretro state slots.
+	bool Settings::rpgKeyEvent(const InputEvent& ev, GameAction& action)
+	{
+		action=G_NONE;
+		if (!rpg::isSystem(gSysId)) return false;
+		if (ev.type==InputEvent::RELEASE) {
+			gRpgHeld.erase(ev.key);
+			if (ev.key==Key::MENU) gRpgFHeld=false;
+			return false;
+		}
+		if (ev.type!=InputEvent::PRESS) return false;
+		if (!gRpgHeld.insert(ev.key).second) return false;
+		if (ev.key==Key::MENU) { gRpgFHeld=true; return false; }
+		if (gRpgFHeld) {
+			switch (ev.key) {
+			case Key::A:
+				gRpgConfirm=0;
+				if (gRpgMenu) { gRpgMenu=false; gRpgPaused=false; }
+				else gRpgPaused=!gRpgPaused;
+				return true;
+			case Key::X: rpgMenuToggle(); return true;
+			case Key::SELECT: gRpgConfirm=1; return true;
+			case Key::START:
+				gRpgConfirm=0; gRpgMenu=false; gRpgPaused=false;
+				gDown=gFlash=-1; action=G_QUIT; return true;
+			default: return false;
+			}
+		}
+		if (gRpgConfirm) {
+			if (ev.key==Key::B) { gRpgConfirm=0; return true; }
+			if (ev.key==Key::A) {
+				action=gRpgConfirm==1?G_RESET:G_QUIT;
+				gRpgConfirm=0; gRpgMenu=false; gRpgPaused=false;
+				if (action==G_RESET) gRpgDirty=false;
+				return true;
+			}
+			return false;
+		}
+		if (gRpgMenu) { rpgMenuKey(ev.key); return true; }
+		return false;
+	}
 	void Settings::rpgMenuKey(Key key)
 	{
 		if (!gRpgMenu) return;
@@ -1069,6 +1110,7 @@ namespace banana
 		static const char* const restartIcon[12]={"....####....","..##....##..",".##......##.","##........#.","##..........","##..........","##......####",".##.....####","..##.....###","....####..##","............","............"};
 		const char* const* icons[]={pauseIcon,IC_LIST,restartIcon,IC_EXIT};
 		const char* labels[]={gRpgPaused?"Resume":"Pause","Menu","Restart","Quit"};
+		const char* shortcuts[]={"F + A","F + X","F + SELECT","F + START"};
 		for(int i=0;i<4;i++) {
 			float x=18+i*153;
 			bool on=gFlash==i || (i==1 && gRpgMenu) || (i==0 && gRpgPaused);
@@ -1080,7 +1122,8 @@ namespace banana
 			std::string label=fit(lang::tr(labels[i]),true,20,135);
 			float tw=text(label,true,20,0,0,fg,false,0,true);
 			text(label,true,20,x+(145-tw)/2,364,fg);
-			if(i==1) text("F + X",false,15,x+47,394,fg);
+			float sw=text(shortcuts[i],false,15,0,0,fg,false,0,true);
+			text(shortcuts[i],false,15,x+(145-sw)/2,394,fg);
 		}
 		if (gRpgMenu) wrapped("Settings apply next launch.",16,22,438,596,2,p.muted);
 		be->endScreen();

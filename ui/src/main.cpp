@@ -1175,6 +1175,25 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			}
 			logf("PASS rpgmenu menu=%d pause=%d",menu,pause);
 		}
+		else if (op == "rpgkey")
+		{
+			std::string edge,key,expected;
+			cs>>edge>>key>>expected;
+			InputEvent ev{};
+			ev.type=edge=="up"?InputEvent::RELEASE:InputEvent::PRESS;
+			ev.key=key=="f"?Key::MENU:key=="a"?Key::A:key=="b"?Key::B:key=="x"?Key::X:key=="select"?Key::SELECT:key=="start"?Key::START:Key::NONE;
+			Settings::GameAction action=Settings::G_NONE;
+			settings.rpgKeyEvent(ev,action);
+			const auto want=expected=="quit"?Settings::G_QUIT:expected=="reset"?Settings::G_RESET:Settings::G_NONE;
+			if (ev.key==Key::NONE || action!=want) { logf("FAIL rpgkey %s %s action=%d",edge.c_str(),key.c_str(),int(action)); return 2; }
+			logf("PASS rpgkey %s %s %s",edge.c_str(),key.c_str(),expected.c_str());
+		}
+		else if (op == "rpgconfirmassert")
+		{
+			int n=0; cs>>n;
+			if (settings.rpgConfirmation()!=n) { logf("FAIL rpgconfirm %d",settings.rpgConfirmation()); return 2; }
+			logf("PASS rpgconfirm %d",n);
+		}
 		else if (op == "gamepanel")
 		{
 			// gamepanel <screen> <rom>: the game panel for a RetroArch game on the other screen, with the Pokémon
@@ -2663,7 +2682,7 @@ int main(int argc, char** argv)
 		const std::string pausePath="/run/banana/rpg-pause-"+std::to_string(pid);
 		const std::string launchStatusPath="/run/banana/mkxp-status-"+std::to_string(pid);
 		double nextStatus=0, nextOverlayRefresh=0;
-		bool pauseApplied=false, overlayShown=false, fHeld=false;
+		bool pauseApplied=false, overlayShown=false;
 		auto syncRpgPause=[&]() {
 			if (!nativeRpg) return;
 			const bool pause=settingsView.rpgPauseRequested();
@@ -2836,18 +2855,24 @@ int main(int argc, char** argv)
 						{
 							std::lock_guard<std::mutex> l(worker.uiLock);
 							if (nativeRpg) {
-								if (ev.code==BTN_MODE) { fHeld=true; return; }
-								if (fHeld && ev.key==Key::X) {
-									settingsView.rpgMenuToggle(); syncRpgPause();
-									bottomIdle.activity(nowMs()); want=true;
-								} else if (settingsView.rpgMenuActive()) {
-									settingsView.rpgMenuKey(ev.key); syncRpgPause();
+								Settings::GameAction a;
+								if (settingsView.rpgKeyEvent(ev,a)) {
+									syncRpgPause();
+									if (a==Settings::G_QUIT) markMkxpQuit();
+									const char* c=a==Settings::G_QUIT?"QUIT\n":a==Settings::G_RESET?"RESET\n":nullptr;
+									if (c) {
+										logf("RPG shortcut: %.*s",(int)strlen(c)-1,c);
+										if (!pipeWrite(cmdFd,c,strlen(c))) logf("RPG shortcut: command pipe full or closed");
+									}
 									bottomIdle.activity(nowMs()); want=true;
 								}
 							} else if (settingsView.gameButton(ev.code, nowMs())) want = true;
 							return;
 						}
-						if (ev.type == InputEvent::RELEASE) { if (ev.code==BTN_MODE) fHeld=false; return; }
+						if (ev.type == InputEvent::RELEASE) {
+							if (nativeRpg) { std::lock_guard<std::mutex> l(worker.uiLock); Settings::GameAction a; settingsView.rpgKeyEvent(ev,a); }
+							return;
+						}
 						if (ev.screen != panelScreen) return;	// touch only on the panel
 						if (ev.type == InputEvent::TOUCH_MOVE)	// (the GBA companion's pages scroll by drag)
 						{

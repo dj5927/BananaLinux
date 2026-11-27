@@ -133,6 +133,8 @@ namespace banana
 		void rpgSetTopMenu(bool on) { gRpgTopMenu=on; }
 		void rpgMenuToggle() { gRpgConfirm=0; gRpgMenu=!gRpgMenu; gDown=-1; }
 		void rpgMenuKey(Key key);
+		bool rpgKeyEvent(const InputEvent& ev, GameAction& action);
+		int rpgConfirmation() const { return gRpgConfirm; }
 		bool rpgLaunchStatus(const std::string& phase,const std::string& runtime) {
 			if (phase==gRpgPhase && runtime==gRpgRuntime) return false;
 			gRpgPhase=phase; gRpgRuntime=runtime; return true;
@@ -781,6 +783,8 @@ namespace banana
 		int gRpgConfirm = 0;
 		bool gRpgDirty = false;
 		bool gRpgMenu = false, gRpgPaused = false, gRpgTopMenu = false;
+		bool gRpgFHeld = false;
+		std::set<Key> gRpgHeld;
 		int gRpgRow = 0;
 		std::string gRpgPhase, gRpgRuntime;
 		void rpgMenuFrame(int screen);
