@@ -15,14 +15,8 @@ if [ "$selected" = swanstation ] && { [ -f /usr/lib/libretro/swanstation_libretr
     mkdir -p "$R/config/$C"
     CF="$R/config/$C/$C.cfg"
     O="$R/config/$C/$C.opt"
-    # RK3566/RK3568: start with the software renderer and native resolution.
-    # Only seed absent options; never overwrite saved per-core/user settings.
-    if [ ! -f "$R/.banana-swanstation-1" ]; then
-        if [ ! -e "$O" ]; then
-            printf '%s\n' 'swanstation_CPU_ExecutionMode = "Recompiler"' 'swanstation_GPU_Renderer = "Software"' 'swanstation_GPU_ResolutionScale = "1"' > "$O"
-        fi
-        touch "$R/.banana-swanstation-1"
-    fi
+    # SwanStation performance settings are applied by run-retroarch after
+    # it resolves the actual core. The PCSX-ReARMed profile is unchanged.
     grep -q '^ *input_player1_analog_dpad_mode *=' "$CF" 2>/dev/null || printf 'input_player1_analog_dpad_mode = "1"\n' >> "$CF"
     if grep -q -e '^ *video_monitor_index *=' -e '^ *stdin_cmd_enable *=' "$CF" 2>/dev/null; then
         sed -i -e '/^ *video_monitor_index *=/d' -e '/^ *stdin_cmd_enable *=/d' "$CF"

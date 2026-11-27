@@ -22,6 +22,7 @@
 #include "arrival.h"
 #include "lang.h"
 #include "settings.h"
+#include "swanstation_menu.h"
 #include "rpg_volume.h"
 #include "rpg_projects.h"
 #include "complink.h"
@@ -1159,6 +1160,37 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			settings.gameProjectKey(key);
 			settings.gameOpen("RPG test", sys, 1, true);
 			logf("rpgpanel %s: %s", sys.c_str(), key.c_str());
+		}
+		else if (op=="swanpanel")
+		{
+			settings.gameClose();
+			settings.companion=nullptr; settings.gameComp=nullptr; settings.link=nullptr;
+			settings.gameSystem("psx"); settings.swanNative(true);
+			settings.gameOpen("SwanStation QA", "PlayStation", 1, true);
+		}
+		else if(op=="swanassert")
+		{
+			int open=0; cs>>open;
+			if(settings.swanMenuActive()!=(open!=0)) { logf("FAIL swanassert %d",open); return 2; }
+			logf("PASS swanassert %d",open);
+		}
+		else if(op=="swankey")
+		{
+			std::string key,edge,expected; cs>>edge>>key>>expected;
+			const std::map<std::string,std::pair<Key,int>> keys={
+				{"f",{Key::MENU,BTN_MODE}},{"x",{Key::X,BTN_NORTH}},
+				{"a",{Key::A,BTN_EAST}},{"b",{Key::B,BTN_SOUTH}},
+				{"up",{Key::UP,BTN_DPAD_UP}},{"down",{Key::DOWN,BTN_DPAD_DOWN}},
+				{"left",{Key::LEFT,BTN_DPAD_LEFT}},{"right",{Key::RIGHT,BTN_DPAD_RIGHT}}
+			};
+			auto it=keys.find(key); if(it==keys.end()) return 2;
+			InputEvent e{}; e.type=edge=="up"?InputEvent::RELEASE:InputEvent::PRESS;
+			e.key=it->second.first; e.code=it->second.second;
+			Settings::GameAction a=Settings::G_NONE; settings.swanKeyEvent(e,a);
+			const auto want=expected=="quit"?Settings::G_QUIT:expected=="reset"?Settings::G_RESET:
+				expected=="save"?Settings::G_SAVE:expected=="load"?Settings::G_LOAD:Settings::G_NONE;
+			if(a!=want) { logf("FAIL swankey %s %s action=%d",edge.c_str(),key.c_str(),int(a)); return 2; }
+			logf("PASS swankey %s %s %s",edge.c_str(),key.c_str(),expected.c_str());
 		}
 		else if(op=="portblind") { int on=0; cs>>on; settings.portHotkeyOnly(on!=0); }
 		else if(op=="porttick") { double t=0; cs>>t; settings.gameUpdate(t); }
@@ -2732,7 +2764,7 @@ int main(int argc, char** argv)
 	// starts so the emulator sees it as a keyboard plugged in, gone when the game ends (vkbd.h)
 	VirtualKeyboard vkbd;
 	bool keysOn = false;
-	auto gamePanel = [&](pid_t pid, int& status, int gameScreen, int cmdFd, int outFd, const std::string& title, const std::string& sysName, const std::string& projectKey, bool paint, const std::string& cover)
+	auto gamePanel = [&](pid_t pid, int& status, int gameScreen, int cmdFd, int outFd, const std::string& title, const std::string& sysName, const std::string& projectKey, bool paint, const std::string& cover, bool swanNative)
 	{
 		auto markMkxpQuit = [&]() {
 			if (gameSysId != "mkxp") return;
@@ -2745,6 +2777,16 @@ int main(int argc, char** argv)
 		const bool nativePort=gameSysId=="ports";
 		const bool nativeEasy=gameSysId=="psp" || gameSysId=="dreamcast";
 		const bool nativeControl=nativeRpg || nativePort || nativeEasy;
+		SwanMenuPause swanPause;
+		std::string swanReply;
+		auto swanSend=[&](const char* c) {
+			return pipeWrite(cmdFd,c,strlen(c));
+		};
+		auto swanAction=[&](Settings::GameAction a) {
+			const char* c=a==Settings::G_SAVE?"SAVE_STATE\n":a==Settings::G_LOAD?"LOAD_STATE\n":
+				a==Settings::G_RESET?"RESET\n":a==Settings::G_QUIT?"QUIT\n":nullptr;
+			if(c && !swanSend(c)) logf("SwanStation: command pipe full or closed");
+		};
 		const std::string pausePath="/run/banana/rpg-pause-"+std::to_string(pid);
 		const std::string launchStatusPath="/run/banana/mkxp-status-"+std::to_string(pid);
 		double nextStatus=0, nextOverlayRefresh=0;
@@ -2784,6 +2826,7 @@ int main(int argc, char** argv)
 			settingsView.gameRom(gameRomPath);
 			settingsView.gameSystem(gameSysId);
 			settingsView.gameProjectKey(projectKey);
+			settingsView.swanNative(swanNative);
 			settingsView.gameKeyboard(keysOn ? &vkbd : nullptr);
 			settingsView.gameOpen(title, sysName, panelScreen, input.hasTouch(panelScreen));
 			if (nativeControl) settingsView.rpgSetTopMenu(nativeRpg && disp.rpgMenuAvailable());
@@ -2835,6 +2878,10 @@ int main(int argc, char** argv)
 			{
 				std::lock_guard<std::mutex> l(worker.uiLock);
 				syncRpgPause();
+				if(swanNative) {
+					swanPause.request(settingsView.swanMenuActive());
+					swanPause.tick(t,swanSend);
+				}
 				if ((gameSysId=="mkxp" || nativeEasy) && t>=nextStatus) {
 					nextStatus=t+250;
 					std::ifstream f(launchStatusPath);
@@ -2942,7 +2989,18 @@ int main(int argc, char** argv)
 				ssize_t n;
 				while ((n = read(outFd, buf, sizeof buf)) > 0)
 				{
-					if (companion.active()) companion.feed(buf, (size_t)n);
+					if(swanNative) {
+						swanReply.append(buf,(size_t)n);
+						size_t nl;
+						while((nl=swanReply.find('\n'))!=std::string::npos) {
+							auto line=swanReply.substr(0,nl);
+							swanReply.erase(0,nl+1);
+							if(line.rfind("GET_STATUS PAUSED ",0)==0) swanPause.status(true,nowMs(),swanSend);
+							else if(line.rfind("GET_STATUS PLAYING ",0)==0) swanPause.status(false,nowMs(),swanSend);
+						}
+						// Ignore a contentless response (no newline in some RA versions).
+						if(swanReply=="GET_STATUS CONTENTLESS" || swanReply.size()>8192) swanReply.clear();
+					} else if (companion.active()) companion.feed(buf, (size_t)n);
 					else
 					{
 						std::lock_guard<std::mutex> l(worker.uiLock);	// (the panel reads its snapshot while drawing)
@@ -2959,7 +3017,13 @@ int main(int argc, char** argv)
 						if (ev.type == InputEvent::PRESS)
 						{
 							std::lock_guard<std::mutex> l(worker.uiLock);
-							if (nativeControl) {
+							if(swanNative) {
+								Settings::GameAction a;
+								if(settingsView.swanKeyEvent(ev,a)) {
+									swanAction(a);
+									want=true; bottomIdle.activity(nowMs());
+								}
+							} else if (nativeControl) {
 								Settings::GameAction a;
 								if (settingsView.rpgKeyEvent(ev,a)) {
 									syncRpgPause();
@@ -2975,6 +3039,7 @@ int main(int argc, char** argv)
 							return;
 						}
 						if (ev.type == InputEvent::RELEASE) {
+							if(swanNative) { std::lock_guard<std::mutex> l(worker.uiLock); Settings::GameAction a; settingsView.swanKeyEvent(ev,a); }
 							if (nativeControl) { std::lock_guard<std::mutex> l(worker.uiLock); Settings::GameAction a; settingsView.rpgKeyEvent(ev,a); }
 							return;
 						}
@@ -3068,6 +3133,10 @@ int main(int argc, char** argv)
 		const bool nativeRpg = sd.id == "mkxp" || sd.id == "easyrpg";
 		const bool nativePort = sd.id == "ports";
 		const bool nativeEasy = sd.id == "psp" || sd.id == "dreamcast";
+		const auto psCore=getConfValue(o.data+"/settings.conf","core.psx","");
+		const bool wantsSwan=sd.id=="psx" &&
+			(psCore.empty()?getConfValue("/etc/banana/settings.conf","core.psx",""):psCore)=="swanstation" &&
+			(access("/usr/lib/libretro/swanstation_libretro.so",R_OK)==0 || access("/data/retroarch/cores/swanstation_libretro.so",R_OK)==0);
 		const bool portManager = nativePort && rom.substr(rom.rfind('/')+1)=="PortMaster.sh";
 		const bool portPanel = nativePort && !forcePortSingle && !portManager && getConfValue(o.data+"/settings.conf","ports_panel","panel")!="off" &&
 			access("/usr/lib/banana/ports/lib/libSDL2-2.0.so.0",R_OK)==0;
@@ -3134,10 +3203,10 @@ int main(int argc, char** argv)
 		// (gamecomp.h; the Pokémon games are the Pokémon companion's)
 		bool pkOn = panel && sd.id == "gba" && settings["pokemon_companion"] == "on" && companion.open(rom);
 		// (any system with a definition: the GBA's in the folder itself, another system's in <folder>/<system>/, schema 2)
-		bool gcOn = !nativeRpg && !nativePort && !nativeEasy && !pkOn && panel && settings["game_companion"] == "on" &&
+		bool gcOn = !wantsSwan && !nativeRpg && !nativePort && !nativeEasy && !pkOn && panel && settings["game_companion"] == "on" &&
 			((access("/data/banana/companions", F_OK) == 0 && gameComp.open(rom, "/data/banana/companions", sd.id)) ||
 				gameComp.open(rom, "/usr/share/banana/companions", sd.id));	// (the card's own first)
-		if (pkOn || gcOn)
+		if (pkOn || gcOn || (wantsSwan && panel))
 		{
 			unlink(OUT);
 			if (mkfifo(OUT, 0600) == 0) outFd = ::open(OUT, O_RDWR | O_NONBLOCK | O_CLOEXEC);
@@ -3145,6 +3214,7 @@ int main(int argc, char** argv)
 			else if (pkOn) logf("pokemon companion: %s", companion.game()->name);
 			else logf("game companion: %s (%s)", gameComp.game()->title.c_str(), gameComp.game()->file.c_str());
 		}
+		const bool swanNative=wantsSwan && panel && outFd>=0;
 		// the DS Pokémon companion (alpha; settings.conf nds_companion): no panel of its own beside a DS game, so its
 		// pages go to BananaDS through the companion overlay (nds/overlay.h), which BananaDS shows on the bottom screen
 		// when its icon is tapped. test: the overlay's test page for any DS game (the overlay's own checks and cost
@@ -3258,6 +3328,8 @@ int main(int argc, char** argv)
 			setenv("BANANA_ROM", rom.c_str(), 1);
 			setenv("BANANA_SYSTEM", sd.id.c_str(), 1);
 			setenv("BANANA_GAME_KEY", lib.gameKey(game).c_str(), 1);
+			if(swanNative) setenv("BANANA_SWAN_MENU","1",1);
+			else unsetenv("BANANA_SWAN_MENU");
 			if ((nativeRpg && panel) || nativePort || nativeEasy) {
 				const std::string pausePath="/run/banana/rpg-pause-"+std::to_string(getpid());
 				unlink(pausePath.c_str());
@@ -3310,7 +3382,7 @@ int main(int argc, char** argv)
 			}
 			if (panel || nativePort || nativeEasy)
 			{
-				gamePanel(pid, status, gameScreen, cmdFd, outFd, lib.gameAt(game).title, sd.name, lib.gameKey(game), panel, lib.gameAt(game).box);
+				gamePanel(pid, status, gameScreen, cmdFd, outFd, lib.gameAt(game).title, sd.name, lib.gameKey(game), panel, lib.gameAt(game).box, swanNative);
 			}
 			else if (ndsPage)
 			{

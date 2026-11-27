@@ -1,5 +1,6 @@
 #include <ctime>
 #include "settings.h"
+#include "swanstation_menu.h"
 #include "rpg_projects.h"
 #include "settings_draw.h"
 #include "settings_curl.h"
@@ -694,6 +695,9 @@ namespace banana
 				// Always offer the launcher's built-in default (including a single-core system).
 				names.insert(names.begin(),"Auto"); values.insert(values.begin(),"");
 				add(sec.c_str(),"gamepad","Emulator","Choose an installed core. Auto uses the system's built-in core.",menu,("core."+id).c_str(),names,values);
+				if(id=="psx" && coreInstalled("swanstation")) {
+					add(sec.c_str(),"gamepad","SwanStation performance","Changes apply the next time a game starts.","","swanstation_performance",{},{},Item::PAGE);
+				}
 				auto option=[&](const char* label,const char* desc,const char* key,std::vector<std::string> n,std::vector<std::string> v) {
 					n.insert(n.begin(),"As in Settings"); v.insert(v.begin(),"inherit");
 					add(sec.c_str(),"gamepad",label,desc,df,(id+"."+key).c_str(),std::move(n),std::move(v));
@@ -713,6 +717,10 @@ namespace banana
 				option("Quick resume","What quitting a game does.","savestate_auto_save",{"Off","On"},{"false","true"});
 				// Existing button settings remain the single source of truth.
 				add(sec.c_str(),"gamepad","Buttons","This system's buttons: what L2, R2, L3 and R3 do alone in its games, and A/B and X/Y swapped or not.","",raButtonsKey(sys).c_str(),{},{},Item::PAGE);
+			}
+			if(coreInstalled("swanstation")) for(const auto& c:swanOptions()) {
+				add("SwanStation performance","gamepad",c.label.c_str(),c.help.c_str(),data+"/swanstation.conf",c.key.c_str(),c.names,c.values);
+				items.back().def=c.def;
 			}
 			for (const auto& id: {std::string("easyrpg"),std::string("mkxp")}) {
 				const std::string label=id=="mkxp"?"MKXP":"EasyRPG",sec=emulatorDefaultsSection(label);
@@ -1361,6 +1369,7 @@ namespace banana
 					{ "ra_second", "Second screen", "retroarch_panel" },
 				{ "ra_picture", "Picture & sound" },	// (a submenu: its shader's "Off" is not the page's state)
 				{ "ra_cores", "Emulators" },
+				{ "swanstation_performance", "SwanStation performance" },
 				{ "net_bt", "Bluetooth", "bluetooth" },
 				{ "net_share", "File sharing", "share" },
 				{ "sys_updates", "Updates" },
@@ -1565,7 +1574,7 @@ namespace banana
 		std::string beforeAccent = getConfValue(menu, "accent", "yellow");
 
 		resetSettings(data, emulator ? ResetScope::Emulator : ResetScope::System);
-		if (emulator) unlink((data+"/emulator-defaults.conf").c_str());
+		if (emulator) { unlink((data+"/emulator-defaults.conf").c_str()); unlink((data+"/swanstation.conf").c_str()); }
 		if (!emulator) speakereq::applySaved(data, eqShare());	// (its keys are back to theirs)
 
 		if (!emulator)

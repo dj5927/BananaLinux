@@ -55,6 +55,12 @@ fi
 # the core that really runs, in banana-ui's log (its "starting" line names systems.conf's)
 c=${CORE##*/}; c=${c%_libretro.so}
 [ "$c" != "$1" ] && echo "run-retroarch: core $c (Settings > Other systems), not $1" >&2 || echo "run-retroarch: core $c" >&2
+swan_native=0
+if [ "$c" = swanstation ]; then
+    /usr/bin/banana-perf performance
+    /usr/bin/python3 /usr/libexec/banana/swanstation-config.py || exit 1
+    [ "${BANANA_SWAN_MENU:-}" = 1 ] && [ -n "$BANANA_DRM_LEASE_FD" ] && swan_native=1
+fi
 CFG=/data/retroarch/retroarch.cfg
 [ -f $CFG ] || { mkdir -p /data/retroarch; cp /etc/banana/retroarch.cfg $CFG; }
 SKEEP=/data/retroarch/.banana-system.keep
@@ -62,7 +68,7 @@ SKEYS=/data/retroarch/.banana-system.keys
 restore_system_defaults() {
     if [ -f "$SKEYS" ] && [ -f "$SKEEP" ]; then
         while IFS= read -r k; do
-            case "$k" in savestate_auto_save|savestate_auto_load|video_scale_integer|video_monitor_index)
+            case "$k" in savestate_auto_save|savestate_auto_load|video_scale_integer|video_monitor_index|video_driver|video_context_driver|video_max_swapchain_images|input_menu_toggle_btn|input_menu_toggle_axis|input_menu_toggle|input_menu_toggle_gamepad_combo)
                 sed -i "/^$k = /d" "$CFG" ;;
             esac
         done < "$SKEYS"
@@ -281,7 +287,8 @@ case $BANANA_SYSTEM in
     for b in l2 r2 l3 r3; do
         j=$(setting "ra_btn_$b.$BANANA_SYSTEM")
         case $j in
-        ff) c=FAST_FORWARD ;; save) c=SAVE_STATE ;; load) c=LOAD_STATE ;; menu) c=MENU_TOGGLE ;;
+        ff) c=FAST_FORWARD ;; save) c=SAVE_STATE ;; load) c=LOAD_STATE ;; menu)
+            if [ "$swan_native" = 1 ]; then c=-; else c=MENU_TOGGLE; fi ;;
         pause) c=PAUSE_TOGGLE ;; screenshot) c=SCREENSHOT ;; none) c=- ;;
         companion) c=- ;;	# (banana-ui's: the second screen's menu or companion; off the game, nothing to RetroArch)
         *) c= ;;
@@ -438,6 +445,21 @@ scoped() {
     printf '%s\n' "$1" >> "$SKEYS"
     printf '%s = "%s"\n' "$1" "$2" >> "$SCFG"
 }
+if [ "${CORE##*/}" = swanstation_libretro.so ]; then
+    # Restore global RetroArch keys on exit or recovery. They are also in
+    # the SwanStation core override, which RetroArch reads last.
+    SWCF=/data/retroarch/config/SwanStation/SwanStation.cfg
+    for k in video_driver video_max_swapchain_images; do
+        v=$(sed -n "s/^$k = \"\([^\"]*\)\"$/\1/p" "$SWCF" | tail -n1)
+        [ -z "$v" ] || scoped "$k" "$v"
+    done
+    if [ "$swan_native" = 1 ]; then
+        scoped input_menu_toggle_btn 31
+        scoped input_menu_toggle_axis nul
+        scoped input_menu_toggle nul
+        scoped input_menu_toggle_gamepad_combo 0
+    fi
+fi
 effective_mon=$MON
 v=$(emu_override video_monitor_index)
 case "$v" in 1|2) effective_mon=$v

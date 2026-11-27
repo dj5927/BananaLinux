@@ -118,6 +118,9 @@ namespace banana
 		// the game's system id (systems.conf's [id], before gameOpen): the Achievements list's console when the game panel
 		// has no game id from the emulator yet
 		void gameSystem(const std::string& id) { gSysId = id; }
+		void swanNative(bool on) { gSwanNative=on; }
+		bool swanMenuActive() const { return gSwanNative && gSwanMenu; }
+		bool swanKeyEvent(const InputEvent& ev, GameAction& action);
 		void gameProjectKey(const std::string& key) { gProjectKey = key; }
 		int gameSlot() const { return gSlotPick; }	// G_LOADSLOT's slot
 		void gameClose();
@@ -782,6 +785,14 @@ namespace banana
 		// the panel's achievements list (the List button on the achievements box): the game's whole list in the panel, a
 		// page of rows at a time; from the watch once the server answered, else the card's cache (the last one seen)
 		std::string gSysId, gRomPath, gProjectKey;
+		bool gSwanNative=false, gSwanMenu=false, gSwanOptions=false, gSwanF=false;
+		int gSwanRow=0, gSwanDown=-1, gSwanConfirm=0;
+		std::set<int> gSwanHeld, gSwanMenuButtons;
+		std::vector<int> gSwanValues;
+		void swanMenuToggle();
+		GameAction swanMenuKey(Key key);
+		GameAction swanMenuTouch(float x,float y,bool down);
+		void swanMenuFrame();
 		int gRpgPage = 0;
 		int gRpgConfirm = 0;
 		bool gRpgDirty = false;

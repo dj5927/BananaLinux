@@ -3003,3 +3003,90 @@ settings		Skip frames if a game is too slow. Auto keeps the native emulator sett
 settings		GD-ROM Fast Loading	GD-ROM 빠른 로딩
 settings		Auto keeps the lower game panel. Off uses the original single-screen mode; F shortcuts still work.	자동은 하단 조작 화면을 사용합니다. 끄기는 기존 단일 화면으로 실행하며 F 단축키는 유지됩니다.
 settings		Optional faster disc access. Off is safest; some games may fail when enabled.	디스크 읽기 속도를 높입니다. 끄는 것이 가장 안정적이며, 켜면 일부 게임이 실행되지 않을 수 있습니다.
+settings		CPU execution	CPU 실행 방식
+settings		Recompiler is fastest.	리컴파일러가 가장 빠릅니다.
+settings		Fast memory access	빠른 메모리 접근
+settings		LUT is the stable default; MMap is optional on ARM64.	LUT가 안정적인 기본값입니다. MMap은 ARM64에서 선택할 수 있습니다.
+settings		Recompiler block linking	리컴파일러 블록 연결
+settings		Direct jumps between blocks improve performance.	블록 간 직접 이동으로 성능을 개선합니다.
+settings		CPU instruction cache	CPU 명령 캐시
+settings		Improves timing accuracy at a performance cost.	타이밍 정확도를 높이지만 성능이 낮아질 수 있습니다.
+settings		Fast memory rewrite	빠른 메모리 재작성
+settings		May improve speed; some platforms can crash.	속도를 높일 수 있지만 일부 환경에서 충돌할 수 있습니다.
+settings		Emulated CPU clock	가상 PS1 CPU 클럭
+settings		100% is original PS1 speed, not the handheld CPU clock.	100%는 원래 PS1 클럭입니다. 기기 자체 클럭과 다릅니다.
+settings		GPU renderer	GPU 렌더러
+settings		Use OpenGL hardware for enhanced resolution. Vulkan is unavailable in this RetroArch build.	고해상도는 OpenGL 하드웨어를 사용하세요. 현재 RetroArch는 Vulkan을 지원하지 않습니다.
+settings		2x recommended; high values may exceed GPU limits. Software stays at 1x.	2x 권장. 높은 값은 GPU 한계를 넘을 수 있습니다. 소프트웨어 렌더러는 1x입니다.
+settings		Software render thread	소프트웨어 렌더링 스레드
+settings		Only used by the software renderer.	소프트웨어 렌더러에서만 사용됩니다.
+settings		Software VRAM readbacks	소프트웨어 VRAM 읽기
+settings		Enable only if a game has framebuffer or texture problems.	프레임버퍼나 텍스처 오류가 있는 게임에서만 켜세요.
+settings		Multisample antialiasing	안티앨리어싱
+settings		Extra samples increase GPU work. Disabled is fastest.	샘플 수가 많을수록 GPU 부하가 증가합니다. 끄기가 가장 빠릅니다.
+settings		Texture filtering	텍스처 필터링
+settings		Nearest has the lowest GPU cost.	Nearest가 GPU 부담이 가장 적습니다.
+settings		Downsampling	다운샘플링
+settings		Additional rendering pass; off is fastest.	추가 렌더링 단계입니다. 끄기가 가장 빠릅니다.
+settings		True color	트루컬러
+settings		Use full color precision for hardware rendering.	하드웨어 렌더링에서 높은 색상 정밀도를 사용합니다.
+settings		Scaled dithering	고해상도 디더링
+settings		Scale the PS1 dithering pattern.	PS1 디더링 패턴을 해상도에 맞춥니다.
+settings		Disable interlacing	인터레이스 해제
+settings		Render interlaced games progressively where supported.	지원되는 게임을 순차주사 방식으로 표시합니다.
+settings		Force NTSC timing	NTSC 타이밍 강제
+settings		May change PAL game timing and compatibility.	PAL 게임의 타이밍과 호환성에 영향을 줄 수 있습니다.
+settings		24-bit chroma smoothing	24비트 색차 보간
+settings		Smooth color transitions in 24-bit content.	24비트 화면의 색상 경계를 부드럽게 합니다.
+settings		Widescreen hack	와이드스크린 핵
+settings		May increase geometry work and cause display errors.	지오메트리 부하와 화면 오류가 발생할 수 있습니다.
+settings		PGXP geometry correction	PGXP 지오메트리 보정
+settings		Reduces polygon jitter but increases CPU work.	폴리곤 떨림을 줄이지만 CPU 부하가 증가합니다.
+settings		PGXP culling	PGXP 컬링 보정
+settings		Requires PGXP geometry correction.	PGXP 지오메트리 보정이 켜져 있어야 합니다.
+settings		PGXP texture correction	PGXP 텍스처 보정
+settings		PGXP color correction	PGXP 색상 보정
+settings		PGXP depth buffer	PGXP 깊이 버퍼
+settings		Extra depth processing; may affect compatibility.	추가 깊이 연산으로 호환성에 영향을 줄 수 있습니다.
+settings		PGXP vertex cache	PGXP 정점 캐시
+settings		Optional PGXP accuracy and caching.	선택적인 PGXP 정확도 및 캐싱 기능입니다.
+settings		PGXP CPU mode	PGXP CPU 모드
+settings		Full CPU tracking costs additional performance.	전체 CPU 추적으로 부하가 증가합니다.
+settings		PGXP projection precision	PGXP 투영 정밀도
+settings		Optional projection precision correction.	선택적인 투영 정밀도 보정입니다.
+settings		PGXP tolerance	PGXP 허용 오차
+settings		Advanced PGXP compatibility adjustment.	고급 PGXP 호환성 조절입니다.
+settings		PGXP depth clear threshold	PGXP 깊이 초기화 기준
+settings		Advanced depth buffer compatibility adjustment.	고급 깊이 버퍼 호환성 조절입니다.
+settings		Shader precompilation	셰이더 사전 컴파일
+settings		Lazy compiles in the background.	Lazy는 백그라운드에서 컴파일합니다.
+settings		CD-ROM read thread	CD-ROM 읽기 스레드
+settings		Asynchronous reads reduce stalls.	비동기 읽기로 끊김을 줄입니다.
+settings		CD-ROM readahead	CD-ROM 선읽기
+settings		More sectors may reduce storage-related stutters.	섹터 수를 늘리면 저장장치 읽기 끊김이 줄 수 있습니다.
+settings		Precache CHD	CHD 메모리 캐시
+settings		Uses more RAM and increases startup time.	메모리 사용량과 초기 실행 시간이 증가합니다.
+settings		Load disc to RAM	디스크 전체 메모리 로드
+settings		Uses substantial RAM. Off recommended on handhelds.	메모리를 많이 사용합니다. 휴대기기에서는 끄기를 권장합니다.
+settings		CD-ROM read speed	CD-ROM 읽기 속도
+settings		Faster loading may break some games.	로딩이 빨라질 수 있지만 일부 게임에서 오류가 날 수 있습니다.
+settings		CD-ROM seek speed	CD-ROM 탐색 속도
+settings		Faster seeks may break some games.	탐색이 빨라질 수 있지만 일부 게임에서 오류가 날 수 있습니다.
+settings		Game compatibility settings	게임 호환성 자동 설정
+settings		Keep known game-specific compatibility fixes.	알려진 게임별 호환성 보정을 유지합니다.
+settings		Internal run-ahead	내부 런어헤드
+settings		Re-emulates frames; very expensive. Off recommended.	프레임을 다시 연산하므로 부하가 큽니다. 끄기를 권장합니다.
+settings		Old MDEC decoding	기존 MDEC 디코딩
+settings		Choose the original or newer video decoding path.	기존 또는 새로운 동영상 디코딩 방식을 선택합니다.
+settings		Per-frame audio batching	프레임별 오디오 처리
+settings		Faster batching; disable if a game freezes.	빠른 일괄 오디오 처리입니다. 게임이 멈추면 꺼 보세요.
+settings		Display buffers	화면 출력 버퍼
+settings		Three buffers allow GPU work to overlap display flips.	3개 버퍼는 GPU 연산과 화면 출력을 겹쳐 처리할 수 있게 합니다.
+settings		SwanStation performance	SwanStation 성능 설정
+settings		Performance settings	성능 설정
+settings		Changes apply the next time a game starts.	변경사항은 다음 게임 실행부터 적용됩니다.
+settings		SwanStation settings apply to all games unless a saved game override exists.	저장된 개별 게임 설정이 없는 모든 게임에 적용됩니다.
+settings		SwanStation menu	SwanStation 메뉴
+settings		Confirm restart	재시작 확인
+settings		Confirm quit	종료 확인
+settings		Game is paused while the menu is open.	메뉴를 열면 게임이 일시정지됩니다.

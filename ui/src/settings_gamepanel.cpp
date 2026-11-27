@@ -3,6 +3,7 @@
 // states, the on-screen keyboard; with a companion, its pages instead (the GBA Pokémon companion: gba/panel.h; any
 // other GBA game with a definition: the game companion, gamecomp.h). Moved out of settings.cpp as it was.
 #include "settings.h"
+#include "swanstation_menu.h"
 #include "rpg_projects.h"
 #include "settings_draw.h"
 #include "settings_curl.h"
@@ -362,6 +363,13 @@ namespace banana
 		gTitle = title; gSystem = system; gScreen = screen; gTouch = touch;
 		gFlash = gDown = -1; gSeen = -1; awardsSeen = 0; wake = false;
 		gKeysOpen = false; gKeyPage = 0; gKeyShift = 0; gKeyTyped.clear();
+		gSwanMenu=gSwanOptions=gSwanF=false;
+		gSwanRow=0; gSwanDown=-1; gSwanConfirm=0;
+		gSwanHeld.clear(); gSwanMenuButtons.clear(); gSwanValues.clear();
+		if(gSwanNative) {
+			for(const auto& b:std::vector<std::pair<const char*,int>>{{"l2",BTN_TL2},{"r2",BTN_TR2},{"l3",BTN_THUMBL},{"r3",BTN_THUMBR}})
+				if(getConfValue(data+"/settings.conf",std::string("ra_btn_")+b.first+".psx","game")=="menu") gSwanMenuButtons.insert(b.second);
+		}
 		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast") {
 			raw.reset(); gRpgPage = gRpgConfirm = 0; gRpgDirty = false;
 			gRpgMenu = gRpgPaused = gRpgTopMenu = false; gRpgRow = 0;
@@ -599,6 +607,7 @@ namespace banana
 
 	void Settings::gameClose()
 	{
+		gSwanNative=gSwanMenu=gSwanOptions=false;
 		gPortCover.reset();
 		// the unlocks of this game's run kept for the library's list (on a thread: the card's write isn't the menu's wait)
 		if (raw) { auto w = raw; std::thread([w] { RaWatch::save(w); }).detach(); }
@@ -783,6 +792,7 @@ namespace banana
 	Settings::GameAction Settings::gameTouch(float x, float y, bool down)
 	{
 		float lx = x / s, ly = y / s;
+		if(swanMenuActive()) return swanMenuTouch(lx,ly,down);
 		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast") return rpgPanelTouch(lx,ly,down);
 		int hit = -1;
 		// the on-screen keyboard (the Keys tile): a key types on the press, the bar's pages and Done on the release
@@ -916,6 +926,7 @@ namespace banana
 			fprintf(stderr, "game panel: keyboard open (%s)\n", vkbd && vkbd->ready() ? "the virtual keyboard is there" : "no virtual keyboard");
 			return G_NONE;
 		}
+		if(gSwanNative && hit==2) { swanMenuToggle(); return G_NONE; }
 		return acts[hit];
 	}
 
@@ -971,6 +982,151 @@ namespace banana
 		frame++;	// (a frame of the cache's, as render()'s: evict() after it)
 		gameFrame();
 		evict();
+	}
+
+	// SwanStation keeps RetroArch's rendering and state handling, while
+	// Banana owns its visible menu and performance settings.
+	void Settings::swanMenuToggle()
+	{
+		gSwanMenu=!gSwanMenu; gSwanOptions=false; gSwanConfirm=0;
+		gSwanRow=0; gSwanDown=gDown=gFlash=-1;
+		gSwanValues.clear();
+		if(!gSwanMenu) return;
+		for(const auto& opt:swanOptions()) {
+			auto v=getConfValue(data+"/swanstation.conf",opt.key,opt.def);
+			auto it=std::find(opt.values.begin(),opt.values.end(),v);
+			if(it==opt.values.end()) it=std::find(opt.values.begin(),opt.values.end(),opt.def);
+			gSwanValues.push_back(it==opt.values.end()?0:int(it-opt.values.begin()));
+		}
+	}
+	bool Settings::swanKeyEvent(const InputEvent& ev, GameAction& action)
+	{
+		action=G_NONE;
+		if(!gSwanNative) return false;
+		if(ev.type==InputEvent::RELEASE) {
+			gSwanHeld.erase(ev.code);
+			if(ev.key==Key::MENU) gSwanF=false;
+			return false;
+		}
+		if(ev.type!=InputEvent::PRESS || !gSwanHeld.insert(ev.code).second) return false;
+		if(ev.key==Key::MENU) { gSwanF=true; return false; }
+		if((gSwanF && ev.key==Key::X) || (!gSwanF && gSwanMenuButtons.count(ev.code))) {
+			swanMenuToggle(); return true;
+		}
+		if(!gSwanMenu || gSwanF) return false;
+		action=swanMenuKey(ev.key);
+		return true;
+	}
+	Settings::GameAction Settings::swanMenuKey(Key key)
+	{
+		if(!gSwanMenu) return G_NONE;
+		if(gSwanConfirm) {
+			if(key==Key::B) gSwanConfirm=0;
+			else if(key==Key::A) {
+				const auto action=gSwanConfirm==1?G_RESET:G_QUIT;
+				swanMenuToggle(); return action;
+			}
+			return G_NONE;
+		}
+		if(key==Key::B) {
+			if(gSwanOptions) { gSwanOptions=false; gSwanRow=1; }
+			else swanMenuToggle();
+			return G_NONE;
+		}
+		const auto& opts=swanOptions();
+		const int count=gSwanOptions?int(opts.size()):6;
+		if(count==0) { gSwanOptions=false; gSwanRow=1; return G_NONE; }
+		if(key==Key::UP || key==Key::DOWN)
+			gSwanRow=(gSwanRow+count+(key==Key::UP?-1:1))%count;
+		if(key==Key::L || key==Key::R)
+			gSwanRow=std::clamp(gSwanRow+(key==Key::L?-5:5),0,count-1);
+		if(gSwanOptions && (key==Key::LEFT || key==Key::RIGHT || key==Key::A)) {
+			const auto& c=opts[gSwanRow];
+			int& v=gSwanValues[gSwanRow];
+			v=(v+int(c.values.size())+(key==Key::LEFT?-1:1))%int(c.values.size());
+			setConfValue(data+"/swanstation.conf",c.key,c.values[v]);
+		} else if(!gSwanOptions && key==Key::A) {
+			switch(gSwanRow) {
+			case 0: swanMenuToggle(); break;
+			case 1: if(!opts.empty()) { gSwanOptions=true; gSwanRow=0; } break;
+			case 2: swanMenuToggle(); return G_SAVE;
+			case 3: swanMenuToggle(); return G_LOAD;
+			case 4: gSwanConfirm=1; break;
+			case 5: gSwanConfirm=2; break;
+			}
+		}
+		return G_NONE;
+	}
+	Settings::GameAction Settings::swanMenuTouch(float x,float y,bool down)
+	{
+		int hit=-1;
+		if(y>=425 && y<480 && x>=18 && x<622) hit=-2;
+		else if(gSwanConfirm) {
+			if(y>=365 && y<425 && x>=18 && x<622) hit=x<320?-2:-3;
+		} else if(x>=18 && x<622 && y>=68) {
+			int pitch=gSwanOptions?58:55;
+			int index=int((y-68)/pitch);
+			int n=gSwanOptions?5:6;
+			if(index<n && y<68+index*pitch+pitch-5)
+				hit=gSwanOptions?(gSwanRow/5)*5+index:index;
+			if(gSwanOptions && hit>=int(swanOptions().size())) hit=-1;
+		}
+		if(down) { gSwanDown=hit; return G_NONE; }
+		int was=gSwanDown; gSwanDown=-1;
+		if(hit==-1 || hit!=was) return G_NONE;
+		if(hit==-2) return swanMenuKey(Key::B);
+		if(hit==-3) return swanMenuKey(Key::A);
+		gSwanRow=hit;
+		if(gSwanOptions) {
+			if(x>=325) return swanMenuKey(x<470?Key::LEFT:Key::RIGHT);
+			return G_NONE;
+		}
+		return swanMenuKey(Key::A);
+	}
+	void Settings::swanMenuFrame()
+	{
+		SPal p=pal(light);
+		be->beginScreen(gScreen);
+		box("screen",false,0,0,640,480);
+		box("bubble",false,18,10,604,48);
+		text(gSwanOptions?"Performance settings":"SwanStation menu",true,24,30,23,p.ink);
+		if(gSwanConfirm) {
+			wrapped(gSwanConfirm==1?"Restart this game? Unsaved progress will be lost.":"Quit this game? Unsaved progress will be lost.",23,30,110,580,4,p.ink);
+			for(int i=0;i<2;i++) {
+				float x=18+i*310;
+				box("slot",false,x,365,294,54);
+				text(i?"Confirm":"Cancel",true,21,x+78,381,p.ink);
+			}
+		} else if(gSwanOptions) {
+			const auto& opts=swanOptions();
+			for(int j=0;j<5;j++) {
+				int i=(gSwanRow/5)*5+j;
+				if(i>=int(opts.size())) break;
+				float y=68+j*58; bool on=i==gSwanRow;
+				auto fg=on?p.onPick:p.ink;
+				const auto& c=opts[i];
+				box(on?"pick":"slot",on,18,y,604,53);
+				text(fit(lang::tr(c.label),true,18,276),true,18,30,y+16,fg);
+				auto v=fit(lang::tr(c.names[gSwanValues[i]]),true,17,245);
+				float vw=text(v,true,17,0,0,fg,false,0,true);
+				arrow(false,320,y+19,fg);
+				text(v,true,17,460-vw/2,y+17,fg);
+				arrow(true,592,y+19,fg);
+			}
+			if(!opts.empty()) wrapped(lang::tr(opts[gSwanRow].help),15,24,364,592,2,p.muted);
+			wrapped("Changes apply the next time a game starts.",15,135,430,475,1,p.muted);
+			text(std::to_string(gSwanRow/5+1)+"/"+std::to_string((opts.size()+4)/5),true,15,550,26,p.muted);
+		} else {
+			const char* labels[]={"Resume","Performance settings","Save state","Load state","Restart","Quit"};
+			for(int i=0;i<6;i++) {
+				float y=68+i*55; bool on=i==gSwanRow;
+				box(on?"pick":"slot",on,18,y,604,50);
+				text(labels[i],true,23,36,y+12,on?p.onPick:p.ink);
+			}
+			text("Game is paused while the menu is open.",false,15,142,439,p.muted);
+		}
+		face("B","Back",18,faceWidth("B","Back"));
+		be->endScreen();
 	}
 
 	// Independent SA panel. No RetroAchievements or Libretro state slots.
@@ -1194,6 +1350,7 @@ namespace banana
 
 	void Settings::gameFrame()
 	{
+		if(swanMenuActive()) { swanMenuFrame(); return; }
 		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast") { rpgPanelFrame(); return; }
 		SPal p = pal(light);
 		int state;
