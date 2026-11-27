@@ -324,6 +324,7 @@ def runtime_env(base, folder, mode):
     env["BANANA_RPG_RESOURCE_PRELOAD"]=str(root/"banana-filenames.rb" if mode=="ruby32" else folder/"banana-filenames.rb")
     env["BANANA_MKXP_ACTIVE_RUNTIME"]=mode
     env["BANANA_MKXP_WIN32_PRELOAD"]=str(root/"banana-win32.rb")
+    env["BANANA_MKXP_COMPAT_PRELOAD"]=str(root/"banana-script-compat.rb")
     game=Path(base["BANANA_SA_ENTRY"]).parent.name.casefold()
     env["BANANA_MKXP_SENIA"]="1" if ("eternal senia" in game or "\uc774\ud130\ub110 \uc138\ub2c8\uc544" in game) else "0"
     return env

@@ -4,6 +4,11 @@ STDOUT.sync = true
 STDERR.sync = true
 puts "[MKXP] Ruby #{RUBY_VERSION} (#{RUBY_PLATFORM})"
 load ENV['BANANA_MKXP_WIN32_PRELOAD'] if ENV['BANANA_MKXP_WIN32_PRELOAD'] && File.file?(ENV['BANANA_MKXP_WIN32_PRELOAD'])
+begin
+  load ENV['BANANA_MKXP_COMPAT_PRELOAD'] if ENV['BANANA_MKXP_COMPAT_PRELOAD'] && File.file?(ENV['BANANA_MKXP_COMPAT_PRELOAD'])
+rescue StandardError, ScriptError => e
+  warn("[MKXP compat] optional preload failed: #{e.class}: #{e.message}")
+end
 module BananaLegacyResource
   EXISTS = File.method(:exist?)
   def self.resolve(path, directory = false)

@@ -2932,6 +2932,28 @@ settings		FinalBurn Neo defaults	파이널번 네오 기본 설정
 settings		PICO-8 defaults	PICO-8 기본 설정
 settings		EasyRPG defaults	이지RPG 기본 설정
 settings		MKXP defaults	MKXP 기본 설정
+settings		Script compatibility patches	스크립트 호환 패치
+settings		Apply narrowly matched fixes for known RGSS script errors in memory. Original game files stay unchanged.	알려진 RGSS 스크립트 오류를 실행 중에 보정합니다. 원본 게임 파일은 변경하지 않습니다.
+settings		Font effects	글꼴 효과
+settings		Lightweight	경량 렌더링
+settings		Lightweight disables bold, italic, shadow and outline effects. It may change text appearance; performance depends on the game.	경량 렌더링은 굵게, 기울임, 그림자, 외곽선을 끕니다. 글자 모양이 달라지며 성능 효과는 게임에 따라 다릅니다.
+settings		Confirm (RGSS C)	확인 (RGSS C)
+settings		Cancel (RGSS B)	취소 (RGSS B)
+settings		Dash / auxiliary (RGSS A)	달리기 / 보조 (RGSS A)
+settings		Game button (RGSS X)	게임 버튼 (RGSS X)
+settings		Game button (RGSS Y)	게임 버튼 (RGSS Y)
+settings		Game button (RGSS Z)	게임 버튼 (RGSS Z)
+settings		Page left (RGSS L)	이전 페이지 (RGSS L)
+settings		Page right (RGSS R)	다음 페이지 (RGSS R)
+settings		Choose the physical controller button for this RGSS action. Shared buttons may trigger multiple actions. Directions and function shortcuts are unchanged. Restart to apply.	이 RGSS 기능에 사용할 게임기 버튼을 선택합니다. 중복 지정 시 여러 기능이 실행될 수 있습니다. 방향키와 F 단축키는 유지됩니다. 재시작 후 적용됩니다.
+settings		Auto (A)	자동 (A)
+settings		Auto (B)	자동 (B)
+settings		Auto (X)	자동 (X)
+settings		Auto (Y)	자동 (Y)
+settings		Auto (L1)	자동 (L1)
+settings		Auto (R1)	자동 (R1)
+settings		Auto (L3)	자동 (L3)
+settings		Auto (R3)	자동 (R3)
 settings		Game & Watch defaults	게임 & 워치 기본 설정
 settings		Nintendo DS defaults	닌텐도 DS 기본 설정
 settings		Open this emulator's default settings. Changes apply to games on their next launch.	에뮬레이터 기본 설정을 엽니다. 다음 게임 실행부터 적용됩니다.

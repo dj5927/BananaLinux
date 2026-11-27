@@ -1002,7 +1002,7 @@ namespace banana
 				gRpgDirty=true;
 			}
 		}
-		gRpgPage=gRpgRow/5;
+		gRpgPage=gRpgRow/(gRpgTopMenu?5:4);
 	}
 	Settings::GameAction Settings::rpgPanelTouch(float x,float y,bool down)
 	{
@@ -1021,20 +1021,13 @@ namespace banana
 		if (gRpgMenu && !gRpgTopMenu) {
 			if (down) return G_NONE;
 			if (y>=420) { gRpgMenu=false; return G_NONE; }
-			if (y>=78 && y<378) {
-				int i=gRpgPage*5+int((y-78)/60);
+			if (y>=78 && y<318) {
+				int i=(gRpgRow/4)*4+int((y-78)/60);
 				if (i>=0 && i<int(pgRpgChoices.size())) {
 					gRpgRow=i;
 					if (x>=325) rpgMenuKey(x<470?Key::LEFT:Key::RIGHT);
 				}
-			} else if (y>=380 && y<420) {
-				if (x<320) rpgMenuKey(Key::UP); else rpgMenuKey(Key::DOWN);
 			}
-			return G_NONE;
-		}
-		if (gRpgMenu && y>=110 && y<270 && !down) {
-			if (y<190) rpgMenuKey(x<320?Key::UP:Key::DOWN);
-			else rpgMenuKey(x<320?Key::LEFT:Key::RIGHT);
 			return G_NONE;
 		}
 		if (down) { gDown=gFlash=hit; return G_NONE; }
@@ -1053,8 +1046,10 @@ namespace banana
 		box("bubble",false,18,14,604,54);
 		text("Menu",true,25,36,27,p.ink);
 		text(fit(gTitle,false,18,380),false,18,215,30,p.muted);
-		for (int j=0;j<5;j++) {
-			int i=gRpgPage*5+j;
+		const int perPage=gRpgTopMenu?5:4;
+		const int currentPage=gRpgRow/perPage;
+		for (int j=0;j<perPage;j++) {
+			int i=currentPage*perPage+j;
 			if (i>=int(pgRpgChoices.size())) break;
 			const auto& c=pgRpgChoices[i];
 			float y=78+j*60; bool on=i==gRpgRow;
@@ -1067,9 +1062,10 @@ namespace banana
 			text(v,true,18,460-vw/2,y+17,fg);
 			arrow(true,592,y+20,fg);
 		}
-		int pages=std::max(1,int(pgRpgChoices.size()+4)/5);
-		text(std::to_string(gRpgPage+1)+" / "+std::to_string(pages),true,18,290,386,p.muted);
-		if (!gRpgTopMenu) { text("Up",true,18,35,386,p.ink); text("Down",true,18,540,386,p.ink); }
+		int pages=std::max(1,int(pgRpgChoices.size()+perPage-1)/perPage);
+		if (!gRpgTopMenu && gRpgRow>=0 && gRpgRow<int(pgRpgChoices.size()))
+			wrapped(lang::tr(pgRpgChoices[gRpgRow].help),15,24,326,592,4,p.muted);
+		else text(std::to_string(currentPage+1)+" / "+std::to_string(pages),true,18,290,386,p.muted);
 		wrapped("Settings apply next launch.",16,145,431,465,1,p.muted);
 		face("B","Back",18,faceWidth("B","Back"));
 		be->endScreen();
@@ -1097,9 +1093,11 @@ namespace banana
 		}
 		box("hero",false,18,88,604,198);
 		if (gRpgMenu) {
-			text("Menu",true,23,36,99,p.accent);
-			button(36,132,276,55,"Up"); button(328,132,276,55,"Down");
-			button(36,202,276,55,"Left"); button(328,202,276,55,"Right");
+			if (gRpgRow>=0 && gRpgRow<int(pgRpgChoices.size())) {
+				const auto& c=pgRpgChoices[gRpgRow];
+				text(fit(lang::tr(c.label),true,23,552),true,23,36,103,p.accent);
+				wrapped(lang::tr(c.help),20,36,145,568,4,p.ink);
+			}
 		} else {
 			const char* status=gRpgPaused?"Paused":gRpgPhase=="preflight"?"Checking scripts...":gRpgPhase=="starting"?"Starting game...":gRpgPhase=="retry"?"Trying another Ruby runtime...":gRpgPhase=="restart"?"Restarting game...":gRpgPhase=="failed"?"Game could not start":"Game running";
 			text(fit(lang::tr(status),true,25,550),true,25,38,110,p.ink);

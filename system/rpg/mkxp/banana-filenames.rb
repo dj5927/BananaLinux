@@ -4,6 +4,11 @@ STDOUT.sync = true
 STDERR.sync = true
 puts "[MKXP] Ruby #{RUBY_VERSION} (#{RUBY_PLATFORM})"
 load ENV['BANANA_MKXP_WIN32_PRELOAD'] if ENV['BANANA_MKXP_WIN32_PRELOAD'] && File.file?(ENV['BANANA_MKXP_WIN32_PRELOAD'])
+begin
+  load ENV['BANANA_MKXP_COMPAT_PRELOAD'] if ENV['BANANA_MKXP_COMPAT_PRELOAD'] && File.file?(ENV['BANANA_MKXP_COMPAT_PRELOAD'])
+rescue StandardError, ScriptError => e
+  warn("[MKXP compat] optional preload failed: #{e.class}: #{e.message}")
+end
 
 # Ruby 3.2 removed these legacy APIs, which were already no-ops in 3.1.
 # Do not reintroduce security-sensitive $SAFE behavior.

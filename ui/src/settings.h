@@ -319,7 +319,7 @@ namespace banana
 		std::string pgTitle, pgRom;
 		int pgRow = 0, pgTop = 0, pgEmu = 0, pgShader = 0, pg3d = 0, pgMic = 0, pgRes = 0, pgTiming = 0, pgCpu = 0;	// (pg3d, pgMic, pgRes, pgTiming, pgCpu: 0 as in Settings)
 		bool pgNds = true;
-		enum PgRow { PG_EMU, PG_SHADER, PG_3D, PG_MIC, PG_NAME, PG_SORT, PG_ART, PG_DELETE, PG_RES, PG_TIMING, PG_CPU, PG_ACH, PG_RPG_RGSS, PG_RPG_SCALE, PG_RPG_FONT1, PG_RPG_FONT2, PG_RPG_FONT1_SIZE, PG_RPG_FONT2_SIZE, PG_RPG_MIDI, PG_RPG_ENCODING, PG_RPG_MKXP_FONT, PG_RPG_FONT_HINT, PG_RPG_FONT_SCALE, PG_RPG_RENDER, PG_RPG_FILENAME_ENCODING, PG_RPG_RUBY };
+		enum PgRow { PG_EMU, PG_SHADER, PG_3D, PG_MIC, PG_NAME, PG_SORT, PG_ART, PG_DELETE, PG_RES, PG_TIMING, PG_CPU, PG_ACH, PG_RPG_RGSS, PG_RPG_SCALE, PG_RPG_FONT1, PG_RPG_FONT2, PG_RPG_FONT1_SIZE, PG_RPG_FONT2_SIZE, PG_RPG_MIDI, PG_RPG_ENCODING, PG_RPG_MKXP_FONT, PG_RPG_FONT_HINT, PG_RPG_FONT_SCALE, PG_RPG_RENDER, PG_RPG_FILENAME_ENCODING, PG_RPG_RUBY, PG_RPG_PATCHES, PG_RPG_FONT_EFFECTS, PG_RPG_KEY_A, PG_RPG_KEY_B, PG_RPG_KEY_C, PG_RPG_KEY_X, PG_RPG_KEY_Y, PG_RPG_KEY_Z, PG_RPG_KEY_L, PG_RPG_KEY_R };
 		struct RpgChoice { PgRow row; const char* key; const char* label; const char* help; std::vector<std::string> names, values; };
 		std::vector<RpgChoice> rpgChoices(const std::string& system);
 		void loadRpgChoices(const std::string& system, const std::string& key);

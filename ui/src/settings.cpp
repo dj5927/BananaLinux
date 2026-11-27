@@ -2524,6 +2524,22 @@ namespace banana
 			if(!c || c->values.size()<3 || c->values[0]!="" || c->values[1]!="auto" || pgRpg[PG_RPG_FILENAME_ENCODING]!=0) return false;
 			log("PASS "+sys+" saved CP949 default and inherited game setting");
 		}
+		// Verify the actual global and library per-game controls, not just
+		// the option catalogue. Auto explicitly cancels a global remap.
+		const std::string sec=emulatorDefaultsSection("MKXP");
+		openSection(sec);
+		for(size_t i=0;i<items.size();++i) if(items[i].section==sec && items[i].key=="mkxp.key_c") sel=int(i);
+		if(items[sel].key!="mkxp.key_c") return false;
+		items[sel].at=2; // B; Right selects X.
+		if(press(Key::RIGHT)!=CHANGED || getConfValue(data+"/emulator-defaults.conf","mkxp.key_c","")!="X") return false;
+		openGame("QA","Game.ini",false,"mkxp/QA","","","","","mkxp");
+		auto row=std::find(pgRows.begin(),pgRows.end(),PG_RPG_KEY_C);
+		const auto* c=rpgChoice(PG_RPG_KEY_C);
+		if(row==pgRows.end() || !c || pgRpg[PG_RPG_KEY_C]!=0 || c->names[0].find("(X)")==std::string::npos) return false;
+		pgRow=int(row-pgRows.begin());
+		if(pressGame(Key::RIGHT)!=MOVED || perGame("rpg-per-game.conf",rpg::key("mkxp/QA")+".key_c")!="auto") return false;
+		if(pressGame(Key::RIGHT)!=MOVED || perGame("rpg-per-game.conf",rpg::key("mkxp/QA")+".key_c")!="A") return false;
+		log("PASS MKXP global key C=X, inherited X, explicit Auto and game override A");
 		openSection("Emulators");
 		return true;
 	}
@@ -5818,6 +5834,22 @@ namespace banana
 			result.push_back({PG_RPG_FONT_HINT,"font_hint","Font rendering","Choose sharper hinted text or the original RGSS font rendering.",{"Auto","Sharp","Original"},{"","sharp","original"}});
 			result.push_back({PG_RPG_FONT_SCALE,"font_scale","Font size adjustment","Adjust MKXP font size relative to the game's original size.",{"Auto","90%","100%","110%","120%"},{"","90","100","110","120"}});
 			result.push_back({PG_RPG_RENDER,"render","Graphics compatibility","Use the safer shader rendering path by default. Native blitting is optional.",{"Auto","Compatible","Native blit"},{"","compat","native"}});
+			result.push_back({PG_RPG_PATCHES,"script_patches","Script compatibility patches","Apply narrowly matched fixes for known RGSS script errors in memory. Original game files stay unchanged.",{"Auto","On","Off"},{"","on","off"}});
+			result.push_back({PG_RPG_FONT_EFFECTS,"font_effects","Font effects","Lightweight disables bold, italic, shadow and outline effects. It may change text appearance; performance depends on the game.",{"Auto","Original","Lightweight"},{"","original","lightweight"}});
+			const struct { PgRow row; const char* key; const char* label; const char* original; } bindings[]={
+				{PG_RPG_KEY_C,"key_c","Confirm (RGSS C)","A"},
+				{PG_RPG_KEY_B,"key_b","Cancel (RGSS B)","B"},
+				{PG_RPG_KEY_A,"key_a","Dash / auxiliary (RGSS A)","X"},
+				{PG_RPG_KEY_X,"key_x","Game button (RGSS X)","Y"},
+				{PG_RPG_KEY_Y,"key_y","Game button (RGSS Y)","L3"},
+				{PG_RPG_KEY_Z,"key_z","Game button (RGSS Z)","R3"},
+				{PG_RPG_KEY_L,"key_l","Page left (RGSS L)","L1"},
+				{PG_RPG_KEY_R,"key_r","Page right (RGSS R)","R1"}
+			};
+			for (const auto& b:bindings) {
+				RpgChoice c{b.row,b.key,b.label,"Choose the physical controller button for this RGSS action. Shared buttons may trigger multiple actions. Directions and function shortcuts are unchanged. Restart to apply.",{"Auto ("+std::string(b.original)+")","A","B","X","Y","L1","R1","L3","R3"},{"","A","B","X","Y","L1","R1","L3","R3"}};
+				result.push_back(std::move(c));
+			}
 		}
 		if (!mkxp) {
 			files(PG_RPG_FONT1,"font1","Game font 1",bios+"/easyrpg-player/Font",false);

@@ -80,7 +80,7 @@ printf 'RPG %s launch %s restart=%s\n' "$sys" "$entry" "${BANANA_SA_RESTARTING:-
 printf 'log=%s\n' "$log"
 [ -f "$entry" ] || { echo "Missing RPG project entry: $entry" >&2; exit 2; }
 if [ "$sys" = mkxp ]; then printf 'attempt_journal=%s\n' "$cfg/ruby-last-attempts.json"; fi
-for opt in rgss scale encoding filename_encoding font_hint font_scale render ruby_runtime; do
+for opt in rgss scale encoding filename_encoding font_hint font_scale render ruby_runtime script_patches font_effects; do
     printf '%s=%s\n' "$opt" "$(get "$opt")"
 done
 export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-kmsdrm}"
@@ -131,6 +131,37 @@ export BANANA_RPG_FONT="$(asset mkxp_font "$D/bios/mkxp/fonts")"
 export BANANA_RPG_FONT_HINT="$(get font_hint)"
 export BANANA_RPG_FONT_SCALE="$(get font_scale)"
 export BANANA_RPG_RENDER="$(get render)"
+export BANANA_MKXP_SCRIPT_PATCHES="$(get_raw script_patches)"
+export BANANA_MKXP_FONT_EFFECTS="$(get_raw font_effects)"
+# Existing native MKXP remapper understands source SDL button -> replacement
+# SDL button. Emit all eight logical bindings together so that unmodified
+# actions are not silently removed when a custom assignment shares a button.
+# No custom choices: leave native keyboard/controller bindings untouched.
+unset MKXP_CONTROLLER_REMAP_FILE
+configure_mkxp_buttons() {
+    remap_tmp=$(mktemp "$cfg/controller-remap.XXXXXX") || return 1
+    custom=0
+    for binding in a:X b:B c:A x:Y y:L3 z:R3 l:L1 r:R1; do
+        action=${binding%:*}; original=${binding#*:}
+        button=$(get_raw "key_$action")
+        case "$button" in
+            A|B|X|Y|L1|R1|L3|R3) custom=1 ;;
+            auto|inherit|'') button="$original" ;;
+            *) printf '[MKXP] Invalid key_%s ignored: %s\n' "$action" "$button"; button="$original" ;;
+        esac
+        printf '%s=%s\n' "$original" "$button" >> "$remap_tmp" || { rm -f "$remap_tmp"; return 1; }
+    done
+    if [ "$custom" = 1 ]; then
+        if ! mv -f "$remap_tmp" "$cfg/controller-remap.conf"; then rm -f "$remap_tmp"; return 1; fi
+        export MKXP_CONTROLLER_REMAP_FILE="$cfg/controller-remap.conf"
+        printf '[MKXP] Controller remap (source -> physical):\n'
+        cat "$MKXP_CONTROLLER_REMAP_FILE" || :
+    else
+        rm -f "$remap_tmp"
+        printf '[MKXP] Native default controller bindings\n'
+    fi
+}
+configure_mkxp_buttons || printf '[MKXP] Could not prepare controller remap; using native bindings\n'
 export BANANA_RPG_RESOURCE_PRELOAD="$R/mkxp/banana-filenames.rb"
 export MKXP_PORTABLE_RTP_ROOT="$D/bios/mkxp/rtp"
 [ ! -f "$R/assets/TimGM6mb.sf2" ] || export MKXP_PORTABLE_SOUNDFONT="$R/assets/TimGM6mb.sf2"
