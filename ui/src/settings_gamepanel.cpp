@@ -377,6 +377,7 @@ namespace banana
 			gRpgPhase=gSysId=="mkxp"?"preflight":(gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation")?"starting":"running"; gRpgRuntime.clear();
 			gPortBlind=false; gPortStart=-1; gPortSeconds=0; gPortBattery=-1; gPortBatteryTick=-1; gPortCover.reset();
 			if(gSysId!="ports") loadRpgChoices(gSysId,gProjectKey);
+			if(saQuickPanel()) saQuickOpen();
 			return;
 		}
 		gcView = gcLast = gcomp::P_STATUS; gcScreen = 0; gcScreens = 1; gcList = gcRow = -1; gcBattle = false; gcHits.clear();
@@ -1129,12 +1130,233 @@ namespace banana
 		be->endScreen();
 	}
 
+	void Settings::saQuickOpen()
+	{
+		gSaSlot=1; gSaRow=0; gSaDown=-1; gSaFast=gSaOptions=false;
+		gSaHeld.clear(); gSaChoices.clear(); gSaValues.clear();
+		auto saved=getConfValue(data+"/sa-quick.conf",gSysId+".slot","1");
+		if(saved.size()==1 && saved[0]>='1' && saved[0]<='5') gSaSlot=saved[0]-'0';
+		if(gSysId!="duckstation") {
+			for(const auto& c:pgRpgChoices) {
+				gSaChoices.push_back({c.key,c.label,c.help,c.names,c.values,true});
+				gSaValues.push_back(pgRpg[c.row]);
+			}
+		} else {
+			const char* fixture=std::getenv("BANANA_DUCK_OPTIONS");
+			std::ifstream f(fixture?fixture:"/usr/share/banana/duckstation-options.tsv");
+			const std::set<std::string> wanted={"panel","GPU.Renderer","GPU.ResolutionScale","CPU.FastmemMode",
+				"GPU.PGXPEnable","GPU.Multisamples","GPU.TextureFilter","Display.VSync",
+				"Display.AspectRatio","Display.ShowFPS","Display.ShowSpeed","Audio.OutputVolume","Audio.OutputMuted"};
+			std::string line;
+			while(std::getline(f,line)) {
+				if(!line.empty() && line.back()=='\r') line.pop_back();
+				auto a=swanSplit(line,'\t');
+				if(a.size()!=6 || !wanted.count(a[0])) continue;
+				auto v=swanSplit(a[4],'|'), n=swanSplit(a[5],'|');
+				if(v.empty() || v.size()!=n.size()) continue;
+				auto current=getConfValue(data+"/duckstation.conf",a[0],a[1]);
+				auto it=std::find(v.begin(),v.end(),current);
+				if(it==v.end()) it=std::find(v.begin(),v.end(),a[1]);
+				gSaValues.push_back(it==v.end()?0:int(it-v.begin()));
+				gSaChoices.push_back({a[0],a[2],a[3],n,v,false});
+			}
+		}
+	}
+	void Settings::saSlotStep(int step)
+	{
+		gSaSlot=(gSaSlot-1+5+step)%5+1;
+		setConfValue(data+"/sa-quick.conf",gSysId+".slot",std::to_string(gSaSlot));
+	}
+	void Settings::saMenuToggle()
+	{
+		gRpgMenu=!gRpgMenu; gRpgConfirm=0; gSaOptions=false;
+		gSaRow=0; gDown=gFlash=gSaDown=-1;
+	}
+	Settings::GameAction Settings::saTile(int i)
+	{
+		if(i==2) { saMenuToggle(); return G_NONE; }
+		if(i==4) { gRpgConfirm=2; return G_NONE; }
+		gRpgPaused=false;
+		if(i==0) return G_SAVE;
+		if(i==1) return G_LOAD;
+		if(i==3) return G_FFWD;
+		return G_NONE;
+	}
+	bool Settings::saKeyEvent(const InputEvent& ev,GameAction& action)
+	{
+		action=G_NONE;
+		// OTHER includes shoulder buttons and stick clicks; use the evdev code
+		// for R2, and keep release tracking independent of the UI key label.
+		const int held=ev.code?ev.code:-(int(ev.key)+1);
+		if(ev.type==InputEvent::RELEASE) {
+			gSaHeld.erase(held);
+			if(ev.key==Key::MENU) gRpgFHeld=false;
+			return false;
+		}
+		if(ev.type!=InputEvent::PRESS || !gSaHeld.insert(held).second) return false;
+		if(ev.key==Key::MENU) { gRpgFHeld=true; return false; }
+		if(gRpgFHeld) {
+			if(ev.key==Key::START) {
+				gRpgConfirm=0; gRpgMenu=gRpgPaused=false; action=G_QUIT; return true;
+			}
+			if(ev.key==Key::X) {
+				if(gPortBlind) { gRpgPaused=false; action=G_MENU; }
+				else saMenuToggle();
+				return true;
+			}
+			if(ev.key==Key::A) {
+				if(gRpgMenu || gRpgConfirm) {gRpgMenu=false;gRpgConfirm=0;gRpgPaused=false;}
+				else gRpgPaused=!gRpgPaused;
+				return true;
+			}
+			if(ev.key==Key::SELECT) {
+				if(gPortBlind) {gRpgPaused=false; action=G_RESET;}
+				else gRpgConfirm=1;
+				return true;
+			}
+			if(!gRpgMenu && !gRpgConfirm) {
+				if(ev.code==BTN_TR2) {action=saTile(3);return true;}
+				if(ev.key==Key::R) {action=saTile(0);return true;}
+				if(ev.key==Key::L) {action=saTile(1);return true;}
+			}
+			return false;
+		}
+		if(gRpgConfirm) {
+			if(ev.key==Key::B) gRpgConfirm=0;
+			else if(ev.key==Key::A) {
+				action=gRpgConfirm==1?G_RESET:G_QUIT;
+				gRpgConfirm=0;gRpgMenu=gRpgPaused=false;gSaFast=false;
+			}
+			return true;
+		}
+		if(gRpgMenu) {action=saMenuKey(ev.key);return true;}
+		return false;
+	}
+	Settings::GameAction Settings::saMenuKey(Key key)
+	{
+		if(key==Key::B) {
+			if(gSaOptions) {gSaOptions=false;gSaRow=2;}
+			else gRpgMenu=false;
+			return G_NONE;
+		}
+		const int count=gSaOptions?int(gSaChoices.size()):7;
+		if(count==0) {gSaOptions=false;gSaRow=2;return G_NONE;}
+		if(key==Key::UP || key==Key::DOWN) gSaRow=(gSaRow+count+(key==Key::UP?-1:1))%count;
+		if(gSaOptions) {
+			if(key==Key::L || key==Key::R) gSaRow=std::clamp(gSaRow+(key==Key::L?-5:5),0,count-1);
+			if(key==Key::LEFT || key==Key::RIGHT || key==Key::A) {
+				const auto& c=gSaChoices[gSaRow];int& v=gSaValues[gSaRow];
+				v=(v+int(c.values.size())+(key==Key::LEFT?-1:1))%int(c.values.size());
+				if(c.perGame) {
+					setPerGame("rpg-per-game.conf",rpg::key(gProjectKey)+"."+c.key,c.values[v]);
+				} else setConfValue(data+"/duckstation.conf",c.key,c.values[v]);
+				gRpgDirty=true;
+			}
+		} else if(gSaRow==1 && (key==Key::LEFT || key==Key::RIGHT || key==Key::A)) {
+			saSlotStep(key==Key::LEFT?-1:1);
+		} else if(key==Key::A) {
+			switch(gSaRow) {
+			case 0:gRpgMenu=gRpgPaused=false;break;
+			case 2:if(!gSaChoices.empty()){gSaOptions=true;gSaRow=0;}break;
+			case 3:gRpgMenu=gRpgPaused=false;gSaFast=false;return G_MENU;
+			case 4:gRpgMenu=false;gRpgPaused=true;break;
+			case 5:gRpgConfirm=1;break;
+			case 6:gRpgConfirm=2;break;
+			}
+		}
+		return G_NONE;
+	}
+	Settings::GameAction Settings::saTouch(float x,float y,bool down)
+	{
+		int hit=-1;
+		if(gRpgConfirm) {
+			if(x>=20 && x<620 && y>=365 && y<425) hit=x<320?-2:-3;
+		} else if(gRpgMenu) {
+			if(y>=425 && x>=18 && x<622) hit=-2;
+			else if(x>=18 && x<622 && y>=78) {
+				const int pitch=gSaOptions?58:48;
+				int i=int((y-78)/pitch);
+				if(i<(gSaOptions?5:7) && y<78+i*pitch+pitch-4) {
+					hit=gSaOptions?(gSaRow/5)*5+i:i;
+					if(gSaOptions && hit>=int(gSaChoices.size())) hit=-1;
+				}
+			}
+		} else {
+			if(x>=18 && x<622 && y>=300 && y<420) {
+				int i=int((x-18)/122);
+				if(i<5 && x<18+i*122+114) hit=i;
+			} else if(y>=237 && y<277) {
+				int x0=gPortCover?276:38;
+				if(x>=x0+65 && x<x0+118) hit=-4;
+				if(x>=x0+140 && x<x0+190) hit=-5;
+			}
+		}
+		if(down) {gSaDown=hit;gFlash=!gRpgMenu&&!gRpgConfirm&&hit>=0?hit:-1;return G_NONE;}
+		int was=gSaDown;gSaDown=gFlash=-1;
+		if(hit==-1 || hit!=was) return G_NONE;
+		if(gRpgConfirm) {
+			if(hit==-2) gRpgConfirm=0;
+			else if(hit==-3) {
+				auto a=gRpgConfirm==1?G_RESET:G_QUIT;
+				gRpgConfirm=0;gRpgMenu=gRpgPaused=false;gSaFast=false;return a;
+			}
+			return G_NONE;
+		}
+		if(gRpgMenu) {
+			if(hit==-2) return saMenuKey(Key::B);
+			gSaRow=hit;
+			if(gSaOptions || hit==1) {
+				if(x>=320) return saMenuKey(x<470?Key::LEFT:Key::RIGHT);
+				return G_NONE;
+			}
+			return saMenuKey(Key::A);
+		}
+		if(hit==-4 || hit==-5) {saSlotStep(hit==-4?-1:1);return G_NONE;}
+		return saTile(hit);
+	}
+	void Settings::saMenuFrame()
+	{
+		SPal p=pal(light);
+		be->beginScreen(gScreen);
+		box("screen",false,0,0,640,480);
+		box("bubble",false,18,14,604,54);
+		text(gSaOptions?"Performance settings":"Menu",true,25,36,27,p.ink);
+		if(gSaOptions) {
+			for(int j=0;j<5;j++) {
+				int i=(gSaRow/5)*5+j;
+				if(i>=int(gSaChoices.size())) break;
+				const auto& c=gSaChoices[i];float y=78+j*58;
+				bool on=i==gSaRow;auto fg=on?p.onPick:p.ink;
+				box(on?"pick":"slot",on,18,y,604,54);
+				text(fit(lang::tr(c.label),true,19,278),true,19,32,y+17,fg);
+				auto v=fit(lang::tr(c.names[gSaValues[i]]),true,17,244);
+				float vw=text(v,true,17,0,0,fg,false,0,true);
+				arrow(false,320,y+20,fg);text(v,true,17,460-vw/2,y+17,fg);arrow(true,592,y+20,fg);
+			}
+			if(!gSaChoices.empty()) wrapped(lang::tr(gSaChoices[gSaRow].help),15,24,371,592,2,p.muted);
+			wrapped(gSysId=="duckstation"?"Global settings apply next launch.":"Settings apply next launch.",15,140,430,475,1,p.muted);
+		} else {
+			const char* labels[]={"Resume","State slot","Performance settings","Open emulator menu","Pause","Restart","Quit"};
+			for(int i=0;i<7;i++) {
+				float y=78+i*48;bool on=i==gSaRow;auto fg=on?p.onPick:p.ink;
+				box(on?"pick":"slot",on,18,y,604,44);
+				text(labels[i],true,20,36,y+11,fg);
+				if(i==1) {
+					arrow(false,320,y+12,fg);text(std::to_string(gSaSlot),true,20,452,y+10,fg);arrow(true,592,y+12,fg);
+				}
+			}
+		}
+		face("B","Back",18,faceWidth("B","Back"));
+		be->endScreen();
+	}
+
 	// Independent SA panel. No RetroAchievements or Libretro state slots.
 	bool Settings::rpgKeyEvent(const InputEvent& ev, GameAction& action)
 	{
 		action=G_NONE;
 		const bool easy=gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation";
 		if (!rpg::isSystem(gSysId) && gSysId!="ports" && !easy) return false;
+		if(easy) return saKeyEvent(ev,action);
 		if (ev.type==InputEvent::RELEASE) {
 			gRpgHeld.erase(ev.key);
 			if (ev.key==Key::MENU) gRpgFHeld=false;
@@ -1198,6 +1420,7 @@ namespace banana
 	}
 	Settings::GameAction Settings::rpgPanelTouch(float x,float y,bool down)
 	{
+		if(saQuickPanel()) return saTouch(x,y,down);
 		int hit=-1;
 		if (x>=18 && x<622 && y>=300 && y<420) {
 			const bool port=gSysId=="ports";
@@ -1269,6 +1492,7 @@ namespace banana
 	}
 	void Settings::rpgPanelFrame()
 	{
+		if(saQuickPanel() && gRpgMenu && !gRpgConfirm) { saMenuFrame(); return; }
 		if (gRpgMenu && !gRpgTopMenu && !gRpgConfirm) { rpgMenuFrame(gScreen); return; }
 		SPal p=pal(light);
 		be->beginScreen(gScreen);
@@ -1308,7 +1532,13 @@ namespace banana
 			const int bx=gPortCover?475:350;
 			text("Battery",false,18,bx,164,p.muted);
 			text(gPortBattery>=0?std::to_string(gPortBattery)+"%":"--",true,28,bx,190,p.ink);
-			wrapped("Save in the game before quitting.",17,x,252,590-x,1,p.muted);
+			if(easy) {
+				box("slot",false,x,237,590-x,40);
+				text("Slot",true,17,x+10,248,p.muted);
+				arrow(false,x+82,248,p.ink);
+				text(std::to_string(gSaSlot),true,20,x+118,246,p.ink);
+				arrow(true,x+155,248,p.ink);
+			} else wrapped("Save in the game before quitting.",17,x,252,590-x,1,p.muted);
 		} else if (gRpgMenu) {
 			if (gRpgRow>=0 && gRpgRow<int(pgRpgChoices.size())) {
 				const auto& c=pgRpgChoices[gRpgRow];
@@ -1326,6 +1556,26 @@ namespace banana
 		const char* const* icons[]={pauseIcon,IC_LIST,restartIcon,IC_EXIT};
 		const char* labels[]={gRpgPaused?"Resume":"Pause","Menu","Restart","Quit"};
 		const char* shortcuts[]={"F + A","F + X","F + SELECT","F + START"};
+		if(easy) {
+			for(int i=0;i<5;i++) {
+				const float x=18+i*122,w=114,y=300;
+				const bool on=gFlash==i || (i==3 && gSaFast);
+				box(on?"pick":"slot",on,x,y,w,120);
+				Color fg=on?p.onPick:(i==4?Color::hex(0xff8a96):p.ink);
+				int k=std::max(1,int(std::lround(3*s)));
+				float ix=std::round(X(x+w/2)-6*k),iy=std::round(X(y+16));
+				for(int r=0;r<12;r++) for(int c=0;c<12;c++) if(GTILES[i].icon[r][c]=='#') be->fill(ix+c*k,iy+r*k,float(k),float(k),fg);
+				auto label=fit(lang::tr("Second screen (RetroArch games)",GTILES[i].label),true,19,w-8);
+				float tw=text(label,true,19,0,0,fg,false,0,true);
+				text(label,true,19,x+(w-tw)/2,y+60,fg);
+				std::string keys=GTILES[i].keys;
+				float sw=text(keys,false,14,0,0,fg,false,0,true);
+				text(keys,false,14,x+(w-sw)/2,y+90,fg);
+			}
+			wrapped("Touch a tile or use F shortcuts.",16,22,438,596,2,p.muted);
+			be->endScreen();
+			return;
+		}
 		for(int i=0;i<4;i++) {
 			if(port && i==1) continue;
 			float w=port?196:145;

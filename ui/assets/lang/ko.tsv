@@ -3134,3 +3134,22 @@ settings		Audio volume	오디오 볼륨
 settings		Control the emulator output volume.	에뮬레이터 출력 볼륨을 조절합니다.
 settings		Resampling	리샘플링
 settings		Time stretching	타임 스트레칭
+settings		State slot	저장 슬롯
+settings		Open emulator menu	에뮬레이터 자체 메뉴
+settings		Global settings apply next launch.	전체 게임에 적용되며, 다음 실행부터 반영됩니다.
+settings		Saving state...	상태 저장 중...
+settings		Loading state...	상태 불러오는 중...
+settings		State saved	상태 저장 완료
+settings		State loaded	상태 불러오기 완료
+settings		State warning	상태 처리 경고
+settings		State operation failed	상태 처리 실패
+settings		State slot empty	비어 있는 저장 슬롯
+settings		State request pending	상태 처리 중
+settings		State request timed out	응답 시간 초과
+settings		Unavailable during this game	현재 게임에서 사용할 수 없음
+settings		Changing speed...	속도 변경 중...
+settings		Fast forward on	빨리감기 켜짐
+settings		Fast forward off	빨리감기 꺼짐
+settings		Invalid state slot	잘못된 저장 슬롯
+settings		Enable game audio.	게임 소리를 활성화합니다.
+settings		Slot	슬롯

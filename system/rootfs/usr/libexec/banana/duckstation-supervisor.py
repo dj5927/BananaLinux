@@ -225,6 +225,10 @@ def sync_native(ini,cfg,opts,selected):
     for k,(default,allowed) in opts.items():
         if "." not in k: continue
         v=native.get(k)
+        # A BananaOS menu setting changed while the game was running takes
+        # precedence over native settings written on shutdown.
+        if k in old and old[k] != selected[k]:
+            continue
         if v in allowed and v != selected[k]:
             old[k]=v;changed=True
     if changed: atomic_write(cfg, "".join(k+" = "+v+"\n" for k,v in old.items()))
@@ -236,7 +240,7 @@ def run(rom, data, engine=ENGINE, schema=SCHEMA, run_dir=Path("/run/banana")):
     logpath=logs/(hashlib.sha256(key.encode("utf-8","surrogateescape")).hexdigest()+".log")
     if logpath.exists(): os.replace(logpath,logpath.with_suffix(".previous.log"))
     (logs/"last-log-path.txt").write_text(str(logpath)+"\n")
-    stopped=False; child=None; fd=None; ready=False; lockfd=None; mali=None
+    stopped=False; child=None; fd=None; ready=False; lockfd=None; mali=None; quick=None
     markers={name:run_dir/("duck-"+name+"-"+str(os.getpid()))
              for name in ("ready","menu","quit","reset")}
     status=os.environ.get("BANANA_EASY_STATUS_FILE","")
@@ -300,6 +304,9 @@ def run(rom, data, engine=ENGINE, schema=SCHEMA, run_dir=Path("/run/banana")):
                 mali.start(data,env,cancelled,progress)
                 if cancelled(): return 0
             for m in markers.values(): m.unlink(missing_ok=True)
+            from sa_quick import QuickBridge
+            quick=QuickBridge(run_dir,lambda detail: progress("running",detail),msg)
+            env.update(quick.env())
             msg("rom="+rom+" lease="+str(bool(lease))+" settings="+str(selected))
             resource.setrlimit(resource.RLIMIT_CORE,(0,0))
             child=subprocess.Popen([str(engine),"-batch","-fullscreen","-settings",str(ini),"--",rom],
@@ -307,6 +314,7 @@ def run(rom, data, engine=ENGINE, schema=SCHEMA, run_dir=Path("/run/banana")):
             # A cold Vulkan shader/pipeline cache may take longer on RK3566.
             deadline=time.monotonic()+(120 if mali is not None else 40);buf=b""
             while child.poll() is None and not stopped:
+                quick.poll()
                 if not ready and markers["ready"].is_file():
                     ready=True;progress("running");msg("Game boot completed")
                 if not ready and time.monotonic()>deadline:
@@ -321,6 +329,7 @@ def run(rom, data, engine=ENGINE, schema=SCHEMA, run_dir=Path("/run/banana")):
                         if c==b"QUIT": stopped=True
                         elif c==b"MENU_TOGGLE": markers["menu"].touch()
                         elif c==b"RESET": markers["reset"].touch()
+                        elif ready: quick.command(c)
             if stopped: return 0
             code=child.returncode
             msg("exit="+str(code))
@@ -345,6 +354,7 @@ def run(rom, data, engine=ENGINE, schema=SCHEMA, run_dir=Path("/run/banana")):
                     try: sync_native(ini,cfg,opts,selected)
                     except OSError as e: msg("settings sync: "+repr(e))
             for m in markers.values(): m.unlink(missing_ok=True)
+            if quick is not None: quick.close()
             if fd is not None: os.close(fd)
             if mali is not None: mali.close()
             if lockfd is not None: os.close(lockfd)

@@ -5870,6 +5870,10 @@ namespace banana
 			result.push_back({PG_RPG_FONT_HINT,"panel","Second screen","Auto keeps the lower game panel. Off uses the original single-screen mode; F shortcuts still work.",{"Auto","Game panel","Off"},{"","on","off"}});
 			result.push_back({PG_RPG_SCALE,"resolution","Internal resolution","Higher resolution improves image quality but may reduce speed. Auto keeps the native emulator setting.",{"Auto","1x","2x","3x"},{"","1","2","3"}});
 			result.push_back({PG_RPG_RENDER,"frameskip","Frame skipping","Skip frames if a game is too slow. Auto keeps the native emulator setting.",{"Auto","Off","1","2"},{"","0","1","2"}});
+			result.push_back({PG_RPG_FONT_EFFECTS,"vsync","VSync","Whether frames wait for the screen's refresh.",{"Auto","On","Off"},{"","on","off"}});
+			result.push_back({PG_RPG_FONT_SCALE,"filter","Texture filtering","Nearest has the lowest GPU cost.",{"Auto","Nearest","Linear"},{"","nearest","linear"}});
+			if(system=="psp") result.push_back({PG_RPG_MIDI,"sound","Game audio","Enable game audio.",{"Auto","On","Off"},{"","on","off"}});
+			else result.push_back({PG_RPG_MIDI,"fps","Show FPS","Display the rendered frame rate.",{"Auto","On","Off"},{"","on","off"}});
 			if(system=="dreamcast") result.push_back({PG_RPG_PATCHES,"fast_loading","GD-ROM Fast Loading","Optional faster disc access. Off is safest; some games may fail when enabled.",{"Auto","Off","On"},{"","off","on"}});
 			return result;
 		}

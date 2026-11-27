@@ -131,6 +131,7 @@ namespace banana
 		void gameRender();
 		GameAction gameTouch(float x, float y, bool down);	// device px on the panel's screen
 		bool rpgMenuActive() const { return gRpgMenu; }
+		int saQuickSlot() const { return gSaSlot; }
 		bool rpgPauseRequested() const { return gRpgPaused || gRpgMenu || gRpgConfirm != 0; }
 		void portHotkeyOnly(bool on) { gPortBlind=on; }
 		void portCover(const std::string& path);
@@ -142,6 +143,8 @@ namespace banana
 		int rpgConfirmation() const { return gRpgConfirm; }
 		bool rpgLaunchStatus(const std::string& phase,const std::string& runtime) {
 			if (phase==gRpgPhase && runtime==gRpgRuntime) return false;
+			if (runtime=="Fast forward on") gSaFast=true;
+			else if (runtime=="Fast forward off" || phase!="running") gSaFast=false;
 			gRpgPhase=phase; gRpgRuntime=runtime; return true;
 		}
 		bool gameKeysOpen() const { return gKeysOpen; }	// (tests: the panel's keyboard page is up)
@@ -793,6 +796,21 @@ namespace banana
 		GameAction swanMenuKey(Key key);
 		GameAction swanMenuTouch(float x,float y,bool down);
 		void swanMenuFrame();
+		struct SaChoice { std::string key,label,help; std::vector<std::string> names,values; bool perGame; };
+		std::vector<SaChoice> gSaChoices;
+		std::vector<int> gSaValues;
+		std::set<int> gSaHeld;
+		int gSaSlot=1, gSaRow=0, gSaDown=-1;
+		bool gSaOptions=false,gSaFast=false;
+		bool saQuickPanel() const { return gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation"; }
+		void saQuickOpen();
+		void saMenuToggle();
+		void saSlotStep(int step);
+		GameAction saTile(int i);
+		GameAction saMenuKey(Key key);
+		bool saKeyEvent(const InputEvent& ev,GameAction& action);
+		GameAction saTouch(float x,float y,bool down);
+		void saMenuFrame();
 		int gRpgPage = 0;
 		int gRpgConfirm = 0;
 		bool gRpgDirty = false;

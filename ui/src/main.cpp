@@ -1217,10 +1217,12 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			cs>>edge>>key>>expected;
 			InputEvent ev{};
 			ev.type=edge=="up"?InputEvent::RELEASE:InputEvent::PRESS;
-			ev.key=key=="f"?Key::MENU:key=="a"?Key::A:key=="b"?Key::B:key=="x"?Key::X:key=="select"?Key::SELECT:key=="start"?Key::START:Key::NONE;
+			ev.key=key=="f"?Key::MENU:key=="a"?Key::A:key=="b"?Key::B:key=="x"?Key::X:key=="select"?Key::SELECT:key=="start"?Key::START:
+				key=="l"?Key::L:key=="r"?Key::R:key=="r2"?Key::OTHER:key=="up"?Key::UP:key=="down"?Key::DOWN:key=="left"?Key::LEFT:key=="right"?Key::RIGHT:Key::NONE;
+			if(key=="r2") ev.code=BTN_TR2;
 			Settings::GameAction action=Settings::G_NONE;
 			settings.rpgKeyEvent(ev,action);
-			const auto want=expected=="quit"?Settings::G_QUIT:expected=="reset"?Settings::G_RESET:expected=="menu"?Settings::G_MENU:Settings::G_NONE;
+			const auto want=expected=="quit"?Settings::G_QUIT:expected=="reset"?Settings::G_RESET:expected=="menu"?Settings::G_MENU:expected=="save"?Settings::G_SAVE:expected=="load"?Settings::G_LOAD:expected=="fast"?Settings::G_FFWD:Settings::G_NONE;
 			if (ev.key==Key::NONE || action!=want) { logf("FAIL rpgkey %s %s action=%d",edge.c_str(),key.c_str(),int(action)); return 2; }
 			logf("PASS rpgkey %s %s %s",edge.c_str(),key.c_str(),expected.c_str());
 		}
@@ -1477,7 +1479,7 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			logf("gtouch %.0f %.0f: action %d keys %d view %s", x, y, (int)act, settings.gameKeysOpen() ? 1 : 0, settings.gamePanelView().c_str());
 			std::string expected;
 			if (cs >> expected) {
-				const auto want=expected=="quit"?Settings::G_QUIT:expected=="reset"?Settings::G_RESET:expected=="menu"?Settings::G_MENU:Settings::G_NONE;
+				const auto want=expected=="quit"?Settings::G_QUIT:expected=="reset"?Settings::G_RESET:expected=="menu"?Settings::G_MENU:expected=="save"?Settings::G_SAVE:expected=="load"?Settings::G_LOAD:expected=="fast"?Settings::G_FFWD:Settings::G_NONE;
 				if (act!=want) { logf("FAIL gtouch expected %s",expected.c_str()); return 2; }
 				logf("PASS gtouch %s",expected.c_str());
 			}
@@ -2965,8 +2967,11 @@ int main(int argc, char** argv)
 					if (a == Settings::G_QUIT) markMkxpQuit();
 					char slotCmd[32];
 					snprintf(slotCmd, sizeof slotCmd, "LOAD_STATE_SLOT %d\n", settingsView.gameSlot());
+					if(nativeEasy && (a==Settings::G_SAVE || a==Settings::G_LOAD))
+						snprintf(slotCmd,sizeof slotCmd,"%s %d\n",a==Settings::G_SAVE?"SAVE_STATE":"LOAD_STATE",settingsView.saQuickSlot());
 					const char* c = a == Settings::G_LOADSLOT ? slotCmd : a == Settings::G_SAVE ? "SAVE_STATE\n" : a == Settings::G_LOAD ? "LOAD_STATE\n" :
 						a == Settings::G_MENU ? "MENU_TOGGLE\n" : a == Settings::G_FFWD ? "FAST_FORWARD\n" : a == Settings::G_RESET ? "RESET\n" : a == Settings::G_QUIT ? "QUIT\n" : nullptr;
+					if(nativeEasy && (a==Settings::G_SAVE || a==Settings::G_LOAD)) c=slotCmd;
 					if (c) { logf("game panel: %.*s (panel-tap)", (int)strlen(c) - 1, c); if (!pipeWrite(cmdFd, c, strlen(c))) logf("game panel: the command pipe is full or closed: %.*s", (int)strlen(c) - 1, c); }
 				}
 				want = true;
@@ -3028,7 +3033,11 @@ int main(int argc, char** argv)
 								if (settingsView.rpgKeyEvent(ev,a)) {
 									syncRpgPause();
 									if (a==Settings::G_QUIT) markMkxpQuit();
-									const char* c=a==Settings::G_QUIT?"QUIT\n":a==Settings::G_RESET?"RESET\n":a==Settings::G_MENU?"MENU_TOGGLE\n":nullptr;
+									char stateCmd[32];
+									snprintf(stateCmd,sizeof stateCmd,"%s %d\n",a==Settings::G_SAVE?"SAVE_STATE":"LOAD_STATE",settingsView.saQuickSlot());
+									const char* c=a==Settings::G_QUIT?"QUIT\n":a==Settings::G_RESET?"RESET\n":a==Settings::G_MENU?"MENU_TOGGLE\n":
+										nativeEasy && (a==Settings::G_SAVE || a==Settings::G_LOAD)?stateCmd:
+										nativeEasy && a==Settings::G_FFWD?"FAST_FORWARD\n":nullptr;
 									if (c) {
 										logf("RPG shortcut: %.*s",(int)strlen(c)-1,c);
 										if (!pipeWrite(cmdFd,c,strlen(c))) logf("RPG shortcut: command pipe full or closed");
@@ -3065,9 +3074,12 @@ int main(int argc, char** argv)
 						want = true;
 						char slotCmd[32];
 						snprintf(slotCmd, sizeof slotCmd, "LOAD_STATE_SLOT %d\n", settingsView.gameSlot());
+						if(nativeEasy && (a==Settings::G_SAVE || a==Settings::G_LOAD))
+							snprintf(slotCmd,sizeof slotCmd,"%s %d\n",a==Settings::G_SAVE?"SAVE_STATE":"LOAD_STATE",settingsView.saQuickSlot());
 						const char* c = a == Settings::G_LOADSLOT ? slotCmd : a == Settings::G_SAVE ? "SAVE_STATE\n" : a == Settings::G_LOAD ? "LOAD_STATE\n" :
 							a == Settings::G_MENU ? "MENU_TOGGLE\n" : a == Settings::G_FFWD ? "FAST_FORWARD\n" :
 							a == Settings::G_RESET ? "RESET\n" : a == Settings::G_QUIT ? "QUIT\n" : nullptr;
+						if(nativeEasy && (a==Settings::G_SAVE || a==Settings::G_LOAD)) c=slotCmd;
 						if (a == Settings::G_QUIT) markMkxpQuit();
 						if (c)
 						{

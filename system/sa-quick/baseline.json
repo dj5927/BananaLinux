@@ -1,0 +1,66 @@
+[
+  {
+    "archive": "banana-easyemu-0.5.3.6.23-sources.tar.gz",
+    "sha256": "5cba99293f86247eaf4b64886c534ff25332e21fd34bdfda9e5194c26aa7d9df",
+    "url": "https://github.com/dj5927/BananaLinux/releases/download/v0.5.3.6.23/banana-easyemu-0.5.3.6.23-sources.tar.gz",
+    "files": [
+      {
+        "path": "source/easypsp/UI/EmuScreen.cpp",
+        "base_sha256": "a665bfefa3c0f619ee25de81fa45ff5148a76a4e60a9c6117f8ac07e24159935",
+        "sha256": "5f0962dea54f53e594b93a7f9b5543891f6563e2d8268e809a9481cc16545279"
+      },
+      {
+        "path": "source/easypsp/Core/Config.cpp",
+        "base_sha256": "f579031e312c2de354470a2416650ecc1c6ef5e58a257e7eb3785b1976083995",
+        "sha256": "5fba8b249b1c512ae1c246cf46d28b5c550971d1000deda7b7c8acc8d9022b8b"
+      },
+      {
+        "path": "source/easypsp/UI/banana_quick.h",
+        "base_sha256": null,
+        "sha256": "8eddac9bec3205f8abcc91f5fe82ce01ee9c0de8f8dc517662560d58057ac0d4"
+      },
+      {
+        "path": "source/easycast/core/nullDC.cpp",
+        "base_sha256": "dd28b93df622e72590f6910360413ed80b271a21c30dbb6a632092c15635f7f8",
+        "sha256": "495de24f2c83c86f97e50da19850af4eb24e53771aa8b7a9fba3f671d0f8b178"
+      },
+      {
+        "path": "source/easycast/core/ui/gui.cpp",
+        "base_sha256": "a094864d58d56725c1a0d2aaf3f510c48fbbbeb23d4444ff86cae08e09e29591",
+        "sha256": "2c7a9329d83eee7d6e07cf81ffcde7e98b045a8edd47a061d84c3cd4df268366"
+      },
+      {
+        "path": "source/easycast/core/sdl/sdl.cpp",
+        "base_sha256": "bf187ba7de7229fb0a515ba76e3be822636dc4cb08c0f34b8ab3606e765d50c8",
+        "sha256": "756e1bb8ccd3d94ad69a9c9757604fffc85056d0509c181902e2bb13dd73e9e6"
+      },
+      {
+        "path": "source/easycast/core/emulator.cpp",
+        "base_sha256": "b864328d49f377180711933281568d021ff5c853937d059402407f283a3a1916",
+        "sha256": "4a1b6733dd7d9093e2c291089b1c33c3b57c02d4dcb80bcf611ccce3bd17b94d"
+      },
+      {
+        "path": "source/easycast/core/ui/banana_quick.h",
+        "base_sha256": null,
+        "sha256": "8eddac9bec3205f8abcc91f5fe82ce01ee9c0de8f8dc517662560d58057ac0d4"
+      }
+    ]
+  },
+  {
+    "archive": "banana-duckstation-0.5.3.6.27-sources.tar.gz",
+    "sha256": "a1a6aa032a95ed1824adc7494ae13b86f021540740870c86ab2e6bcabc764f7b",
+    "url": "https://github.com/dj5927/BananaLinux/releases/download/v0.5.3.6.27/banana-duckstation-0.5.3.6.27-sources.tar.gz",
+    "files": [
+      {
+        "path": "duckstation/src/duckstation-nogui/nogui_host.cpp",
+        "base_sha256": "4604d521614a922c91ba14f6ff60724bb81523418cf8fce3298cd20b7e2bea25",
+        "sha256": "a4095dec19ec24252d27a3a04560337060278b8d8a769b6935813c99101e538a"
+      },
+      {
+        "path": "duckstation/src/duckstation-nogui/banana_quick.h",
+        "base_sha256": null,
+        "sha256": "8eddac9bec3205f8abcc91f5fe82ce01ee9c0de8f8dc517662560d58057ac0d4"
+      }
+    ]
+  }
+]

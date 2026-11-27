@@ -41,7 +41,7 @@ def settings(data, system, key):
     prefix = key.encode("utf-8", "surrogateescape").hex() + "."
     def get(k):
         return games.get(prefix + k) or defaults.get(system + "." + k) or "auto"
-    return {k: get(k) for k in ("resolution", "frameskip", "fast_loading")}
+    return {k: get(k) for k in ("resolution", "frameskip", "fast_loading", "vsync", "filter", "sound", "fps")}
 
 
 def sha256(path):
@@ -312,6 +312,8 @@ def configure(runtime, user, system, opts, leased):
     # Keep the existing RPG SDL untouched; it was built without Vulkan.
     env.update(LD_LIBRARY_PATH=str(lib),
                VK_ICD_FILENAMES=str(lib / "mali.json"), VK_DRIVER_FILES=str(lib / "mali.json"))
+    for key in ("vsync", "filter", "sound", "fps"):
+        env["BANANA_EASY_"+key.upper()]=opts.get(key,"auto")
     for d in ("home", "config", "data"):
         (user / d).mkdir(parents=True, exist_ok=True)
     if system == "psp":
@@ -430,6 +432,7 @@ def run(system, rom, data, key, log, logf):
     menu = Path("/run/banana/easyemu-menu-" + str(os.getpid()))
     quitfile = Path("/run/banana/easyemu-quit-" + str(os.getpid()))
     pausefile = os.environ.get("BANANA_SA_PAUSE_FILE")
+    quick = None
     def command(*args, required=True):
         try:
             result = subprocess.run(args, stdout=logf, stderr=subprocess.STDOUT, timeout=15)
@@ -503,6 +506,9 @@ def run(system, rom, data, key, log, logf):
         log("settings=" + json.dumps(opts) + " lease=" + str(bool(lease)))
         env, args, cwd = configure(runtime, user, system, opts, bool(lease))
         env.update(BANANA_SA_MENU_FILE=str(menu), BANANA_SA_QUIT_FILE=str(quitfile))
+        from sa_quick import QuickBridge
+        quick=QuickBridge("/run/banana",lambda detail: progress("running",detail),log)
+        env.update(quick.env())
         for name in ("max_freq", "min_freq", "governor"):
             try: saved_freq[name] = (freq / name).read_text().strip()
             except OSError: pass
@@ -521,6 +527,7 @@ def run(system, rom, data, key, log, logf):
         buf = b""
         while not stopping:
             menu.unlink(missing_ok=True); quitfile.unlink(missing_ok=True)
+            quick.reset()
             offset = os.fstat(logf.fileno()).st_size
             child = subprocess.Popen(args + [rom], cwd=cwd, env=env, stdout=logf,
                                      stderr=subprocess.STDOUT, start_new_session=True, pass_fds=passfds)
@@ -543,8 +550,12 @@ def run(system, rom, data, key, log, logf):
                             send(signal.SIGCONT); paused=False
                             menu.touch()
                             log("native menu requested")
+                        elif quick.command(c):
+                            if quick.pending is not None and paused:
+                                send(signal.SIGCONT); paused=False
                 if stopping or restart: break
-                wanted = bool(pausefile and Path(pausefile).is_file())
+                quick.poll()
+                wanted = bool(pausefile and Path(pausefile).is_file() and quick.pending is None)
                 if wanted != paused:
                     send(signal.SIGSTOP if wanted else signal.SIGCONT)
                     paused = wanted
@@ -578,6 +589,7 @@ def run(system, rom, data, key, log, logf):
         return 0 if stopping else 1
     finally:
         cleanup()
+        if quick is not None: quick.close()
         if fd is not None: os.close(fd)
         if loaded_mali:
             for _ in range(10):
