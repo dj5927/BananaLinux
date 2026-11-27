@@ -2468,6 +2468,9 @@ void System::UpdateSpeedLimiterState()
   s_target_speed = s_turbo_enabled ?
                      g_settings.turbo_speed :
                      (s_fast_forward_enabled ? g_settings.fast_forward_speed : g_settings.emulation_speed);
+  // Banana standalone fast/turbo is always at most 200%, including native/per-game overrides.
+  if (std::getenv("BANANA_DUCK_RENDERER") && (s_fast_forward_enabled || s_turbo_enabled))
+    s_target_speed = (s_target_speed > 0.0f && s_target_speed <= 2.0f) ? s_target_speed : 2.0f;
   s_throttler_enabled = (s_target_speed != 0.0f);
   s_display_all_frames = !s_throttler_enabled || g_settings.display_all_frames;
 

@@ -2,7 +2,7 @@ CC ?= gcc
 CFLAGS ?= -O2
 override CFLAGS += -Wall -Wextra -Wno-unused-parameter
 all: bananad banana-panel-tune
-bananad: bananad.c
+bananad: bananad.c sleep-tree.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
 banana-panel-tune: banana-panel-tune.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lm

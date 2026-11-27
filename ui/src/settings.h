@@ -133,6 +133,7 @@ namespace banana
 		GameAction saTopTouch(float x,float y,bool down);
 		bool rpgMenuActive() const { return gRpgMenu; }
 		int saQuickSlot() const { return gSaSlot; }
+		bool saQuickFast() const { return gSaFast; }
 		bool rpgPauseRequested() const { return gRpgPaused || gRpgMenu || gRpgConfirm != 0; }
 		void portHotkeyOnly(bool on) { gPortBlind=on; }
 		void portCover(const std::string& path);
@@ -145,7 +146,7 @@ namespace banana
 		bool rpgLaunchStatus(const std::string& phase,const std::string& runtime) {
 			if (phase==gRpgPhase && runtime==gRpgRuntime) return false;
 			if (runtime=="Fast forward on") gSaFast=true;
-			else if (runtime=="Fast forward off" || phase!="running") gSaFast=false;
+			else if (runtime=="Fast forward off" || phase=="starting" || phase=="failed" || phase=="user-exit") gSaFast=false;
 			gRpgPhase=phase; gRpgRuntime=runtime; return true;
 		}
 		bool gameKeysOpen() const { return gKeysOpen; }	// (tests: the panel's keyboard page is up)

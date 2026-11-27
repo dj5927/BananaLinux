@@ -58,6 +58,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "sleep-tree.h"
+
 #define MAXDEV 32
 
 static struct {
@@ -781,7 +783,7 @@ static int game_gone(pid_t game, double secs)
 	return kill(game, 0) != 0;
 }
 
-static void sleep_poweroff(pid_t game, pid_t pg, double asleep)
+static void sleep_poweroff(pid_t game, pid_t pg, double asleep, struct sleep_tree *tree)
 {
 	sleep_log("asleep %.0f min: the game saved, then shutting down (poweroff_after_sleep_minutes)", asleep / 60);
 	backlights_power(0);
@@ -809,11 +811,13 @@ static void sleep_poweroff(pid_t game, pid_t pg, double asleep)
 			 * quits; sent while stopped, it is the first thing the game does on SIGCONT */
 			emu = "superdrastic";
 			kill(p, SIGUSR1);
+			sleep_tree_resume(tree);
 			kill(grp, SIGCONT);
 		} else if (pg > 0 && (p = pgrp_member(pg, "bananads"))) {
 			/* BananaDS: SIGUSR1 quits with the resume state written whatever resume.on_quit says, then the save */
 			emu = "bananads";
 			kill(p, SIGUSR1);
+			sleep_tree_resume(tree);
 			kill(grp, SIGCONT);
 		} else if (pg > 0 && (p = pgrp_member(pg, "bananafront"))) {
 			/* BananaFront: SIGUSR1 quits with the automatic state written (RetroArch's .state.auto, the one Quick
@@ -821,12 +825,14 @@ static void sleep_poweroff(pid_t game, pid_t pg, double asleep)
 			emu = "bananafront";
 			bf_resume_path();
 			kill(p, SIGUSR1);
+			sleep_tree_resume(tree);
 			kill(grp, SIGCONT);
 		} else if (pg > 0 && (p = pgrp_member(pg, "retroarch"))) {
 			/* RetroArch: a state in its automatic slot (-1: the slot down past 0, from wherever it is; the one
 			 * savestate_auto_load reads), then QUIT, which waits for the save task to finish. run-retroarch puts
 			 * the slot back after. No state in Hardcore: then it only quits (its SRAM is written on the way). */
 			emu = "retroarch";
+			sleep_tree_resume(tree);
 			kill(grp, SIGCONT);
 			usleep(500000);	/* (the pipe is read once a frame: running first) */
 			int slot = 0;
@@ -850,6 +856,7 @@ static void sleep_poweroff(pid_t game, pid_t pg, double asleep)
 			}
 		} else {
 			/* the rest (PortMaster ports, PICO-8): SIGTERM, as a shutdown; no resume state to come back to */
+			sleep_tree_resume(tree);
 			kill(grp, SIGCONT);
 			kill(grp, SIGTERM);
 			wait = 10;
@@ -894,7 +901,14 @@ static void suspend_now(const char *why)
 	lid_held = 0;
 	pid_t game = pid_of("/run/banana/game.pid");
 	pid_t pg = game ? getpgid(game) : 0;
-	if (pg > 0) kill(-pg, SIGSTOP);	/* DraStic's dynarec mustn't run on while the clocks drop (ROCKNIX's finding) */
+	struct sleep_tree paused_tree = {0};
+	if (game && sleep_tree_stop(&paused_tree,game,0)) {
+		sleep_tree_resume(&paused_tree);
+		backlights_power(!lid_closed);
+		sleep_log("sleep cancelled: could not pause the complete game process tree");
+		return;
+	}
+	sleep_log("sleep game tree: %d processes (including separate SA sessions)",paused_tree.count);
 	hooks("pre", 0);
 	sync();
 	if (sleep_fallback > 1) sleep_fallback = 1;	/* deep again (devices one at a time), see sleep_fallback */
@@ -935,7 +949,7 @@ static void suspend_now(const char *why)
 				if (cap >= 0 && cap <= cfg.sleep_poweroff_pct && dark_cap >= 0 && cap < dark_cap) {
 					sleep_log("dark on the charger, but the battery is down to %d%%: shutting down", cap);
 					inputs_grab(0);
-					if (pg > 0) kill(-pg, SIGCONT);	/* the game gets SIGTERM next, to write its saves */
+					sleep_tree_resume(&paused_tree);	/* the game gets SIGTERM next, to write its saves */
 					shutdown_now("battery empty while charging");
 					return;
 				}
@@ -953,7 +967,7 @@ static void suspend_now(const char *why)
 		if (cfg.poweroff_after_min > 0 && !off_at) off_at = time(NULL) + (time_t)(cfg.poweroff_after_min * 60 + 0.5);
 		if (off_at && time(NULL) >= off_at) {
 			if (dark) inputs_grab(0);
-			sleep_poweroff(game, pg, asleep);
+			sleep_poweroff(game, pg, asleep, &paused_tree);
 			return;
 		}
 		/* a sleep the lid started: the lid as it is now, just before the suspend. Opened again while the hooks took
@@ -998,6 +1012,21 @@ static void suspend_now(const char *why)
 			 * the power button, lid open, nothing took it back - the lid's opening after a sleep is read below, not
 			 * as an event - and "lid still closed" never slept again: a lid shut during a download stayed awake) */
 			if (lid_closed) lid_retry_off = 1;
+			/* A failed kernel suspend must not leave an invisible game/audio running.
+			 * Keep the stopped game dark until an intentional wake, then resume it. */
+			if (game) {
+			int failed_lid=lid_closed;
+			inputs_grab(1);
+			sleep_log("suspend unavailable: game paused, panels dark until lid/power wake");
+			for (;;) {
+				if (powering_off()) break;
+				int power=power_pressed(250);
+				read_lid();
+				if (!lid_closed && (failed_lid || power)) break;
+				if (lid_closed) failed_lid=1;
+			}
+			inputs_grab(0);
+			}
 			break;
 		}
 		asleep += (b1.tv_sec - b0.tv_sec) + (b1.tv_nsec - b0.tv_nsec) / 1e9;
@@ -1009,7 +1038,7 @@ static void suspend_now(const char *why)
 			int pct = battery_discharging_pct();
 			if (pct >= 0 && pct <= cfg.sleep_poweroff_pct) {
 				sleep_log("battery check: %d%% after %.1f h asleep: shutting down", pct, asleep / 3600);
-				if (pg > 0) kill(-pg, SIGCONT);	/* the game gets SIGTERM next, to write its saves */
+				sleep_tree_resume(&paused_tree);	/* the game gets SIGTERM next, to write its saves */
 				shutdown_now("battery empty while asleep");
 				return;
 			}
@@ -1026,7 +1055,7 @@ static void suspend_now(const char *why)
 	 * power-button sleep (the lid-open event that would light them is drained below) */
 	if (dark) inputs_grab(0);	/* the buttons and touchscreens shared again */
 	if (dark || !lid_closed) backlights_power(!lid_closed);
-	if (pg > 0) kill(-pg, SIGCONT);
+	sleep_tree_resume(&paused_tree);
 	pid_t ui = ui_pid();
 	if (ui && !game) kill(ui, SIGUSR1);	/* draws both panels again (the clock and the battery moved on) */
 	double t_back = mono();
@@ -2092,7 +2121,7 @@ int main(int argc, char **argv)
 	load_drivers_present();
 	leds_update();
 	last_input = mono();
-	double next_battery = 0;
+	double next_battery = 0, next_lid_check = 0;
 	int low_count = 0;
 	say("running: lid %s, auto-sleep %g min, %s", cfg.lid_sleep ? "sleeps" : "ignored", cfg.autosleep_min, cfg.mem_sleep);
 	/* the power and volume keys heard from here: rcS waits for this before the menu (and its boot animation) starts */
@@ -2135,6 +2164,7 @@ int main(int argc, char **argv)
 		if (sound_child > 0 && wait > 0.05) wait = 0.05;	/* the sound's setup running: its end looked for (the first second or so) */
 		if (lid_sleep_at > 0) { double d = lid_sleep_at - tnow; if (d < wait) wait = d > 0 ? d : 0; }
 		if (menu_sleep_at > 0) { double d = menu_sleep_at - tnow; if (d < wait) wait = d > 0 ? d : 0; }
+		if (game && wait > 0.25) wait = 0.25;
 		int timeout = wait <= 0 ? 20 : (int)(wait * 1000) + 20;
 		in_poll = 1;
 		if (!stopping) poll(pf, n, timeout);
@@ -2186,6 +2216,16 @@ int main(int argc, char **argv)
 			if (inputs) {
 				usleep(200000);	/* udev/mdev sets the node's permissions */
 				open_inputs();
+			}
+		}
+
+		if (game && now >= next_lid_check) {
+			next_lid_check=now+0.25;
+			int before=lid_closed;
+			read_lid();
+			if (before!=lid_closed) {
+				struct input_event edge={.type=EV_SW,.code=SW_LID,.value=lid_closed};
+				handle(&edge);
 			}
 		}
 

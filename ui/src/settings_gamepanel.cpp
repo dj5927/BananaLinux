@@ -1259,7 +1259,7 @@ namespace banana
 			switch(gSaRow) {
 			case 0:gRpgMenu=gRpgPaused=false;break;
 			case 2:if(!gSaChoices.empty()){gSaOptions=true;gSaRow=0;}break;
-			case 3:gRpgMenu=gRpgPaused=false;gSaFast=false;return G_MENU;
+			case 3:gRpgMenu=gRpgPaused=false;return G_MENU;
 			case 4:gRpgMenu=false;gRpgPaused=true;break;
 			case 5:gRpgConfirm=1;break;
 			case 6:gRpgConfirm=2;break;

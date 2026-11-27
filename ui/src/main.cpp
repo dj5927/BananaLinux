@@ -1467,6 +1467,17 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			const bool changed = settings.gameButton(code, now);
 			logf("gbutton %s: %s view %s", b.c_str(), changed ? "switched" : "nothing", settings.gamePanelView().c_str());
 		}
+		else if (op == "safast")
+		{
+			std::string phase, runtime; cs>>phase; std::getline(cs>>std::ws,runtime);
+			settings.rpgLaunchStatus(phase,runtime);
+		}
+		else if (op == "safastassert")
+		{
+			int expected=0; cs>>expected;
+			if(settings.saQuickFast()!=(expected!=0)) {logf("FAIL SA fast expected=%d",expected);return 2;}
+			logf("PASS SA fast %d",expected);
+		}
 		else if (op == "saslotassert")
 		{
 			int slot=0; cs>>slot;

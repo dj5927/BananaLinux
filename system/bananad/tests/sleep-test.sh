@@ -12,7 +12,10 @@ HERE=$(cd "$(dirname "$0")/.." && pwd)
 ROOTFS=$(cd "$HERE/../rootfs" && pwd)
 if [ "$1" != --inside ]; then
     if [ "$1" = --build ]; then W=$2; mkdir -p "$W"; else W=$(mktemp -d); fi
-    cc -O2 -o "$W/bananad" "$HERE/bananad.c"
+    # All test files live on private tmpfs mounts. Do not flush unrelated host
+    # builds/disks: real sync() can exceed fixture deadlines while packaging.
+    printf 'void __wrap_sync(void) {}\n' > "$W/sync-stub.c"
+    cc -O2 -Wl,--wrap=sync -o "$W/bananad" "$HERE/bananad.c" "$W/sync-stub.c"
     cc -O2 -o "$W/banana-ui" -x c - <<'EOF'
 #include <signal.h>
 #include <stdio.h>

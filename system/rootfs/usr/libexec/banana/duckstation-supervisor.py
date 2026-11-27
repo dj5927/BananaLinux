@@ -127,6 +127,7 @@ def prepare(data, schema=SCHEMA, log=lambda msg: None):
         "Main.PauseOnMenu":"true", "Main.PauseOnFocusLoss":"false",
         "Main.ConfirmPowerOff":"false", "Main.InhibitScreensaver":"true",
         "Main.SyncToHostRefreshRate":"false", "Main.StartPaused":"false",
+        "Main.FastForwardSpeed":"2.0", "Main.TurboSpeed":"2.0",
         "CPU.OverclockEnable":"false", "GPU.FullscreenMode":"",
         "Audio.Backend":"SDL", "Logging.LogToConsole":"true",
         "Logging.LogLevel":"Info", "InputSources.SDL":"true",
