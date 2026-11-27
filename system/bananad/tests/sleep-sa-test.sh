@@ -15,7 +15,7 @@ if [ "$1" != --inside ]; then
     # All test files live on private tmpfs mounts. Do not flush unrelated host
     # builds/disks: real sync() can exceed fixture deadlines while packaging.
     printf 'void __wrap_sync(void) {}\n' > "$W/sync-stub.c"
-    cc -O2 -Wl,--wrap=sync -o "$W/bananad" "$HERE/bananad.c" "$W/sync-stub.c"
+    cc -O2 -Wl,--wrap=sync -Wl,--wrap=fopen -o "$W/bananad" "$HERE/bananad.c" "$W/sync-stub.c" "$HERE/tests/no-children-wrap.c"
     cc -O2 -o "$W/banana-ui" -x c - <<'EOF'
 #include <signal.h>
 #include <stdio.h>
@@ -123,7 +123,7 @@ stop() { kill $BD 2>/dev/null; wait $BD 2>/dev/null || true; }
 "$W/banana-ui" & UI=$!
 setsid sleep 600 & GAME=$!
 sleep 0.2
-echo $GAME > /run/banana/game.pid
+echo "$GAME $(awk '{print $22}' /proc/$GAME/stat)" > /run/banana/game.pid
 
 kill $GAME; wait $GAME 2>/dev/null || true
 cat > /run/test/sa.py <<'PY'
@@ -154,7 +154,7 @@ PY
 setsid python3 /run/test/sa.py & GAME=$!
 for i in $(seq 50); do [ -f /run/test/paused.pid ] && [ -f /run/test/renderer.ticks ] && break; sleep .02; done
 ENGINE=$(cat /run/test/engine.pid); RENDERER=$(cat /run/test/renderer.pid); PAUSED=$(cat /run/test/paused.pid)
-echo $GAME > /run/banana/game.pid
+echo "$GAME $(awk '{print $22}' /proc/$GAME/stat)" > /run/banana/game.pid
 setsid sleep 600 & OTHER=$!
 state() { awk '{print $3}' /proc/$1/stat; }
 all_stopped() { [ "$(state $GAME)" = T ] && [ "$(state $ENGINE)" = T ] && [ "$(state $RENDERER)" = T ]; }

@@ -908,7 +908,10 @@ static void suspend_now(const char *why)
 		sleep_log("sleep cancelled: could not pause the complete game process tree");
 		return;
 	}
-	sleep_log("sleep game tree: %d processes (including separate SA sessions)",paused_tree.count);
+	sleep_log("sleep game tree: %d processes (PPid scan, no PROC_CHILDREN dependency)",paused_tree.count);
+	for(int i=0;i<paused_tree.count;i++)
+		sleep_log("sleep paused pid=%d state=%c resume=%d",paused_tree.p[i].pid,
+			sleep_process_state(paused_tree.p[i].pid),paused_tree.p[i].resume);
 	hooks("pre", 0);
 	sync();
 	if (sleep_fallback > 1) sleep_fallback = 1;	/* deep again (devices one at a time), see sleep_fallback */

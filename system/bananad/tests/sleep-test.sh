@@ -15,7 +15,7 @@ if [ "$1" != --inside ]; then
     # All test files live on private tmpfs mounts. Do not flush unrelated host
     # builds/disks: real sync() can exceed fixture deadlines while packaging.
     printf 'void __wrap_sync(void) {}\n' > "$W/sync-stub.c"
-    cc -O2 -Wl,--wrap=sync -o "$W/bananad" "$HERE/bananad.c" "$W/sync-stub.c"
+    cc -O2 -Wl,--wrap=sync -Wl,--wrap=fopen -o "$W/bananad" "$HERE/bananad.c" "$W/sync-stub.c" "$HERE/tests/no-children-wrap.c"
     cc -O2 -o "$W/banana-ui" -x c - <<'EOF'
 #include <signal.h>
 #include <stdio.h>
