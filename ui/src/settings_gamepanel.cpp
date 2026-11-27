@@ -362,7 +362,7 @@ namespace banana
 		gTitle = title; gSystem = system; gScreen = screen; gTouch = touch;
 		gFlash = gDown = -1; gSeen = -1; awardsSeen = 0; wake = false;
 		gKeysOpen = false; gKeyPage = 0; gKeyShift = 0; gKeyTyped.clear();
-		if (rpg::isSystem(gSysId) || gSysId=="ports") {
+		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast") {
 			raw.reset(); gRpgPage = gRpgConfirm = 0; gRpgDirty = false;
 			gRpgMenu = gRpgPaused = gRpgTopMenu = false; gRpgRow = 0;
 			gRpgFHeld = false; gRpgHeld.clear();
@@ -710,7 +710,7 @@ namespace banana
 	bool Settings::gameUpdate(double t)
 	{
 		now = t;
-		if(gSysId=="ports") {
+		if(gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast") {
 			if(gPortStart<0) gPortStart=t;
 			int seconds=int((t-gPortStart)/1000);
 			if(seconds==gPortSeconds && gPortBatteryTick>=0) return false;
@@ -783,7 +783,7 @@ namespace banana
 	Settings::GameAction Settings::gameTouch(float x, float y, bool down)
 	{
 		float lx = x / s, ly = y / s;
-		if (rpg::isSystem(gSysId) || gSysId=="ports") return rpgPanelTouch(lx,ly,down);
+		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast") return rpgPanelTouch(lx,ly,down);
 		int hit = -1;
 		// the on-screen keyboard (the Keys tile): a key types on the press, the bar's pages and Done on the release
 		if (gKeysOpen)
@@ -977,7 +977,8 @@ namespace banana
 	bool Settings::rpgKeyEvent(const InputEvent& ev, GameAction& action)
 	{
 		action=G_NONE;
-		if (!rpg::isSystem(gSysId) && gSysId!="ports") return false;
+		const bool easy=gSysId=="psp" || gSysId=="dreamcast";
+		if (!rpg::isSystem(gSysId) && gSysId!="ports" && !easy) return false;
 		if (ev.type==InputEvent::RELEASE) {
 			gRpgHeld.erase(ev.key);
 			if (ev.key==Key::MENU) gRpgFHeld=false;
@@ -993,9 +994,11 @@ namespace banana
 				if (gRpgMenu) { gRpgMenu=false; gRpgPaused=false; }
 				else gRpgPaused=!gRpgPaused;
 				return true;
-			case Key::X: if(gSysId!="ports") { rpgMenuToggle(); return true; } return false;
+			case Key::X:
+				if(easy) { gRpgPaused=false; gRpgConfirm=0; action=G_MENU; return true; }
+				if(gSysId!="ports") { rpgMenuToggle(); return true; } return false;
 			case Key::SELECT:
-				if(gSysId=="ports" && gPortBlind) { gRpgConfirm=0; gRpgPaused=false; action=G_RESET; }
+				if((gSysId=="ports" || easy) && gPortBlind) { gRpgConfirm=0; gRpgPaused=false; action=G_RESET; }
 				else gRpgConfirm=1;
 				return true;
 			case Key::START:
@@ -1069,7 +1072,10 @@ namespace banana
 		int was=gDown; gDown=gFlash=-1;
 		if (hit<0 || hit!=was) return G_NONE;
 		if (hit==0) { if (gRpgMenu) { gRpgMenu=false; gRpgPaused=false; } else gRpgPaused=!gRpgPaused; }
-		else if (hit==1) rpgMenuToggle();
+		else if (hit==1) {
+			if(gSysId=="psp" || gSysId=="dreamcast") { gRpgPaused=false; return G_MENU; }
+			rpgMenuToggle();
+		}
 		else gRpgConfirm=hit==2?1:2;
 		return G_NONE;
 	}
@@ -1113,7 +1119,8 @@ namespace banana
 		box("screen",false,0,0,640,480);
 		text(fit(gTitle,true,25,600),true,25,20,12,p.ink);
 		const bool port=gSysId=="ports";
-		text(port?"PortMaster":gSysId=="mkxp"?"mkxp-z SA":"EasyRPG Player SA",false,18,20,48,p.muted);
+		const bool easy=gSysId=="psp" || gSysId=="dreamcast";
+		text(port?"PortMaster":gSysId=="psp"?"EasyPSP / PPSSPP":gSysId=="dreamcast"?"EasyCast / Flycast":gSysId=="mkxp"?"mkxp-z SA":"EasyRPG Player SA",false,18,20,48,p.muted);
 		auto button = [&](float x,float y,float w,float h,const std::string& label) {
 			box("slot",false,x,y,w,h);
 			auto l=fit(lang::tr(label),true,19,w-12);
@@ -1128,7 +1135,7 @@ namespace banana
 			return;
 		}
 		box("hero",false,18,88,604,198);
-		if(port) {
+		if(port || easy) {
 			const int x=gPortCover?276:38;
 			if(gPortCover) {
 				const float k=std::min(218.0f/gPortCover->w,160.0f/gPortCover->h);
@@ -1177,7 +1184,7 @@ namespace banana
 			float sw=text(shortcuts[i],false,15,0,0,fg,false,0,true);
 			text(shortcuts[i],false,15,x+(w-sw)/2,394,fg);
 		}
-		if(port) wrapped("Touch a tile or use F shortcuts.",16,22,438,596,2,p.muted);
+		if(port || easy) wrapped("Touch a tile or use F shortcuts.",16,22,438,596,2,p.muted);
 		else if (gRpgMenu) wrapped("Settings apply next launch.",16,22,438,596,2,p.muted);
 		be->endScreen();
 		if (gRpgMenu && gRpgTopMenu) rpgMenuFrame(1-gScreen);
@@ -1185,7 +1192,7 @@ namespace banana
 
 	void Settings::gameFrame()
 	{
-		if (rpg::isSystem(gSysId) || gSysId=="ports") { rpgPanelFrame(); return; }
+		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast") { rpgPanelFrame(); return; }
 		SPal p = pal(light);
 		int state;
 		std::string game;

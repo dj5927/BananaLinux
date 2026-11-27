@@ -727,6 +727,15 @@ namespace banana
 				if(id=="mkxp")
 					add(sec.c_str(),"gamepad","Buttons","MKXP controller assignments are in Other systems > Buttons > MKXP.","","rpg_buttons.mkxp",{},{},Item::PAGE);
 			}
+			for(const auto& p:std::vector<std::pair<std::string,std::string>>{{"psp","PlayStation Portable"},{"dreamcast","Dreamcast"}}) {
+				const auto sec=emulatorDefaultsSection(p.second);
+				page(p.first,p.second);
+				add(sec.c_str(),"gamepad","Emulator","Standalone emulator using the Mali Vulkan graphics stack.","",(p.first+".engine_info").c_str(),{p.first=="psp"?"EasyPSP (PPSSPP)":"EasyCast (Flycast)"},{""},Item::INFO);
+				for(auto c:rpgChoices(p.first)) {
+					c.values[0]="auto";
+					add(sec.c_str(),"gamepad",c.label,c.help,df,(p.first+"."+c.key).c_str(),std::move(c.names),std::move(c.values));
+				}
+			}
 			page("gameandwatch","Game & Watch");
 			const std::string gw=emulatorDefaultsSection("Game & Watch");
 			add(gw.c_str(),"gamepad","Emulator","Game & Watch uses its dedicated MAME engine.","","gameandwatch.engine_info",{"MAME (SA)"},{""},Item::INFO);
@@ -1368,7 +1377,7 @@ namespace banana
 				v.push_back({raButtonsKey(sys),raButtonsSection(sys)});
 				v.push_back({emulatorDefaultsKey(sys.id),emulatorDefaultsSection(sys.label)});
 			}
-			for (const auto& p : std::vector<std::pair<std::string,std::string>>{{"easyrpg","EasyRPG"},{"mkxp","MKXP"},{"gameandwatch","Game & Watch"},{"nds","Nintendo DS"}})
+			for (const auto& p : std::vector<std::pair<std::string,std::string>>{{"easyrpg","EasyRPG"},{"mkxp","MKXP"},{"psp","PlayStation Portable"},{"dreamcast","Dreamcast"},{"gameandwatch","Game & Watch"},{"nds","Nintendo DS"}})
 				v.push_back({emulatorDefaultsKey(p.first),emulatorDefaultsSection(p.second)});
 			return v;
 		}();
@@ -2514,7 +2523,7 @@ namespace banana
 		openSection("Emulators");
 		std::vector<std::string> keys;
 		for(const auto& it:items) if(it.section=="Emulators" && it.kind==Item::PAGE) keys.push_back(it.key);
-		if(keys.size()!=16) { log("FAIL emulator page count "+std::to_string(keys.size())); return false; }
+		if(keys.size()!=18) { log("FAIL emulator page count "+std::to_string(keys.size())); return false; }
 		for(const auto& key:keys) {
 			openSection("Emulators");
 			for(size_t i=0;i<items.size();++i) if(items[i].section=="Emulators"&&items[i].key==key) sel=int(i);
@@ -5829,6 +5838,13 @@ namespace banana
 	std::vector<Settings::RpgChoice> Settings::rpgChoices(const std::string& system)
 	{
 		std::vector<RpgChoice> result;
+		if(system=="psp" || system=="dreamcast") {
+			result.push_back({PG_RPG_FONT_HINT,"panel","Second screen","Auto keeps the lower game panel. Off uses the original single-screen mode; F shortcuts still work.",{"Auto","Game panel","Off"},{"","on","off"}});
+			result.push_back({PG_RPG_SCALE,"resolution","Internal resolution","Higher resolution improves image quality but may reduce speed. Auto keeps the native emulator setting.",{"Auto","1x","2x","3x"},{"","1","2","3"}});
+			result.push_back({PG_RPG_RENDER,"frameskip","Frame skipping","Skip frames if a game is too slow. Auto keeps the native emulator setting.",{"Auto","Off","1","2"},{"","0","1","2"}});
+			if(system=="dreamcast") result.push_back({PG_RPG_PATCHES,"fast_loading","GD-ROM Fast Loading","Optional faster disc access. Off is safest; some games may fail when enabled.",{"Auto","Off","On"},{"","off","on"}});
+			return result;
+		}
 		if (!rpg::isSystem(system)) return result;
 		const bool mkxp = system == "mkxp";
 		const std::string bios = (rpg::fs::path(data).parent_path() / "bios").string();

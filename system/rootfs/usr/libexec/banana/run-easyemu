@@ -1,0 +1,11 @@
+#!/bin/sh
+# The same launcher's FIFO and DRM lease are used by both standalone engines.
+case "$1" in psp|dreamcast) ;; *) exit 2 ;; esac
+[ "$#" = 2 ] || exit 2
+export BANANA_SYSTEM="$1"
+. /usr/libexec/banana/emulator-defaults
+face_sdl_mapping "$(face_layout)"
+. /usr/libexec/banana/one-panel
+if [ -z "${BANANA_DRM_LEASE_FD:-}" ]; then one_panel_dark top; fi
+export BANANA_PORT_DARK_BACKLIGHT="$ONE_PANEL_BL"
+exec /usr/bin/python3 /usr/libexec/banana/easyemu-supervisor.py "$1" "$2"

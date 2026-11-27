@@ -23,6 +23,7 @@
 #include "lang.h"
 #include "settings.h"
 #include "rpg_volume.h"
+#include "rpg_projects.h"
 #include "complink.h"
 #include "nds/overlay.h"
 #include "nds/pages_page.h"
@@ -1151,7 +1152,7 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			std::string sys, key;
 			cs >> sys;
 			std::getline(cs >> std::ws, key);
-			if (sys != "mkxp" && sys != "easyrpg" && sys!="ports") return 2;
+			if (sys != "mkxp" && sys != "easyrpg" && sys!="ports" && sys!="psp" && sys!="dreamcast") return 2;
 			settings.gameClose();
 			settings.companion = nullptr; settings.gameComp = nullptr; settings.link = nullptr;
 			settings.gameSystem(sys);
@@ -1187,7 +1188,7 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			ev.key=key=="f"?Key::MENU:key=="a"?Key::A:key=="b"?Key::B:key=="x"?Key::X:key=="select"?Key::SELECT:key=="start"?Key::START:Key::NONE;
 			Settings::GameAction action=Settings::G_NONE;
 			settings.rpgKeyEvent(ev,action);
-			const auto want=expected=="quit"?Settings::G_QUIT:expected=="reset"?Settings::G_RESET:Settings::G_NONE;
+			const auto want=expected=="quit"?Settings::G_QUIT:expected=="reset"?Settings::G_RESET:expected=="menu"?Settings::G_MENU:Settings::G_NONE;
 			if (ev.key==Key::NONE || action!=want) { logf("FAIL rpgkey %s %s action=%d",edge.c_str(),key.c_str(),int(action)); return 2; }
 			logf("PASS rpgkey %s %s %s",edge.c_str(),key.c_str(),expected.c_str());
 		}
@@ -1442,6 +1443,12 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			const Settings::GameAction act = settings.gameTouch(x * k, y * k, false);
 			settings.gameUpdate(now);
 			logf("gtouch %.0f %.0f: action %d keys %d view %s", x, y, (int)act, settings.gameKeysOpen() ? 1 : 0, settings.gamePanelView().c_str());
+			std::string expected;
+			if (cs >> expected) {
+				const auto want=expected=="quit"?Settings::G_QUIT:expected=="reset"?Settings::G_RESET:expected=="menu"?Settings::G_MENU:Settings::G_NONE;
+				if (act!=want) { logf("FAIL gtouch expected %s",expected.c_str()); return 2; }
+				logf("PASS gtouch %s",expected.c_str());
+			}
 		}
 		else if (op == "gbahost")
 		{
@@ -2736,7 +2743,8 @@ int main(int argc, char** argv)
 		const int panelScreen = 1 - gameScreen;
 		const bool nativeRpg=gameSysId=="mkxp" || gameSysId=="easyrpg";
 		const bool nativePort=gameSysId=="ports";
-		const bool nativeControl=nativeRpg || nativePort;
+		const bool nativeEasy=gameSysId=="psp" || gameSysId=="dreamcast";
+		const bool nativeControl=nativeRpg || nativePort || nativeEasy;
 		const std::string pausePath="/run/banana/rpg-pause-"+std::to_string(pid);
 		const std::string launchStatusPath="/run/banana/mkxp-status-"+std::to_string(pid);
 		double nextStatus=0, nextOverlayRefresh=0;
@@ -2779,7 +2787,7 @@ int main(int argc, char** argv)
 			settingsView.gameKeyboard(keysOn ? &vkbd : nullptr);
 			settingsView.gameOpen(title, sysName, panelScreen, input.hasTouch(panelScreen));
 			if (nativeControl) settingsView.rpgSetTopMenu(nativeRpg && disp.rpgMenuAvailable());
-			if (nativePort) { settingsView.portHotkeyOnly(!paint); if(paint) settingsView.portCover(cover); }
+			if (nativePort || nativeEasy) { settingsView.portHotkeyOnly(!paint); if(paint) settingsView.portCover(cover); }
 			settingsView.gbaAttach(gbaHost.get());
 		}
 		be.invalidate();
@@ -2956,7 +2964,7 @@ int main(int argc, char** argv)
 								if (settingsView.rpgKeyEvent(ev,a)) {
 									syncRpgPause();
 									if (a==Settings::G_QUIT) markMkxpQuit();
-									const char* c=a==Settings::G_QUIT?"QUIT\n":a==Settings::G_RESET?"RESET\n":nullptr;
+									const char* c=a==Settings::G_QUIT?"QUIT\n":a==Settings::G_RESET?"RESET\n":a==Settings::G_MENU?"MENU_TOGGLE\n":nullptr;
 									if (c) {
 										logf("RPG shortcut: %.*s",(int)strlen(c)-1,c);
 										if (!pipeWrite(cmdFd,c,strlen(c))) logf("RPG shortcut: command pipe full or closed");
@@ -3059,21 +3067,24 @@ int main(int argc, char** argv)
 			(sd.run.find("run-pico8") != std::string::npos && (emulatorDefault("pico_engine","auto")=="fake08" || access("/data/roms/pico-8/pico8_64", F_OK) != 0));
 		const bool nativeRpg = sd.id == "mkxp" || sd.id == "easyrpg";
 		const bool nativePort = sd.id == "ports";
+		const bool nativeEasy = sd.id == "psp" || sd.id == "dreamcast";
 		const bool portManager = nativePort && rom.substr(rom.rfind('/')+1)=="PortMaster.sh";
 		const bool portPanel = nativePort && !forcePortSingle && !portManager && getConfValue(o.data+"/settings.conf","ports_panel","panel")!="off" &&
 			access("/usr/lib/banana/ports/lib/libSDL2-2.0.so.0",R_OK)==0;
-		bool panel = ((ra && (nativeRpg || emulatorDefault("retroarch_panel",settings["retroarch_panel"]) != "off")) || portPanel) && disp.isOpen();
+		auto easyPanel=getConfValue(o.data+"/rpg-per-game.conf",rpg::key(lib.gameKey(game))+".panel","");
+		if(easyPanel.empty()) easyPanel=emulatorDefault("panel","auto");
+		bool panel = ((ra && (nativeRpg || emulatorDefault("retroarch_panel",settings["retroarch_panel"]) != "off")) || portPanel || (nativeEasy && easyPanel!="off" && !forcePortSingle)) && disp.isOpen();
 		int gameScreen = 0, leaseFd = -1, cmdFd = -1, outFd = -1;
 		const char* OUT = "/run/banana/retroarch.out";	// RetroArch's stdout, for the Pokémon companion
 		if (panel)
 		{
 			// the panel RetroArch is set to use (Settings > Other systems > Screen: video_monitor_index 2 the top, 1 the
 			// bottom)
-			gameScreen = nativeRpg || nativePort ? 0 : (emulatorDefault("video_monitor_index",getConfValue("/data/retroarch/retroarch.cfg", "video_monitor_index", "2")) == "1" ? 1 : 0);
+			gameScreen = nativeRpg || nativePort || nativeEasy ? 0 : (emulatorDefault("video_monitor_index",getConfValue("/data/retroarch/retroarch.cfg", "video_monitor_index", "2")) == "1" ? 1 : 0);
 			leaseFd = disp.lease(gameScreen);
 			unlink(FIFO);
 			unlink("/run/banana/retroarch.log");	// (the last game's: the panel must not read it as this one's)
-			if (!nativeRpg && !nativePort && !compLink.create()) logf("companion: no shared memory: %s", strerror(errno));
+			if (!nativeRpg && !nativePort && !nativeEasy && !compLink.create()) logf("companion: no shared memory: %s", strerror(errno));
 			if (leaseFd >= 0 && mkfifo(FIFO, 0600) == 0) cmdFd = ::open(FIFO, O_RDWR | O_NONBLOCK | O_CLOEXEC);	// (read too: RetroArch never sees an end)
 			if (leaseFd < 0 || cmdFd < 0)
 			{
@@ -3083,11 +3094,11 @@ int main(int argc, char** argv)
 				leaseFd = cmdFd = -1;
 				panel = false;
 			}
-			if (panel && (nativeRpg || nativePort) && !disp.prepareRpgMenu(leaseFd))
+			if (panel && (nativeRpg || nativePort || nativeEasy) && !disp.prepareRpgMenu(leaseFd))
 				logf("RPG menu: no suitable leased overlay plane; bottom menu fallback");
 		}
 		// The hotkey command channel remains available in single-screen mode.
-		if(nativePort && !panel) {
+		if((nativePort || nativeEasy) && !panel) {
 			unlink(FIFO);
 			if(mkfifo(FIFO,0600)==0) cmdFd=::open(FIFO,O_RDWR|O_NONBLOCK|O_CLOEXEC);
 			if(cmdFd<0) logf("Port hotkey command pipe unavailable: %s",strerror(errno));
@@ -3123,7 +3134,7 @@ int main(int argc, char** argv)
 		// (gamecomp.h; the Pokémon games are the Pokémon companion's)
 		bool pkOn = panel && sd.id == "gba" && settings["pokemon_companion"] == "on" && companion.open(rom);
 		// (any system with a definition: the GBA's in the folder itself, another system's in <folder>/<system>/, schema 2)
-		bool gcOn = !nativeRpg && !nativePort && !pkOn && panel && settings["game_companion"] == "on" &&
+		bool gcOn = !nativeRpg && !nativePort && !nativeEasy && !pkOn && panel && settings["game_companion"] == "on" &&
 			((access("/data/banana/companions", F_OK) == 0 && gameComp.open(rom, "/data/banana/companions", sd.id)) ||
 				gameComp.open(rom, "/usr/share/banana/companions", sd.id));	// (the card's own first)
 		if (pkOn || gcOn)
@@ -3217,7 +3228,7 @@ int main(int argc, char** argv)
 		}
 		if (!panel)
 		{
-			if(!nativePort) input.close();
+			if(!nativePort && !nativeEasy) input.close();
 			disp.close();
 		}
 		drawn = false;	// the menu is drawn afresh when the panels come back
@@ -3247,7 +3258,7 @@ int main(int argc, char** argv)
 			setenv("BANANA_ROM", rom.c_str(), 1);
 			setenv("BANANA_SYSTEM", sd.id.c_str(), 1);
 			setenv("BANANA_GAME_KEY", lib.gameKey(game).c_str(), 1);
-			if ((nativeRpg && panel) || nativePort) {
+			if ((nativeRpg && panel) || nativePort || nativeEasy) {
 				const std::string pausePath="/run/banana/rpg-pause-"+std::to_string(getpid());
 				unlink(pausePath.c_str());
 				setenv("BANANA_SA_PAUSE_FILE",pausePath.c_str(),1);
@@ -3268,7 +3279,7 @@ int main(int argc, char** argv)
 				if (compLink.open()) setenv(BCOMP_ENV, BCOMP_DEFAULT_PATH, 1);
 				if (outFd >= 0) setenv("BANANA_RA_OUT", OUT, 1);
 			}
-			else if(nativePort && cmdFd>=0) setenv("BANANA_RA_CMD",FIFO,1);
+			else if((nativePort || nativeEasy) && cmdFd>=0) setenv("BANANA_RA_CMD",FIFO,1);
 			if (ndsPage)
 			{
 				setenv(BOVL_ENV, ndsOverlay.file().c_str(), 1);
@@ -3292,7 +3303,7 @@ int main(int argc, char** argv)
 				if (!f || rename("/run/banana/game.pid.new", "/run/banana/game.pid") != 0)
 					logf("game.pid not written: %s", strerror(errno));
 			}
-			if (panel || nativePort)
+			if (panel || nativePort || nativeEasy)
 			{
 				gamePanel(pid, status, gameScreen, cmdFd, outFd, lib.gameAt(game).title, sd.name, lib.gameKey(game), panel, lib.gameAt(game).box);
 			}
@@ -3353,7 +3364,7 @@ int main(int argc, char** argv)
 			compLink.close();
 		}
 		const double ended = nowMs();
-		if (panel || nativePort)
+		if (panel || nativePort || nativeEasy)
 		{
 			{
 				std::lock_guard<std::mutex> l(worker.uiLock);
@@ -3445,7 +3456,7 @@ int main(int argc, char** argv)
 		batteryDue = true;	// a step passed during the game shows now
 		// Retry once only for a short failed start, never for a successful
 		// natural exit or deliberate quit (the supervisor returns zero).
-		return nativePort && panel && pid>0 && secs<8 && WIFEXITED(status) && WEXITSTATUS(status)!=0;
+		return (nativePort || nativeEasy) && panel && pid>0 && secs<8 && WIFEXITED(status) && WEXITSTATUS(status)!=0;
 	};
 	auto runGame=[&](int game) {
 		if(runGameOnce(game,false)) {

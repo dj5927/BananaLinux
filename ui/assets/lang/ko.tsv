@@ -2985,3 +2985,15 @@ settings		Game audio	게임 소리
 settings		Mute or enable Game & Watch audio.	게임 & 워치 소리를 켜거나 끕니다.
 settings		Choose the default DS emulator.	DS 기본 에뮬레이터를 선택합니다.
 settings		Default settings for every installed game system and emulator.	모든 설치된 게임 기종과 에뮬레이터의 기본 설정입니다.
+settings		PlayStation Portable	플레이스테이션 포터블
+settings		PlayStation Portable defaults	PSP 기본 설정
+settings		Dreamcast	드림캐스트
+settings		Dreamcast defaults	드림캐스트 기본 설정
+settings		Standalone emulator using the Mali Vulkan graphics stack.	Mali Vulkan 그래픽을 사용하는 독립 실행 에뮬레이터입니다.
+settings		Internal resolution	내부 해상도
+settings		Higher resolution improves image quality but may reduce speed. Auto keeps the native emulator setting.	해상도를 높이면 화질이 좋아지지만 속도가 느려질 수 있습니다. 자동은 에뮬레이터 설정을 따릅니다.
+settings		Frame skipping	프레임 건너뛰기
+settings		Skip frames if a game is too slow. Auto keeps the native emulator setting.	게임이 느리면 프레임을 건너뜁니다. 자동은 에뮬레이터 설정을 따릅니다.
+settings		GD-ROM Fast Loading	GD-ROM 빠른 로딩
+settings		Auto keeps the lower game panel. Off uses the original single-screen mode; F shortcuts still work.	자동은 하단 조작 화면을 사용합니다. 끄기는 기존 단일 화면으로 실행하며 F 단축키는 유지됩니다.
+settings		Optional faster disc access. Off is safest; some games may fail when enabled.	디스크 읽기 속도를 높입니다. 끄는 것이 가장 안정적이며, 켜면 일부 게임이 실행되지 않을 수 있습니다.
