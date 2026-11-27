@@ -3157,3 +3157,7 @@ settings		Upper screen menu	상단 화면 메뉴
 settings		Previous value	이전 값
 settings		Next value	다음 값
 settings		Use the D-pad or touch to navigate.	방향키 또는 터치로 조작하세요.
+
+settings		Graphics driver	그래픽 드라이버
+settings		Default (Panfrost)	기본값 따름 (Panfrost)
+settings		Choose Panfrost or Mali for this 64-bit port. Changes apply next launch. The system restores Panfrost after the game ends.	이 64비트 포트 게임에 사용할 Panfrost 또는 Mali를 선택합니다. 다음 실행부터 적용되며, 게임 종료 후 Panfrost로 복원합니다.

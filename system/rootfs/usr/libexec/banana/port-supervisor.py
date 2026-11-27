@@ -9,6 +9,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from port_gpu import PortGPU, PortProcesses
 
 
 def main():
@@ -58,39 +59,29 @@ def main():
             log.close()
             return 1
     child = None
-    def group_signal(sig):
-        if child is not None:
-            try:
-                os.killpg(child.pid, sig)
-                return True
-            except ProcessLookupError:
-                pass
-        return False
+    processes = PortProcesses(note)
+    gpu = PortGPU(data,key,note,log,manager=script.name=="PortMaster.sh")
     def cleanup_group():
-        if child is None:
-            return
-        group_signal(signal.SIGCONT)  # TERM must reach a stopped game too.
-        if group_signal(signal.SIGTERM):
-            deadline = time.monotonic() + 2
-            while time.monotonic() < deadline:
-                child.poll()
-                if not group_signal(0):
-                    break
-                time.sleep(.05)
-            if group_signal(signal.SIGKILL):
-                note("remaining processes sent SIGKILL")
-        try:
+        processes.cleanup(child)
+        if child is not None:
             child.wait(timeout=2)
-        except subprocess.TimeoutExpired:
-            note("process did not reap within timeout")
     note("script=" + str(script))
     note("display=" + ("leased dual screen" if lease else "single screen"))
     buf = b""
+    def startup_cancelled():
+        nonlocal stopping,buf
+        if fd is not None:
+            try: buf+=os.read(fd,4096)
+            except BlockingIOError: pass
+            lines=buf.split(b"\n");buf=lines.pop()[-4096:]
+            if any(line.strip()==b"QUIT" for line in lines):stopping=True
+        return stopping
     try:
+        env=gpu.start(os.environ.copy(),startup_cancelled)
         while not stopping:
             child = subprocess.Popen(["/bin/bash", str(script)], cwd=str(script.parent),
                                      stdout=log, stderr=subprocess.STDOUT,
-                                     start_new_session=True, pass_fds=pass_fds)
+                                     start_new_session=True, pass_fds=pass_fds, env=env)
             note("launch pid=" + str(child.pid))
             paused = False
             restart = False
@@ -113,9 +104,10 @@ def main():
                         break
                 wanted = bool(pause_file and os.path.isfile(pause_file))
                 if wanted != paused:
-                    if group_signal(signal.SIGSTOP if wanted else signal.SIGCONT):
-                        paused = wanted
-                        note("paused" if paused else "resumed")
+                    if wanted: processes.pause()
+                    else: processes.resume()
+                    paused = wanted
+                    note("paused" if paused else "resumed")
             rc = child.poll()
             note("exit=" + str(rc) + " request=" + ("quit" if stopping else "restart" if restart else "natural"))
             cleanup_group()
@@ -130,10 +122,12 @@ def main():
         note("supervisor error: " + repr(e))
         return 1
     finally:
-        cleanup_group()
-        if fd is not None:
-            os.close(fd)
-        log.close()
+        try:
+            cleanup_group()
+            gpu.close()
+        finally:
+            if fd is not None: os.close(fd)
+            log.close()
 
 
 if __name__ == "__main__":

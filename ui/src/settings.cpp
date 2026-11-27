@@ -5866,6 +5866,10 @@ namespace banana
 	std::vector<Settings::RpgChoice> Settings::rpgChoices(const std::string& system)
 	{
 		std::vector<RpgChoice> result;
+		if(system=="ports") {
+			result.push_back({PG_RPG_RENDER,"gpu_driver","Graphics driver","Choose Panfrost or Mali for this 64-bit port. Changes apply next launch. The system restores Panfrost after the game ends.",{"Default (Panfrost)","Panfrost","Mali"},{"","panfrost","mali"}});
+			return result;
+		}
 		if(system=="psp" || system=="dreamcast") {
 			result.push_back({PG_RPG_FONT_HINT,"panel","Second screen","Auto keeps the lower game panel. Off uses the original single-screen mode; F shortcuts still work.",{"Auto","Game panel","Off"},{"","on","off"}});
 			result.push_back({PG_RPG_SCALE,"resolution","Internal resolution","Higher resolution improves image quality but may reduce speed. Auto keeps the native emulator setting.",{"Auto","1x","2x","3x"},{"","1","2","3"}});
@@ -5949,6 +5953,12 @@ namespace banana
 		pgRpg.clear();
 		pgRpgChoices=rpgChoices(system);
 		for(auto& c:pgRpgChoices) {
+			if(system=="ports") {
+				const auto v=perGame("rpg-per-game.conf",rpg::key(key)+"."+c.key);
+				auto it=std::find(c.values.begin(),c.values.end(),v);
+				pgRpg[c.row]=it==c.values.end()?0:int(it-c.values.begin());
+				continue;
+			}
 			c.values[0]="auto";
 			c.names.insert(c.names.begin(),"As in Settings");
 			c.values.insert(c.values.begin(),"");
@@ -5994,7 +6004,7 @@ namespace banana
 		// each frame
 		if (!path.empty())
 		{
-			if (!nds && !rpg::isSystem(system)) pgRows.insert(pgRows.begin(), PG_ACH);
+			if (!nds && system!="ports" && !rpg::isSystem(system)) pgRows.insert(pgRows.begin(), PG_ACH);
 			pgAchValue = lang::tr("Show the list");
 			std::string h; uint32_t id = 0; ach::List l;
 			if (!ach::consoleFor(system)) pgAchValue = lang::tr("None for this system");

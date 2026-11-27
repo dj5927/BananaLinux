@@ -29,3 +29,11 @@ GODOT2_OPTS="-r ${DISPLAY_WIDTH}x${DISPLAY_HEIGHT} -f"
 
 # Use for Godot 3+
 GODOT_OPTS="--resolution ${DISPLAY_WIDTH}x${DISPLAY_HEIGHT} -f"
+
+# Reapply the selected graphics libraries after PortMaster's common setup.
+if [ "${BANANA_PORT_GPU_DRIVER:-}" = mali ] && [ -d "${BANANA_PORT_GPU_LIB:-}" ]; then
+    _banana_port_gpu_path="$BANANA_PORT_GPU_LIB"
+    if [ -n "${BANANA_DRM_LEASE_FD:-}" ]; then _banana_port_gpu_path="/usr/lib/banana/ports/lib:$_banana_port_gpu_path"; fi
+    export LD_LIBRARY_PATH="$_banana_port_gpu_path${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    unset _banana_port_gpu_path
+fi
