@@ -387,13 +387,14 @@ namespace banana
 		{ "megadrive", "Mega Drive", { { "picodrive", "PicoDrive" }, { "genesis_plus_gx", "Genesis Plus GX" }, { "clownmdemu", "clownmdemu" }, { "blastem", "BlastEm" } } },
 		{ "c64", "Commodore 64", { { "vice_x64sc", "VICE x64sc" }, { "vice_x64", "VICE x64" } } },
 		{ "zxspectrum", "ZX Spectrum", { { "fuse", "Fuse" } } },
-		{ "psx", "PlayStation", { { "pcsx_rearmed", "PCSX ReARMed" }, { "swanstation", "SwanStation" }, { "mednafen_psx", "Beetle PSX" } } },
+		{ "psx", "PlayStation", { { "pcsx_rearmed", "PCSX ReARMed" }, { "swanstation", "SwanStation" }, { "duckstation_sa", "DuckStation SA" }, { "mednafen_psx", "Beetle PSX" } } },
 		{ "n64", "Nintendo 64", { { "mupen64plus_next", "Mupen64Plus-Next" }, { "parallel_n64", "ParaLLEl N64" } } },
 		{ "fbneo", "FinalBurn Neo", { { "fbneo", "FBNeo" } } },
 		{ "pico-8", "PICO-8", { { "fake08", "Fake-08" } } },
 	};
 	static bool coreInstalled(const std::string& core)
 	{
+		if(core=="duckstation_sa") return access("/usr/lib/banana/duckstation/duckstation-nogui", X_OK)==0 || std::getenv("BANANA_TEST_DUCKSTATION");
 		return access(("/usr/lib/libretro/" + core + "_libretro.so").c_str(), F_OK) == 0
 			|| access(("/data/retroarch/cores/" + core + "_libretro.so").c_str(), F_OK) == 0;
 	}
@@ -698,6 +699,9 @@ namespace banana
 				if(id=="psx" && coreInstalled("swanstation")) {
 					add(sec.c_str(),"gamepad","SwanStation performance","Changes apply the next time a game starts.","","swanstation_performance",{},{},Item::PAGE);
 				}
+				if(id=="psx" && coreInstalled("duckstation_sa")) {
+					add(sec.c_str(),"gamepad","DuckStation SA settings","Changes apply the next time a game starts.","","duckstation_settings",{},{},Item::PAGE);
+				}
 				auto option=[&](const char* label,const char* desc,const char* key,std::vector<std::string> n,std::vector<std::string> v) {
 					n.insert(n.begin(),"As in Settings"); v.insert(v.begin(),"inherit");
 					add(sec.c_str(),"gamepad",label,desc,df,(id+"."+key).c_str(),std::move(n),std::move(v));
@@ -721,6 +725,20 @@ namespace banana
 			if(coreInstalled("swanstation")) for(const auto& c:swanOptions()) {
 				add("SwanStation performance","gamepad",c.label.c_str(),c.help.c_str(),data+"/swanstation.conf",c.key.c_str(),c.names,c.values);
 				items.back().def=c.def;
+			}
+			if(coreInstalled("duckstation_sa")) {
+				const char* fixture=std::getenv("BANANA_DUCK_OPTIONS");
+				std::ifstream f(fixture?fixture:"/usr/share/banana/duckstation-options.tsv");
+				std::string line;
+				while(std::getline(f,line)) {
+					if(!line.empty() && line.back()=='\r') line.pop_back();
+					auto p=swanSplit(line,'\t');
+					if(p.size()!=6) continue;
+					auto values=swanSplit(p[4],'|'),names=swanSplit(p[5],'|');
+					if(values.empty() || values.size()!=names.size()) continue;
+					add("DuckStation SA settings","gamepad",p[2].c_str(),p[3].c_str(),data+"/duckstation.conf",p[0].c_str(),names,values);
+					items.back().def=p[1];
+				}
 			}
 			for (const auto& id: {std::string("easyrpg"),std::string("mkxp")}) {
 				const std::string label=id=="mkxp"?"MKXP":"EasyRPG",sec=emulatorDefaultsSection(label);
@@ -1370,6 +1388,7 @@ namespace banana
 				{ "ra_picture", "Picture & sound" },	// (a submenu: its shader's "Off" is not the page's state)
 				{ "ra_cores", "Emulators" },
 				{ "swanstation_performance", "SwanStation performance" },
+				{ "duckstation_settings", "DuckStation SA settings" },
 				{ "net_bt", "Bluetooth", "bluetooth" },
 				{ "net_share", "File sharing", "share" },
 				{ "sys_updates", "Updates" },
@@ -1574,7 +1593,7 @@ namespace banana
 		std::string beforeAccent = getConfValue(menu, "accent", "yellow");
 
 		resetSettings(data, emulator ? ResetScope::Emulator : ResetScope::System);
-		if (emulator) { unlink((data+"/emulator-defaults.conf").c_str()); unlink((data+"/swanstation.conf").c_str()); }
+		if (emulator) { unlink((data+"/emulator-defaults.conf").c_str()); unlink((data+"/swanstation.conf").c_str()); unlink((data+"/duckstation.conf").c_str()); }
 		if (!emulator) speakereq::applySaved(data, eqShare());	// (its keys are back to theirs)
 
 		if (!emulator)

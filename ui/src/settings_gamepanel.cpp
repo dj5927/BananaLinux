@@ -370,11 +370,11 @@ namespace banana
 			for(const auto& b:std::vector<std::pair<const char*,int>>{{"l2",BTN_TL2},{"r2",BTN_TR2},{"l3",BTN_THUMBL},{"r3",BTN_THUMBR}})
 				if(getConfValue(data+"/settings.conf",std::string("ra_btn_")+b.first+".psx","game")=="menu") gSwanMenuButtons.insert(b.second);
 		}
-		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast") {
+		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation") {
 			raw.reset(); gRpgPage = gRpgConfirm = 0; gRpgDirty = false;
 			gRpgMenu = gRpgPaused = gRpgTopMenu = false; gRpgRow = 0;
 			gRpgFHeld = false; gRpgHeld.clear();
-			gRpgPhase=gSysId=="mkxp"?"preflight":(gSysId=="psp" || gSysId=="dreamcast")?"starting":"running"; gRpgRuntime.clear();
+			gRpgPhase=gSysId=="mkxp"?"preflight":(gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation")?"starting":"running"; gRpgRuntime.clear();
 			gPortBlind=false; gPortStart=-1; gPortSeconds=0; gPortBattery=-1; gPortBatteryTick=-1; gPortCover.reset();
 			if(gSysId!="ports") loadRpgChoices(gSysId,gProjectKey);
 			return;
@@ -719,7 +719,7 @@ namespace banana
 	bool Settings::gameUpdate(double t)
 	{
 		now = t;
-		if(gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast") {
+		if(gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation") {
 			if(gPortStart<0) gPortStart=t;
 			int seconds=int((t-gPortStart)/1000);
 			if(seconds==gPortSeconds && gPortBatteryTick>=0) return false;
@@ -793,7 +793,7 @@ namespace banana
 	{
 		float lx = x / s, ly = y / s;
 		if(swanMenuActive()) return swanMenuTouch(lx,ly,down);
-		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast") return rpgPanelTouch(lx,ly,down);
+		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation") return rpgPanelTouch(lx,ly,down);
 		int hit = -1;
 		// the on-screen keyboard (the Keys tile): a key types on the press, the bar's pages and Done on the release
 		if (gKeysOpen)
@@ -1133,7 +1133,7 @@ namespace banana
 	bool Settings::rpgKeyEvent(const InputEvent& ev, GameAction& action)
 	{
 		action=G_NONE;
-		const bool easy=gSysId=="psp" || gSysId=="dreamcast";
+		const bool easy=gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation";
 		if (!rpg::isSystem(gSysId) && gSysId!="ports" && !easy) return false;
 		if (ev.type==InputEvent::RELEASE) {
 			gRpgHeld.erase(ev.key);
@@ -1229,7 +1229,7 @@ namespace banana
 		if (hit<0 || hit!=was) return G_NONE;
 		if (hit==0) { if (gRpgMenu) { gRpgMenu=false; gRpgPaused=false; } else gRpgPaused=!gRpgPaused; }
 		else if (hit==1) {
-			if(gSysId=="psp" || gSysId=="dreamcast") { gRpgPaused=false; return G_MENU; }
+			if(gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation") { gRpgPaused=false; return G_MENU; }
 			rpgMenuToggle();
 		}
 		else gRpgConfirm=hit==2?1:2;
@@ -1275,8 +1275,8 @@ namespace banana
 		box("screen",false,0,0,640,480);
 		text(fit(gTitle,true,25,600),true,25,20,12,p.ink);
 		const bool port=gSysId=="ports";
-		const bool easy=gSysId=="psp" || gSysId=="dreamcast";
-		text(port?"PortMaster":gSysId=="psp"?"EasyPSP / PPSSPP":gSysId=="dreamcast"?"EasyCast / Flycast":gSysId=="mkxp"?"mkxp-z SA":"EasyRPG Player SA",false,18,20,48,p.muted);
+		const bool easy=gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation";
+		text(port?"PortMaster":gSysId=="psp"?"EasyPSP / PPSSPP":gSysId=="dreamcast"?"EasyCast / Flycast":gSysId=="duckstation"?"DuckStation SA":gSysId=="mkxp"?"mkxp-z SA":"EasyRPG Player SA",false,18,20,48,p.muted);
 		auto button = [&](float x,float y,float w,float h,const std::string& label) {
 			box("slot",false,x,y,w,h);
 			auto l=fit(lang::tr(label),true,19,w-12);
@@ -1351,7 +1351,7 @@ namespace banana
 	void Settings::gameFrame()
 	{
 		if(swanMenuActive()) { swanMenuFrame(); return; }
-		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast") { rpgPanelFrame(); return; }
+		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation") { rpgPanelFrame(); return; }
 		SPal p = pal(light);
 		int state;
 		std::string game;

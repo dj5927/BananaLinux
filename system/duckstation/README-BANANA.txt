@@ -1,0 +1,2 @@
+Upstream: https://github.com/stenzek/duckstation/tree/bfa792ddbff11c102521124f235ccb310cac6e6a
+GPLv3 legacy standalone. The compiled ARM64 NoGUI sources and bundled dependencies are included. Windows-only Qt submodule is not used. The patch is already applied to duckstation/. Build recipe records target compiler, libraries and CMake options; adjust workspace paths to your Buildroot SDK. See duckstation/LICENSE.

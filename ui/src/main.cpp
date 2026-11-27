@@ -1153,7 +1153,7 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			std::string sys, key;
 			cs >> sys;
 			std::getline(cs >> std::ws, key);
-			if (sys != "mkxp" && sys != "easyrpg" && sys!="ports" && sys!="psp" && sys!="dreamcast") return 2;
+			if (sys != "mkxp" && sys != "easyrpg" && sys!="ports" && sys!="psp" && sys!="dreamcast" && sys!="duckstation") return 2;
 			settings.gameClose();
 			settings.companion = nullptr; settings.gameComp = nullptr; settings.link = nullptr;
 			settings.gameSystem(sys);
@@ -2775,7 +2775,7 @@ int main(int argc, char** argv)
 		const int panelScreen = 1 - gameScreen;
 		const bool nativeRpg=gameSysId=="mkxp" || gameSysId=="easyrpg";
 		const bool nativePort=gameSysId=="ports";
-		const bool nativeEasy=gameSysId=="psp" || gameSysId=="dreamcast";
+		const bool nativeEasy=gameSysId=="psp" || gameSysId=="dreamcast" || gameSysId=="duckstation";
 		const bool nativeControl=nativeRpg || nativePort || nativeEasy;
 		SwanMenuPause swanPause;
 		std::string swanReply;
@@ -3132,16 +3132,21 @@ int main(int argc, char** argv)
 			(sd.run.find("run-pico8") != std::string::npos && (emulatorDefault("pico_engine","auto")=="fake08" || access("/data/roms/pico-8/pico8_64", F_OK) != 0));
 		const bool nativeRpg = sd.id == "mkxp" || sd.id == "easyrpg";
 		const bool nativePort = sd.id == "ports";
-		const bool nativeEasy = sd.id == "psp" || sd.id == "dreamcast";
 		const auto psCore=getConfValue(o.data+"/settings.conf","core.psx","");
+		const auto effectivePSCore=psCore.empty()?getConfValue("/etc/banana/settings.conf","core.psx",""):psCore;
+		const bool nativeDuck=sd.id=="psx" && effectivePSCore=="duckstation_sa" &&
+			access("/usr/lib/banana/duckstation/duckstation-nogui",X_OK)==0;
+		const bool nativeEasy = sd.id == "psp" || sd.id == "dreamcast" || nativeDuck;
+		if(nativeDuck) { gameSysId="duckstation"; ra=false; }
 		const bool wantsSwan=sd.id=="psx" &&
-			(psCore.empty()?getConfValue("/etc/banana/settings.conf","core.psx",""):psCore)=="swanstation" &&
+			effectivePSCore=="swanstation" &&
 			(access("/usr/lib/libretro/swanstation_libretro.so",R_OK)==0 || access("/data/retroarch/cores/swanstation_libretro.so",R_OK)==0);
 		const bool portManager = nativePort && rom.substr(rom.rfind('/')+1)=="PortMaster.sh";
 		const bool portPanel = nativePort && !forcePortSingle && !portManager && getConfValue(o.data+"/settings.conf","ports_panel","panel")!="off" &&
 			access("/usr/lib/banana/ports/lib/libSDL2-2.0.so.0",R_OK)==0;
 		auto easyPanel=getConfValue(o.data+"/rpg-per-game.conf",rpg::key(lib.gameKey(game))+".panel","");
 		if(easyPanel.empty()) easyPanel=emulatorDefault("panel","auto");
+		if(nativeDuck) easyPanel=getConfValue(o.data+"/duckstation.conf","panel","on");
 		bool panel = ((ra && (nativeRpg || emulatorDefault("retroarch_panel",settings["retroarch_panel"]) != "off")) || portPanel || (nativeEasy && easyPanel!="off" && !forcePortSingle)) && disp.isOpen();
 		int gameScreen = 0, leaseFd = -1, cmdFd = -1, outFd = -1;
 		const char* OUT = "/run/banana/retroarch.out";	// RetroArch's stdout, for the Pokémon companion
@@ -3303,7 +3308,7 @@ int main(int argc, char** argv)
 		}
 		drawn = false;	// the menu is drawn afresh when the panels come back
 		rep.key = Key::NONE;
-		if (system(("banana-perf " + shellQuote(sd.perf.empty() ? "balanced" : sd.perf)).c_str()) != 0) {}
+		if (system(("banana-perf " + shellQuote(nativeDuck?"performance":sd.perf.empty() ? "balanced" : sd.perf)).c_str()) != 0) {}
 		// a job of Files' (a download, an unpacking) stops while the game runs (the network, the card and the CPU are the
 		// game's), and goes on after it: banana-fetch's runner and its 7zz, stopped as a group
 		const fetch::Paths fetchPaths = fetch::Paths::fromEnv(o.data);

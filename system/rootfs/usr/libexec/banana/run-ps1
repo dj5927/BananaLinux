@@ -9,6 +9,9 @@
 selected=$(emu_override core.psx)
 [ -n "$selected" ] || selected=$(sed -n '/^ *core\.psx *= */{s///;h};${x;p}' /data/banana/settings.conf 2>/dev/null)
 [ -n "$selected" ] || selected=$(sed -n '/^ *core\.psx *= */{s///;h};${x;p}' /etc/banana/settings.conf 2>/dev/null)
+if [ "$selected" = duckstation_sa ] && [ -x /usr/lib/banana/duckstation/duckstation-nogui ]; then
+    exec /usr/libexec/banana/run-duckstation "$1"
+fi
 if [ "$selected" = swanstation ] && { [ -f /usr/lib/libretro/swanstation_libretro.so ] || [ -f /data/retroarch/cores/swanstation_libretro.so ]; }; then
     R=/data/retroarch
     C=SwanStation

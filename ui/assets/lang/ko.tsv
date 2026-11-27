@@ -3090,3 +3090,35 @@ settings		SwanStation menu	SwanStation 메뉴
 settings		Confirm restart	재시작 확인
 settings		Confirm quit	종료 확인
 settings		Game is paused while the menu is open.	메뉴를 열면 게임이 일시정지됩니다.
+settings		DuckStation SA settings	DuckStation SA 설정
+settings		Use OpenGL hardware for enhanced resolution. Software stays at 1x.	고해상도는 OpenGL 하드웨어를 사용하세요. 소프트웨어 렌더러는 1x로 동작합니다.
+settings		Higher resolution improves image quality but may reduce speed.	해상도를 높이면 화질이 좋아지지만 속도가 느려질 수 있습니다.
+settings		MMap is the fastest option. Use LUT if a game crashes.	MMap이 가장 빠릅니다. 게임이 튕기면 LUT를 선택하세요.
+settings		CPU memory exceptions	CPU 메모리 예외
+settings		Enable only for game compatibility.	게임 호환성에 필요한 경우에만 켜세요.
+settings		Threaded presentation	화면 출력 스레드
+settings		Separates frame presentation from emulation.	에뮬레이션과 화면 출력을 분리합니다.
+settings		Antialiasing	안티앨리어싱
+settings		Show FPS	FPS 표시
+settings		Display the rendered frame rate.	화면에 렌더링 프레임 수를 표시합니다.
+settings		Show speed	구동 속도 표시
+settings		Display emulation speed.	에뮬레이션 구동 속도를 표시합니다.
+settings		Linear filtering	선형 필터링
+settings		Smooth final display scaling.	최종 화면 확대를 부드럽게 처리합니다.
+settings		Choose the game's display aspect ratio.	게임의 화면 비율을 선택합니다.
+settings		Rewind uses additional memory and CPU.	되감기는 추가 메모리와 CPU를 사용합니다.
+settings		Save state on exit	종료 시 상태 저장
+settings		Create a resume state when quitting.	종료할 때 재개용 상태를 저장합니다.
+settings		Fast boot	빠른 부팅
+settings		Skip the BIOS animation when supported.	지원되는 경우 BIOS 시작 애니메이션을 건너뜁니다.
+settings		Audio buffer	오디오 버퍼
+settings		Larger audio buffers can reduce audio interruptions.	오디오 버퍼를 늘리면 소리 끊김을 줄일 수 있습니다.
+settings		Cached interpreter	캐시 인터프리터
+settings		Interpreter	인터프리터
+settings		Recompiler	리컴파일러
+settings		Hardware (OpenGL)	하드웨어 (OpenGL)
+settings		Software	소프트웨어
+settings		Stretch	화면 채우기
+settings		Adaptive	적응형
+settings		Box	박스
+settings		Nearest	최근접

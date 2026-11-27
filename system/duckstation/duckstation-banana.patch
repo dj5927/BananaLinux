@@ -1,0 +1,477 @@
+diff --git a/src/common/drm_display.cpp b/src/common/drm_display.cpp
+index be9da8f..1ebc12e 100644
+--- a/src/common/drm_display.cpp
++++ b/src/common/drm_display.cpp
+@@ -5,10 +5,29 @@
+ #include "common/string.h"
+ #include "file_system.h"
+ #include <cmath>
++#include <cstdlib>
++#include <cerrno>
++#include <climits>
+ #include <fcntl.h>
+ #include <string.h>
+ #include <unistd.h>
+ Log_SetChannel(DRMDisplay);
++static bool HasBananaLease()
++{
++  const char* p = std::getenv("BANANA_DRM_LEASE_FD");
++  return p && *p;
++}
++static int BananaDisplayFD()
++{
++  if (!HasBananaLease()) return -2;
++  const char* value = std::getenv("BANANA_DRM_LEASE_FD");
++  char* end = nullptr;
++  errno = 0;
++  const long fd = std::strtol(value, &end, 10);
++  if (errno || *end || fd < 3 || fd > INT_MAX) return -1;
++  return fcntl(static_cast<int>(fd), F_DUPFD_CLOEXEC, 3);
++}
++
+ 
+ enum
+ {
+@@ -67,7 +86,7 @@ static uint32_t find_crtc_for_connector(int card_fd, const drmModeRes* resources
+       const uint32_t crtc_id = find_crtc_for_encoder(resources, encoder);
+ 
+       drmModeFreeEncoder(encoder);
+-      if (crtc_id != 0)
++      if (crtc_id != 0 && crtc_id != static_cast<u32>(-1))
+       {
+         return crtc_id;
+       }
+@@ -80,6 +99,7 @@ static uint32_t find_crtc_for_connector(int card_fd, const drmModeRes* resources
+ 
+ bool DRMDisplay::Initialize(u32 width, u32 height, float refresh_rate)
+ {
++  if (HasBananaLease()) return TryOpeningCard(-1, 0, 0, 0.0f);
+   if (m_card_id < 0)
+   {
+     for (int i = 0; i < MAX_CARDS_TO_TRY; i++)
+@@ -108,10 +128,14 @@ void DRMDisplay::RestoreBuffer()
+ 
+ bool DRMDisplay::TryOpeningCard(int card, u32 width, u32 height, float refresh_rate)
+ {
+-  if (m_card_fd >= 0)
+-    close(m_card_fd);
+-
+-  m_card_fd = open(TinyString::FromFormat("/dev/dri/card%d", card), O_RDWR);
++  if (m_card_fd >= 0) close(m_card_fd);
++  if (m_connector) drmModeFreeConnector(m_connector);
++  m_connector = nullptr;
++  m_mode = nullptr;
++  m_crtc_id = 0;
++  m_card_fd = BananaDisplayFD();
++  if (m_card_fd == -2)
++    m_card_fd = open(TinyString::FromFormat("/dev/dri/card%d", card), O_RDWR | O_CLOEXEC);
+   if (m_card_fd < 0)
+   {
+     Log_ErrorPrintf("open(/dev/dri/card%d) failed: %d (%s)", card, errno, strerror(errno));
+@@ -130,7 +154,9 @@ bool DRMDisplay::TryOpeningCard(int card, u32 width, u32 height, float refresh_r
+   for (int i = 0; i < resources->count_connectors; i++)
+   {
+     drmModeConnector* next_connector = drmModeGetConnector(m_card_fd, resources->connectors[i]);
+-    if (next_connector->connection == DRM_MODE_CONNECTED)
++    if (next_connector && next_connector->connection == DRM_MODE_CONNECTED && next_connector->count_modes > 0 &&
++        (HasBananaLease() || !std::getenv("BANANA_DUCK_READY_FILE") ||
++         (next_connector->connector_type == DRM_MODE_CONNECTOR_DSI && next_connector->connector_type_id == 2)))
+     {
+       m_connector = next_connector;
+       break;
+@@ -189,7 +215,7 @@ bool DRMDisplay::TryOpeningCard(int card, u32 width, u32 height, float refresh_r
+   for (int i = 0; i < resources->count_encoders; i++)
+   {
+     drmModeEncoder* next_encoder = drmModeGetEncoder(m_card_fd, resources->encoders[i]);
+-    if (next_encoder->encoder_id == m_connector->encoder_id)
++    if (next_encoder && next_encoder->encoder_id == m_connector->encoder_id)
+     {
+       encoder = next_encoder;
+       m_crtc_id = encoder->crtc_id;
+@@ -214,10 +240,19 @@ bool DRMDisplay::TryOpeningCard(int card, u32 width, u32 height, float refresh_r
+     }
+   }
+ 
++  bool allowed = false;
++  for (int i = 0; i < resources->count_crtcs; i++) allowed |= resources->crtcs[i] == m_crtc_id;
++  if (!allowed)
++  {
++    m_crtc_id = find_crtc_for_connector(m_card_fd, resources, m_connector);
++    for (int i = 0; i < resources->count_crtcs; i++) allowed |= resources->crtcs[i] == m_crtc_id;
++  }
+   drmModeFreeResources(resources);
+-
++  if (!allowed) return false;
+   m_card_id = card;
+-  m_prev_crtc = drmModeGetCrtc(m_card_fd, m_crtc_id);
++  m_prev_crtc = HasBananaLease() ? nullptr : drmModeGetCrtc(m_card_fd, m_crtc_id);
++  Log_InfoPrintf("Banana display: lease=%d connector=%u crtc=%u %ux%u",
++                 HasBananaLease(), m_connector->connector_id, m_crtc_id, GetWidth(), GetHeight());
+   return true;
+ }
+ 
+@@ -274,15 +309,18 @@ void DRMDisplay::PresentBuffer(u32 fb_id, bool wait_for_vsync)
+     fd_set fds;
+     FD_ZERO(&fds);
+     FD_SET(m_card_fd, &fds);
+-    int res = select(m_card_fd + 1, &fds, nullptr, nullptr, nullptr);
++    timeval timeout{2, 0};
++    int res = select(m_card_fd + 1, &fds, nullptr, nullptr, &timeout);
+     if (res < 0)
+     {
++      if (errno == EINTR) continue;
+       Log_ErrorPrintf("select() failed: %d", errno);
+-      break;
++      std::abort();
+     }
+     else if (res == 0)
+     {
+-      continue;
++      Log_ErrorPrintf("Banana display flip timed out");
++      std::abort();
+     }
+ 
+     drmHandleEvent(m_card_fd, &event_ctx);
+@@ -291,8 +329,9 @@ void DRMDisplay::PresentBuffer(u32 fb_id, bool wait_for_vsync)
+ 
+ bool DRMDisplay::GetCurrentMode(u32* width, u32* height, float* refresh_rate, int card, int connector)
+ {
+-  int card_fd = -1;
+-  if (card < 0)
++  int card_fd = BananaDisplayFD();
++  if (HasBananaLease() && card_fd < 0) return false;
++  if (!HasBananaLease() && card < 0)
+   {
+     for (int try_card = 0; try_card < MAX_CARDS_TO_TRY; try_card++)
+     {
+@@ -301,7 +340,7 @@ bool DRMDisplay::GetCurrentMode(u32* width, u32* height, float* refresh_rate, in
+         break;
+     }
+   }
+-  else
++  else if (!HasBananaLease())
+   {
+     card_fd = open(TinyString::FromFormat("/dev/dri/card%d", card), O_RDWR);
+   }
+@@ -328,10 +367,12 @@ bool DRMDisplay::GetCurrentMode(u32* width, u32* height, float* refresh_rate, in
+     for (int i = 0; i < resources->count_connectors; i++)
+     {
+       connector_ptr = drmModeGetConnector(card_fd, resources->connectors[i]);
+-      if (connector_ptr->connection == DRM_MODE_CONNECTED)
++      if (connector_ptr && connector_ptr->connection == DRM_MODE_CONNECTED &&
++          (HasBananaLease() || !std::getenv("BANANA_DUCK_READY_FILE") ||
++           (connector_ptr->connector_type == DRM_MODE_CONNECTOR_DSI && connector_ptr->connector_type_id == 2)))
+         break;
+-
+       drmModeFreeConnector(connector_ptr);
++      connector_ptr = nullptr;
+     }
+   }
+   else if (connector < resources->count_connectors)
+diff --git a/src/common/gl/context_egl_gbm.cpp b/src/common/gl/context_egl_gbm.cpp
+index 2f8c7de..5bb6bb7 100644
+--- a/src/common/gl/context_egl_gbm.cpp
++++ b/src/common/gl/context_egl_gbm.cpp
+@@ -135,6 +135,7 @@ EGLNativeWindowType ContextEGLGBM::GetNativeWindow(EGLConfig config)
+ ContextEGLGBM::Buffer* ContextEGLGBM::LockFrontBuffer()
+ {
+   struct gbm_bo* bo = gbm_surface_lock_front_buffer(m_fb_surface);
++  if (!bo) return nullptr;
+ 
+   Buffer* buffer = nullptr;
+   for (u32 i = 0; i < m_num_buffers; i++)
+@@ -149,7 +150,7 @@ ContextEGLGBM::Buffer* ContextEGLGBM::LockFrontBuffer()
+   if (!buffer)
+   {
+     // haven't tracked this buffer yet
+-    Assert(m_num_buffers < MAX_BUFFERS);
++    if (m_num_buffers >= MAX_BUFFERS) { gbm_surface_release_buffer(m_fb_surface, bo); return nullptr; }
+ 
+     const u32 width = gbm_bo_get_width(bo);
+     const u32 height = gbm_bo_get_height(bo);
+@@ -158,8 +159,7 @@ ContextEGLGBM::Buffer* ContextEGLGBM::LockFrontBuffer()
+     const u32 handle = gbm_bo_get_handle(bo).u32;
+ 
+     std::optional<u32> fb_id = m_drm_display.AddBuffer(width, height, format, handle, stride, 0);
+-    if (!fb_id.has_value())
+-      return nullptr;
++    if (!fb_id.has_value()) { gbm_surface_release_buffer(m_fb_surface, bo); return nullptr; }
+ 
+     buffer = &m_buffers[m_num_buffers];
+     buffer->bo = bo;
+@@ -257,12 +257,14 @@ void ContextEGLGBM::PresentThread()
+ 
+   while (!m_present_thread_shutdown.load())
+   {
+-    m_present_cv.wait(lock);
++    m_present_cv.wait(lock, [this]() { return m_present_pending.load() || m_present_thread_shutdown.load(); });
++    if (m_present_thread_shutdown.load()) break;
+ 
+     if (!m_present_pending.load())
+       continue;
+ 
+     Buffer* next_buffer = LockFrontBuffer();
++    if (!next_buffer) { m_present_pending.store(false); m_present_done_cv.notify_one(); continue; }
+     const bool wait_for_vsync = m_vsync && m_current_present_buffer;
+ 
+     lock.unlock();
+diff --git a/src/duckstation-nogui/CMakeLists.txt b/src/duckstation-nogui/CMakeLists.txt
+index 60b97ec..74ace33 100644
+--- a/src/duckstation-nogui/CMakeLists.txt
++++ b/src/duckstation-nogui/CMakeLists.txt
+@@ -67,7 +67,7 @@ if(USE_WAYLAND)
+   )
+ endif()
+ 
+-if(USE_DRMKMS AND USE_EVDEV)
++if(USE_DRMKMS)
+   message(STATUS "Building VTY/DRM/KMS/EVDev NoGUI Platform.")
+   target_compile_definitions(duckstation-nogui PRIVATE "NOGUI_PLATFORM_VTY=1" "WITH_DRMKMS=1")
+   target_sources(duckstation-nogui PRIVATE 
+@@ -75,6 +75,4 @@ if(USE_DRMKMS AND USE_EVDEV)
+     vty_nogui_platform.cpp
+     vty_nogui_platform.h
+   )
+-  target_include_directories(duckstation-nogui PRIVATE ${LIBEVDEV_INCLUDE_DIRS})
+-  target_link_libraries(duckstation-nogui PRIVATE ${LIBEVDEV_LIBRARIES})
+ endif()
+diff --git a/src/duckstation-nogui/nogui_host.cpp b/src/duckstation-nogui/nogui_host.cpp
+index e3e98ad..a5e406a 100644
+--- a/src/duckstation-nogui/nogui_host.cpp
++++ b/src/duckstation-nogui/nogui_host.cpp
+@@ -40,6 +40,11 @@
+ #include <condition_variable>
+ #include <csignal>
+ #include <thread>
++#include <fstream>
++#include <cstdlib>
++#ifndef _WIN32
++#include <unistd.h>
++#endif
+ 
+ Log_SetChannel(NoGUIHost);
+ 
+@@ -97,6 +102,8 @@ static void ReleaseHostDisplay();
+ //////////////////////////////////////////////////////////////////////////
+ static std::unique_ptr<INISettingsInterface> s_base_settings_interface;
+ static bool s_batch_mode = false;
++static bool s_banana_failure = false;
++static bool s_banana_paused = false;
+ static bool s_is_fullscreen = false;
+ static bool s_save_state_on_shutdown = false;
+ static bool s_was_paused_by_focus_loss = false;
+@@ -417,7 +424,13 @@ void NoGUIHost::SetBatchMode(bool enabled)
+ 
+ void NoGUIHost::StartSystem(SystemBootParameters params)
+ {
+-  Host::RunOnCPUThread([params = std::move(params)]() { System::BootSystem(std::move(params)); });
++  Host::RunOnCPUThread([params = std::move(params)]() {
++    if (!System::BootSystem(std::move(params)) && std::getenv("BANANA_DUCK_READY_FILE"))
++    {
++      s_banana_failure = true;
++      s_running.store(false, std::memory_order_release);
++    }
++  });
+ }
+ 
+ void NoGUIHost::ProcessPlatformWindowResize(s32 width, s32 height, float scale)
+@@ -629,6 +642,7 @@ void NoGUIHost::CPUThreadEntryPoint()
+   }
+   else
+   {
++    s_banana_failure = true;
+     g_nogui_window->ReportError("Error", "Failed to open host display.");
+   }
+ 
+@@ -766,6 +780,7 @@ void Host::OnSystemStarted()
+ {
+   CommonHost::OnSystemStarted();
+   Log_VerbosePrintf("Host::OnSystemStarted()");
++  if (const char* path = std::getenv("BANANA_DUCK_READY_FILE")) std::ofstream(path) << "ready\n";
+ }
+ 
+ void Host::OnSystemPaused()
+@@ -865,8 +880,49 @@ void Host::SetMouseMode(bool relative, bool hide_cursor)
+   // emit g_emu_thread->mouseModeRequested(relative, hide_cursor);
+ }
+ 
++#ifndef _WIN32
++static bool BananaMarker(const char* name, bool consume)
++{
++  const char* path = std::getenv(name);
++  if (!path || access(path, F_OK) != 0) return false;
++  return !consume || unlink(path) == 0;
++}
++static void BananaControls()
++{
++  static auto last = std::chrono::steady_clock::time_point{};
++  const auto now = std::chrono::steady_clock::now();
++  if (now - last < std::chrono::milliseconds(20)) return;
++  last = now;
++  if (BananaMarker("BANANA_SA_QUIT_FILE", true)) { Host::RequestExit(false); return; }
++  if (!System::IsValid()) return;
++  const bool want = BananaMarker("BANANA_SA_PAUSE_FILE", false);
++  if (!want && s_banana_paused)
++  {
++    s_banana_paused = false;
++    if (System::IsPaused() && !FullscreenUI::HasActiveWindow()) System::PauseSystem(false);
++  }
++  if (BananaMarker("BANANA_SA_MENU_FILE", true))
++  {
++    if (s_banana_paused)
++    {
++      s_banana_paused = false;
++      if (System::IsPaused()) System::PauseSystem(false);
++    }
++    FullscreenUI::OpenPauseMenu();
++  }
++  if (BananaMarker("BANANA_DUCK_RESET_FILE", true)) System::ResetSystem();
++  if (want && !s_banana_paused && System::IsRunning() && !FullscreenUI::HasActiveWindow())
++  {
++    s_banana_paused = true;
++    System::PauseSystem(true);
++  }
++}
++#endif
+ void Host::PumpMessagesOnCPUThread()
+ {
++#ifndef _WIN32
++  if (std::getenv("BANANA_DUCK_READY_FILE")) BananaControls();
++#endif
+   NoGUIHost::ProcessCPUThreadPlatformMessages();
+   NoGUIHost::ProcessCPUThreadEvents(false);
+   CommonHost::PumpMessagesOnCPUThread(); // calls InputManager::PollSources()
+@@ -1319,7 +1375,7 @@ int main(int argc, char* argv[])
+ 
+   s_base_settings_interface.reset();
+   g_nogui_window.reset();
+-  return EXIT_SUCCESS;
++  return s_banana_failure ? EXIT_FAILURE : EXIT_SUCCESS;
+ }
+ 
+ #ifdef _WIN32
+diff --git a/src/duckstation-nogui/vty_nogui_platform.cpp b/src/duckstation-nogui/vty_nogui_platform.cpp
+index 3c394da..e062c5f 100644
+--- a/src/duckstation-nogui/vty_nogui_platform.cpp
++++ b/src/duckstation-nogui/vty_nogui_platform.cpp
+@@ -11,7 +11,8 @@
+ #include "resource.h"
+ #include "vty_key_names.h"
+ #include <fcntl.h>
+-#include <linux/input-event-codes.h>
++#include <linux/input.h>
++#include <sys/ioctl.h>
+ #include <thread>
+ #include <unistd.h>
+ Log_SetChannel(VTYNoGUIPlatform);
+@@ -46,7 +47,7 @@ bool VTYNoGUIPlatform::Initialize()
+ 
+ void VTYNoGUIPlatform::ReportError(const std::string_view& title, const std::string_view& message)
+ {
+-  // not implemented
++  Log_ErrorPrintf("%.*s: %.*s", int(title.size()), title.data(), int(message.size()), message.data());
+ }
+ 
+ bool VTYNoGUIPlatform::ConfirmMessage(const std::string_view& title, const std::string_view& message)
+@@ -169,69 +170,32 @@ void VTYNoGUIPlatform::QuitMessageLoop()
+ 
+ void VTYNoGUIPlatform::OpenEVDevFDs()
+ {
+-  for (int i = 0; i < 1000; i++)
++  for (int i = 0; i < 128; i++)
+   {
+     TinyString path;
+     path.Format("/dev/input/event%d", i);
+-
+-    int fd = open(path, O_RDONLY | O_NONBLOCK);
+-    if (fd < 0)
+-      break;
+-
+-    struct libevdev* obj;
+-    if (libevdev_new_from_fd(fd, &obj) != 0)
+-    {
+-      Log_ErrorPrintf("libevdev_new_from_fd(%s) failed", path.GetCharArray());
+-      close(fd);
+-      continue;
+-    }
+-
+-    Log_DevPrintf("Input path: %s", path.GetCharArray());
+-    Log_DevPrintf("Input device name: \"%s\"", libevdev_get_name(obj));
+-    Log_DevPrintf("Input device ID: bus %#x vendor %#x product %#x", libevdev_get_id_bustype(obj),
+-                  libevdev_get_id_vendor(obj), libevdev_get_id_product(obj));
+-    if (!libevdev_has_event_code(obj, EV_KEY, KEY_SPACE))
+-    {
+-      Log_DevPrintf("This device does not look like a keyboard");
+-      libevdev_free(obj);
+-      close(fd);
+-      continue;
+-    }
+-
+-    const int grab_res = libevdev_grab(obj, LIBEVDEV_GRAB);
+-    if (grab_res != 0)
+-      Log_WarningPrintf("Failed to grab '%s' (%s): %d", libevdev_get_name(obj), path.GetCharArray(), grab_res);
+-
+-    m_evdev_keyboards.push_back({obj, fd});
++    int fd = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
++    if (fd < 0) continue;
++    unsigned char keys[(KEY_MAX + 8) / 8] = {};
++    if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keys)), keys) < 0 ||
++        !(keys[KEY_SPACE / 8] & (1u << (KEY_SPACE % 8))))
++    { close(fd); continue; }
++    m_evdev_keyboards.push_back({fd});
+   }
+ }
+-
+ void VTYNoGUIPlatform::CloseEVDevFDs()
+ {
+-  for (const EvDevKeyboard& kb : m_evdev_keyboards)
+-  {
+-    libevdev_grab(kb.obj, LIBEVDEV_UNGRAB);
+-    libevdev_free(kb.obj);
+-    close(kb.fd);
+-  }
++  for (const EvDevKeyboard& kb : m_evdev_keyboards) close(kb.fd);
+   m_evdev_keyboards.clear();
+ }
+-
+ void VTYNoGUIPlatform::PollEvDevKeyboards()
+ {
+   for (const EvDevKeyboard& kb : m_evdev_keyboards)
+   {
+     struct input_event ev;
+-    while (libevdev_next_event(kb.obj, LIBEVDEV_READ_FLAG_NORMAL, &ev) == 0)
+-    {
+-      // auto-repeat
+-      // TODO: forward char to imgui
+-      if (ev.value == 2)
+-        continue;
+-
+-      const bool pressed = (ev.value == 1);
+-      NoGUIHost::ProcessPlatformKeyEvent(static_cast<s32>(ev.code), pressed);
+-    }
++    while (read(kb.fd, &ev, sizeof(ev)) == sizeof(ev))
++      if (ev.type == EV_KEY && ev.value != 2)
++        NoGUIHost::ProcessPlatformKeyEvent(static_cast<s32>(ev.code), ev.value == 1);
+   }
+ }
+ 
+diff --git a/src/duckstation-nogui/vty_nogui_platform.h b/src/duckstation-nogui/vty_nogui_platform.h
+index bcb3104..164b482 100644
+--- a/src/duckstation-nogui/vty_nogui_platform.h
++++ b/src/duckstation-nogui/vty_nogui_platform.h
+@@ -6,7 +6,6 @@
+ #include <atomic>
+ #include <deque>
+ #include <functional>
+-#include <libevdev/libevdev.h>
+ #include <mutex>
+ #include <vector>
+ 
+@@ -50,7 +49,6 @@ private:
+ 
+   struct EvDevKeyboard
+   {
+-    struct libevdev* obj;
+     int fd;
+   };
+ 

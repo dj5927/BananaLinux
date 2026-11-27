@@ -1,0 +1,44 @@
+panel	on	Second screen	Auto keeps the lower game panel. Off uses the original single-screen mode; F shortcuts still work.	on|off	Game panel|Off
+GPU.Renderer	OpenGL	GPU renderer	Use OpenGL hardware for enhanced resolution. Software stays at 1x.	OpenGL|Software	Hardware (OpenGL)|Software
+GPU.ResolutionScale	2	Internal resolution	Higher resolution improves image quality but may reduce speed.	1|2|3|4|5|6|7|8	1x|2x|3x|4x|5x|6x|7x|8x
+CPU.ExecutionMode	Recompiler	CPU execution	Recompiler is fastest.	Recompiler|CachedInterpreter|Interpreter	Recompiler|Cached interpreter|Interpreter
+CPU.FastmemMode	MMap	Fast memory access	MMap is the fastest option. Use LUT if a game crashes.	MMap|LUT|Disabled	MMap|LUT|Off
+CPU.RecompilerBlockLinking	true	Recompiler block linking	Direct jumps between blocks improve performance.	true|false	On|Off
+CPU.RecompilerICache	false	CPU instruction cache	Improves timing accuracy at a performance cost.	true|false	On|Off
+CPU.RecompilerMemoryExceptions	false	CPU memory exceptions	Enable only for game compatibility.	true|false	On|Off
+GPU.UseThread	true	Software render thread	Only used by the software renderer.	true|false	On|Off
+GPU.ThreadedPresentation	true	Threaded presentation	Separates frame presentation from emulation.	true|false	On|Off
+GPU.UseSoftwareRendererForReadbacks	false	Software VRAM readbacks	Enable only if a game has framebuffer or texture problems.	true|false	On|Off
+GPU.Multisamples	1	Antialiasing	Extra samples increase GPU work. Disabled is fastest.	1|2|4|8	Off|2x|4x|8x
+GPU.TextureFilter	Nearest	Texture filtering	Nearest has the lowest GPU cost.	Nearest|Bilinear|BilinearBinAlpha|JINC2|JINC2BinAlpha|xBR|xBRBinAlpha	Nearest|Bilinear|Bilinear (no blend)|JINC2|JINC2 (no blend)|xBR|xBR (no blend)
+GPU.DownsampleMode	Disabled	Downsampling	Additional rendering pass; off is fastest.	Disabled|Box|Adaptive	Off|Box|Adaptive
+GPU.TrueColor	false	True color	Use full color precision for hardware rendering.	true|false	On|Off
+GPU.ScaledDithering	false	Scaled dithering	Scale the PS1 dithering pattern.	true|false	On|Off
+GPU.DisableInterlacing	true	Disable interlacing	Render interlaced games progressively where supported.	true|false	On|Off
+GPU.ForceNTSCTimings	false	Force NTSC timing	May change PAL game timing and compatibility.	true|false	On|Off
+GPU.ChromaSmoothing24Bit	false	24-bit chroma smoothing	Smooth color transitions in 24-bit content.	true|false	On|Off
+GPU.WidescreenHack	false	Widescreen hack	May increase geometry work and cause display errors.	true|false	On|Off
+GPU.PGXPEnable	false	PGXP geometry correction	Reduces polygon jitter but increases CPU work.	true|false	On|Off
+GPU.PGXPCulling	true	PGXP culling	Requires PGXP geometry correction.	true|false	On|Off
+GPU.PGXPTextureCorrection	true	PGXP texture correction	Requires PGXP geometry correction.	true|false	On|Off
+GPU.PGXPColorCorrection	false	PGXP color correction	Requires PGXP geometry correction.	true|false	On|Off
+GPU.PGXPDepthBuffer	false	PGXP depth buffer	Extra depth processing; may affect compatibility.	true|false	On|Off
+GPU.PGXPVertexCache	false	PGXP vertex cache	Optional PGXP accuracy and caching.	true|false	On|Off
+GPU.PGXPCPU	false	PGXP CPU mode	Full CPU tracking costs additional performance.	true|false	On|Off
+GPU.PGXPPreserveProjFP	false	PGXP projection precision	Optional projection precision correction.	true|false	On|Off
+Display.VSync	true	VSync	Whether frames wait for the screen's refresh.	true|false	On|Off
+Display.ShowFPS	false	Show FPS	Display the rendered frame rate.	true|false	On|Off
+Display.ShowSpeed	false	Show speed	Display emulation speed.	true|false	On|Off
+Display.LinearFiltering	true	Linear filtering	Smooth final display scaling.	true|false	On|Off
+Display.IntegerScaling	false	Integer scaling	Scale by whole pixels instead of fractional enlargement.	true|false	On|Off
+Display.AspectRatio	4:3	Aspect ratio	Choose the game's display aspect ratio.	4:3|16:9|Stretch To Fill	4:3|16:9|Stretch
+Main.ApplyGameSettings	true	Game compatibility settings	Keep known game-specific compatibility fixes.	true|false	On|Off
+Main.RewindEnable	false	Rewind	Rewind uses additional memory and CPU.	true|false	On|Off
+Main.RunaheadFrameCount	0	Internal run-ahead	Re-emulates frames; very expensive. Off recommended.	0|1|2	Off|1|2
+Main.SaveStateOnExit	false	Save state on exit	Create a resume state when quitting.	true|false	On|Off
+CDROM.ReadaheadSectors	8	CD-ROM readahead	More sectors may reduce storage-related stutters.	0|4|8|16|32	0|4|8|16|32
+CDROM.LoadImageToRAM	false	Load disc to RAM	Uses substantial RAM. Off recommended on handhelds.	true|false	On|Off
+CDROM.ReadSpeedup	1	CD-ROM read speed	Faster loading may break some games.	1|2|3|4|6|8|10	1x|2x|3x|4x|6x|8x|10x
+CDROM.SeekSpeedup	1	CD-ROM seek speed	Faster seeks may break some games.	1|2|3|4|6|8|10	1x|2x|3x|4x|6x|8x|10x
+BIOS.PatchFastBoot	true	Fast boot	Skip the BIOS animation when supported.	true|false	On|Off
+Audio.BufferMS	50	Audio buffer	Larger audio buffers can reduce audio interruptions.	32|50|64|100|128	32 ms|50 ms|64 ms|100 ms|128 ms

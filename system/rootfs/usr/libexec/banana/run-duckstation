@@ -1,0 +1,14 @@
+#!/bin/sh
+[ "$#" = 1 ] || exit 2
+[ -x /usr/lib/banana/duckstation/duckstation-nogui ] || exit 1
+export BANANA_SYSTEM=psx
+. /usr/libexec/banana/emulator-defaults
+# Use the built-in pad's verified Nintendo mapping by default.
+layout=$(face_layout)
+[ "$layout" = individual ] && layout=nintendo
+face_sdl_mapping "$layout"
+/usr/bin/banana-perf performance
+. /usr/libexec/banana/one-panel
+if [ -z "${BANANA_DRM_LEASE_FD:-}" ]; then one_panel_dark top; fi
+export BANANA_PORT_DARK_BACKLIGHT="$ONE_PANEL_BL"
+exec /usr/bin/python3 /usr/libexec/banana/duckstation-supervisor.py "$1"
