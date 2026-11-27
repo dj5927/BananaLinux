@@ -3,6 +3,7 @@
 STDOUT.sync = true
 STDERR.sync = true
 puts "[MKXP] Ruby #{RUBY_VERSION} (#{RUBY_PLATFORM})"
+load ENV['BANANA_MKXP_WIN32_PRELOAD'] if ENV['BANANA_MKXP_WIN32_PRELOAD'] && File.file?(ENV['BANANA_MKXP_WIN32_PRELOAD'])
 module BananaLegacyResource
   EXISTS = File.method(:exist?)
   def self.resolve(path, directory = false)

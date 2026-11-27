@@ -14,7 +14,7 @@ import time
 import zlib
 
 MODES = ("ruby18", "ruby19", "ruby31", "ruby32")
-REV = 4
+REV = 5
 MAX_ARCHIVE = 32 * 1024 * 1024
 MAX_SOURCE = 32 * 1024 * 1024
 STOP_SIGNALS = tuple(getattr(signal,n) for n in ("SIGTERM","SIGINT","SIGHUP") if hasattr(signal,n))
@@ -323,6 +323,9 @@ def runtime_env(base, folder, mode):
     env["MKXP_PORTABLE_RUBY_LOADPATH"]=":".join(str(p) for p in paths if p.is_dir())
     env["BANANA_RPG_RESOURCE_PRELOAD"]=str(root/"banana-filenames.rb" if mode=="ruby32" else folder/"banana-filenames.rb")
     env["BANANA_MKXP_ACTIVE_RUNTIME"]=mode
+    env["BANANA_MKXP_WIN32_PRELOAD"]=str(root/"banana-win32.rb")
+    game=Path(base["BANANA_SA_ENTRY"]).parent.name.casefold()
+    env["BANANA_MKXP_SENIA"]="1" if ("eternal senia" in game or "\uc774\ud130\ub110 \uc138\ub2c8\uc544" in game) else "0"
     return env
 
 def probe(sources, folder, env, deadline, cancelled=lambda:False):
@@ -339,7 +342,10 @@ def probe(sources, folder, env, deadline, cancelled=lambda:False):
             path=Path(td)/"section.rb"
             path.write_bytes(src)
             try:
-                r=subprocess.run([str(cli),"--disable-gems","-c",str(path)] if env["BANANA_MKXP_ACTIVE_RUNTIME"] != "ruby18" else [str(cli),"-c",str(path)],env=env,cwd=td,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=min(5,remaining))
+                args=[str(cli)]
+                if env["BANANA_MKXP_ACTIVE_RUNTIME"]!="ruby18": args.append("--disable-gems")
+                if env["BANANA_MKXP_ACTIVE_RUNTIME"]=="ruby19": args.append("-Ku")
+                r=subprocess.run(args+["-c",str(path)],env=env,cwd=td,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=min(5,remaining))
             except (OSError,subprocess.TimeoutExpired) as e:
                 log("Probe unavailable: "+str(e)); return "unknown"
             if r.returncode:

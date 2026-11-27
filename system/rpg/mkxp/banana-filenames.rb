@@ -3,6 +3,7 @@
 STDOUT.sync = true
 STDERR.sync = true
 puts "[MKXP] Ruby #{RUBY_VERSION} (#{RUBY_PLATFORM})"
+load ENV['BANANA_MKXP_WIN32_PRELOAD'] if ENV['BANANA_MKXP_WIN32_PRELOAD'] && File.file?(ENV['BANANA_MKXP_WIN32_PRELOAD'])
 
 # Ruby 3.2 removed these legacy APIs, which were already no-ops in 3.1.
 # Do not reintroduce security-sensitive $SAFE behavior.
