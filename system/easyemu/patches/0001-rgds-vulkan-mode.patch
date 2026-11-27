@@ -1,0 +1,21 @@
+--- a/core/rend/vulkan/drm_presenter.h
++++ b/core/rend/vulkan/drm_presenter.h
+@@ -92,8 +92,17 @@
+                 if(connector && crtc) break;
+             }
+             freeres(r);
+-            if(!connector || !crtc || mode.hdisplay!=1024 || mode.vdisplay!=768)
++            // Both BananaOS boards expose a landscape 4:3 DSI mode:
++            // RG DS 640x480, RG DS Plus 1024x768. Buffer allocation below
++            // already derives dimensions from the chosen DRM mode.
++            const bool supportedMode =
++                (mode.hdisplay==640 && mode.vdisplay==480) ||
++                (mode.hdisplay==1024 && mode.vdisplay==768);
++            if(!connector || !crtc || !supportedMode) {
++                fprintf(stderr,"EASYCAST_DRM selection failed: connector=%u crtc=%u mode=%ux%u\n",
++                    connector,crtc,mode.hdisplay,mode.vdisplay);
+                 throw std::runtime_error("Selected DS panel/mode unavailable");
++            }
+             drmModeCrtc *old=getcrtc(fd,crtc);
+             if(!old) throw std::runtime_error("Cannot save CRTC");
+             saved=*old; freecrtc(old);

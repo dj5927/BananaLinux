@@ -132,7 +132,9 @@ def install_bundle(data, manifest, log, cancelled=lambda: False):
 
 def ini_set(path, updates):
     # Preserve native comments/unknown keys, including repeated sections.
-    text = path.read_text(encoding="utf-8", errors="replace") if path.exists() else ""
+    # PPSSPP writes a UTF-8 BOM when saving its own INI files.
+    # Decode it before comparing section headers; never append a duplicate section.
+    text = path.read_text(encoding="utf-8-sig", errors="replace") if path.exists() else ""
     lines = text.splitlines()
     for section, keys in updates.items():
         start = next((i for i, line in enumerate(lines) if line.strip() == "[" + section + "]"), -1)
@@ -185,7 +187,7 @@ def configure(runtime, user, system, opts, leased):
         # Ensure the panel menu event can be routed even with the default pad mapping.
         cfg = configparser.ConfigParser(interpolation=None, strict=False)
         cfg.optionxform = str
-        cfg.read(ctrl, encoding="utf-8")
+        cfg.read(ctrl, encoding="utf-8-sig")
         pause = cfg.get("ControlMapping", "Pause", fallback="")
         if "1-111" not in [p.strip() for p in pause.split(",")]:
             ini_set(ctrl, {"ControlMapping": {"Pause": ",".join(p for p in (pause,"1-111") if p)}})
@@ -207,9 +209,17 @@ def configure(runtime, user, system, opts, leased):
         shutil.copyfile(runtime / "dreamcast/defaults/SDL_retrogame_joypad.cfg", m)
     cfg = configparser.ConfigParser(interpolation=None, strict=False)
     cfg.optionxform = str
-    cfg.read(ini, encoding="utf-8")
+    cfg.read(ini, encoding="utf-8-sig")
     renderer = cfg.get("config", "pvr.rend", fallback="4")
-    ini_set(ini, {"config": {"easycast.Screen": "0", "pvr.rend": renderer if renderer in ("4","5") else "4"}})
+    # Keep native/user paths first, then search BananaOS's conventional BIOS
+    # directories. This also migrates v20 settings without replacing saved data.
+    (user / "bios").mkdir(parents=True, exist_ok=True)
+    paths = [p.strip() for p in cfg.get("config", "Dreamcast.BiosPath", fallback="").split(";") if p.strip()]
+    for path in (str(user / "bios"), "/data/bios/dc", "/data/bios/dreamcast", "/data/bios"):
+        if path not in paths:
+            paths.append(path)
+    ini_set(ini, {"config": {"easycast.Screen": "0", "pvr.rend": renderer if renderer in ("4","5") else "4",
+                            "Dreamcast.BiosPath": ";".join(paths)}})
     env["BANANA_EASY_RESOLUTION"] = opts["resolution"]
     env["BANANA_EASY_FRAMESKIP"] = opts["frameskip"]
     env["BANANA_EASY_FAST_LOADING"] = opts["fast_loading"]
