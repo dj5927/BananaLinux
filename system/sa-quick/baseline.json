@@ -27,7 +27,7 @@
       {
         "path": "source/easycast/core/ui/gui.cpp",
         "base_sha256": "a094864d58d56725c1a0d2aaf3f510c48fbbbeb23d4444ff86cae08e09e29591",
-        "sha256": "2c7a9329d83eee7d6e07cf81ffcde7e98b045a8edd47a061d84c3cd4df268366"
+        "sha256": "e691b2f5d73dbc9e5315bf16c086fd3d3c6fceeb3626641e2df0f3d98a19779c"
       },
       {
         "path": "source/easycast/core/sdl/sdl.cpp",
@@ -37,12 +37,22 @@
       {
         "path": "source/easycast/core/emulator.cpp",
         "base_sha256": "b864328d49f377180711933281568d021ff5c853937d059402407f283a3a1916",
-        "sha256": "4a1b6733dd7d9093e2c291089b1c33c3b57c02d4dcb80bcf611ccce3bd17b94d"
+        "sha256": "d447551601d857467cf076b1c1f3e81a3497ee0dd417f298d3f98c0c6bff1127"
       },
       {
         "path": "source/easycast/core/ui/banana_quick.h",
         "base_sha256": null,
         "sha256": "8eddac9bec3205f8abcc91f5fe82ce01ee9c0de8f8dc517662560d58057ac0d4"
+      },
+      {
+        "path": "source/easycast/core/rend/vulkan/async_present.h",
+        "base_sha256": "0ea3dcfcc66f64235b6044216c28c166e2034fcf03a7e89ffb2a980ae23c976f",
+        "sha256": "d89e47ea172a65b20612d483d6267160ae4ef85981869cdc09d6819da16761cd"
+      },
+      {
+        "path": "source/easycast/core/rend/vulkan/vulkan_context.cpp",
+        "base_sha256": "25d60ada4aba5b161fee8ec1d3a6ed704666214241cf222012b31e23c084cb82",
+        "sha256": "06c83735dc5e96a38122923ddef7f8678c8dc9dee8bc440641834e0ce3a7fca7"
       }
     ]
   },
@@ -60,6 +70,36 @@
         "path": "duckstation/src/duckstation-nogui/banana_quick.h",
         "base_sha256": null,
         "sha256": "8eddac9bec3205f8abcc91f5fe82ce01ee9c0de8f8dc517662560d58057ac0d4"
+      },
+      {
+        "path": "duckstation/src/common/vulkan/context.h",
+        "base_sha256": "28df4b55ba5c2bdfc3d43f629c400c346006feee490f3e2d660773996908429f",
+        "sha256": "8aeb8b32294500e205a3e0558b405561137225504649b7be44a7e864106f29ab"
+      },
+      {
+        "path": "duckstation/src/common/vulkan/banana_scanout.h",
+        "base_sha256": "094200f7ccdb2986a1ba6e4e8ae27e2df280923d604fddea55b8ec727c0550bf",
+        "sha256": "49f7b28126651b56da3dbdebd6275607a553a560a9a37aac0d3f6dbb6610f10a"
+      },
+      {
+        "path": "duckstation/src/common/vulkan/swap_chain.h",
+        "base_sha256": "9694ae4e25333e25156efb53b660c40096eda95223f4195ffa7b1670d99978ba",
+        "sha256": "6a8e3be385750c950eeffc21d80e967733c4c00d468f752427f6bc1c9c9482f7"
+      },
+      {
+        "path": "duckstation/src/common/vulkan/swap_chain.cpp",
+        "base_sha256": "615ea64de27947a516d5efd4e37ee13690be28fb828b3b7b4c0da1d602d4252e",
+        "sha256": "55d0345ccd4c6116251eefda230e4259bea583b5e51cba541f0ebcfb8377e934"
+      },
+      {
+        "path": "duckstation/src/util/vulkan_host_display.cpp",
+        "base_sha256": "4020288e18afc5859cb1bc6139360b1581531980b929c704e1721d0fa150b368",
+        "sha256": "7d0d78120abbccf0ab0ee76beef33be022d5408a6b3a1fd66e37cdc6a4a51213"
+      },
+      {
+        "path": "duckstation/src/core/system.cpp",
+        "base_sha256": "c442aa0b354cfd4656bb73fe22a136ab9cdb4c90fd4079df83da40cb5e683d4a",
+        "sha256": "c66a2eb8b8a5cd716b3b0eeadaf2fb7c458fa652d8aa3e93013b3a37a56e70d7"
       }
     ]
   }

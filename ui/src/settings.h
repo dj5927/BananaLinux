@@ -130,6 +130,7 @@ namespace banana
 		bool gameWake() { bool w = wake; wake = false; return w; }
 		void gameRender();
 		GameAction gameTouch(float x, float y, bool down);	// device px on the panel's screen
+		GameAction saTopTouch(float x,float y,bool down);
 		bool rpgMenuActive() const { return gRpgMenu; }
 		int saQuickSlot() const { return gSaSlot; }
 		bool rpgPauseRequested() const { return gRpgPaused || gRpgMenu || gRpgConfirm != 0; }
@@ -809,8 +810,9 @@ namespace banana
 		GameAction saTile(int i);
 		GameAction saMenuKey(Key key);
 		bool saKeyEvent(const InputEvent& ev,GameAction& action);
-		GameAction saTouch(float x,float y,bool down);
-		void saMenuFrame();
+		GameAction saTouch(float x,float y,bool down,bool top=false);
+		void saMenuFrame(int screen);
+		void saMenuNavFrame();
 		int gRpgPage = 0;
 		int gRpgConfirm = 0;
 		bool gRpgDirty = false;

@@ -1215,6 +1215,7 @@ namespace banana
 				return true;
 			}
 			if(!gRpgMenu && !gRpgConfirm) {
+				if(ev.key==Key::LEFT || ev.key==Key::RIGHT) {saSlotStep(ev.key==Key::LEFT?-1:1);return true;}
 				if(ev.code==BTN_TR2) {action=saTile(3);return true;}
 				if(ev.key==Key::R) {action=saTile(0);return true;}
 				if(ev.key==Key::L) {action=saTile(1);return true;}
@@ -1266,11 +1267,23 @@ namespace banana
 		}
 		return G_NONE;
 	}
-	Settings::GameAction Settings::saTouch(float x,float y,bool down)
+	Settings::GameAction Settings::saTopTouch(float x,float y,bool down)
+	{
+		if(!saQuickPanel() || !gRpgMenu || !gRpgTopMenu || gRpgConfirm) return G_NONE;
+		return saTouch(x/s,y/s,down,true);
+	}
+	Settings::GameAction Settings::saTouch(float x,float y,bool down,bool top)
 	{
 		int hit=-1;
 		if(gRpgConfirm) {
 			if(x>=20 && x<620 && y>=365 && y<425) hit=x<320?-2:-3;
+		} else if(gRpgMenu && gRpgTopMenu && !top) {
+			// Lower touchscreen navigation while the menu occupies the upper screen.
+			if(x>=18 && x<622 && y>=192 && y<416) {
+				int col=int((x-18)/204), row=int((y-192)/114);
+				if(col<3 && row<2 && x<18+col*204+196 && y<192+row*114+106)
+					hit=30+row*3+col;
+			}
 		} else if(gRpgMenu) {
 			if(y>=425 && x>=18 && x<622) hit=-2;
 			else if(x>=18 && x<622 && y>=78) {
@@ -1279,16 +1292,20 @@ namespace banana
 				if(i<(gSaOptions?5:7) && y<78+i*pitch+pitch-4) {
 					hit=gSaOptions?(gSaRow/5)*5+i:i;
 					if(gSaOptions && hit>=int(gSaChoices.size())) hit=-1;
+					if(!gSaOptions && hit==1 && x>=320 && x<620) {
+						int slot=int((x-320)/60);
+						if(slot<5 && x<320+slot*60+54) hit=20+slot;
+						else hit=-1;
+					}
 				}
 			}
 		} else {
 			if(x>=18 && x<622 && y>=300 && y<420) {
 				int i=int((x-18)/122);
 				if(i<5 && x<18+i*122+114) hit=i;
-			} else if(y>=237 && y<277) {
-				int x0=gPortCover?276:38;
-				if(x>=x0+65 && x<x0+118) hit=-4;
-				if(x>=x0+140 && x<x0+190) hit=-5;
+			} else if(y>=237 && y<289 && x>=194 && x<622) {
+				int i=int((x-194)/86);
+				if(i<5 && x<194+i*86+80) hit=10+i;
 			}
 		}
 		if(down) {gSaDown=hit;gFlash=!gRpgMenu&&!gRpgConfirm&&hit>=0?hit:-1;return G_NONE;}
@@ -1303,6 +1320,15 @@ namespace banana
 			return G_NONE;
 		}
 		if(gRpgMenu) {
+			if(hit>=20 && hit<25) {
+				gSaRow=1;gSaSlot=hit-19;
+				setConfValue(data+"/sa-quick.conf",gSysId+".slot",std::to_string(gSaSlot));
+				return G_NONE;
+			}
+			if(hit>=30 && hit<36) {
+				const Key keys[]={Key::LEFT,Key::UP,Key::RIGHT,Key::B,Key::DOWN,Key::A};
+				return saMenuKey(keys[hit-30]);
+			}
 			if(hit==-2) return saMenuKey(Key::B);
 			gSaRow=hit;
 			if(gSaOptions || hit==1) {
@@ -1311,13 +1337,17 @@ namespace banana
 			}
 			return saMenuKey(Key::A);
 		}
-		if(hit==-4 || hit==-5) {saSlotStep(hit==-4?-1:1);return G_NONE;}
+		if(hit>=10 && hit<15) {
+			gSaSlot=hit-9;
+			setConfValue(data+"/sa-quick.conf",gSysId+".slot",std::to_string(gSaSlot));
+			return G_NONE;
+		}
 		return saTile(hit);
 	}
-	void Settings::saMenuFrame()
+	void Settings::saMenuFrame(int screen)
 	{
 		SPal p=pal(light);
-		be->beginScreen(gScreen);
+		be->beginScreen(screen);
 		box("screen",false,0,0,640,480);
 		box("bubble",false,18,14,604,54);
 		text(gSaOptions?"Performance settings":"Menu",true,25,36,27,p.ink);
@@ -1342,11 +1372,64 @@ namespace banana
 				box(on?"pick":"slot",on,18,y,604,44);
 				text(labels[i],true,20,36,y+11,fg);
 				if(i==1) {
-					arrow(false,320,y+12,fg);text(std::to_string(gSaSlot),true,20,452,y+10,fg);arrow(true,592,y+12,fg);
+					for(int j=0;j<5;j++) {
+						float x=320+j*60;
+						bool chosen=gSaSlot==j+1;
+						box(chosen?"pick":"slot",chosen,x,y+3,54,38);
+						auto n=std::to_string(j+1);
+						Color ink=chosen?p.onPick:p.ink;
+						float w=text(n,true,23,0,0,ink,false,0,true);
+						text(n,true,23,x+27-w/2,y+8,ink);
+					}
 				}
 			}
 		}
 		face("B","Back",18,faceWidth("B","Back"));
+		be->endScreen();
+	}
+
+	void Settings::saMenuNavFrame()
+	{
+		SPal p=pal(light);
+		be->beginScreen(gScreen);
+		box("screen",false,0,0,640,480);
+		box("bubble",false,18,14,604,54);
+		text("Menu",true,25,36,27,p.ink);
+		box("hero",false,18,82,604,96);
+		const char* labels[]={"Resume","State slot","Performance settings","Open emulator menu","Pause","Restart","Quit"};
+		std::string selected=gSaOptions && !gSaChoices.empty()?lang::tr(gSaChoices[gSaRow].label):lang::tr(labels[gSaRow]);
+		text(fit(selected,true,24,564),true,24,36,96,p.ink);
+		std::string value;
+		if(gSaOptions && !gSaChoices.empty()) value=lang::tr(gSaChoices[gSaRow].names[gSaValues[gSaRow]]);
+		else if(gSaRow==1) value=std::to_string(gSaSlot)+" / 5";
+		else value=lang::tr("Upper screen menu");
+		text(fit(value,true,23,564),true,23,36,137,p.accent);
+		const char* nav[]={"<","^",">","B","v","A"};
+		const char* hint[]={"Previous value","Up","Next value","Back","Down","Confirm"};
+		for(int i=0;i<6;i++) {
+			const float x=18+(i%3)*204,y=192+(i/3)*114;
+			const bool on=gSaDown==30+i;
+			box(on?"pick":"slot",on,x,y,196,106);
+			Color fg=on?p.onPick:p.ink;
+			float w=0;
+			if(i==0 || i==1 || i==2 || i==4) {
+				// Draw arrows as pixels instead of the font's small caret.
+				int k=std::max(1,int(std::lround(3*s)));
+				float cx=std::round(X(x+98)),cy=std::round(X(y+32));
+				for(int r=0;r<7;r++) {
+					int t=(i==0 || i==1)?r:6-r;
+					if(i==0 || i==2) be->fill(cx+(r-3)*k,cy-t*k,float(k),float((2*t+1)*k),fg);
+					else be->fill(cx-t*k,cy+(r-3)*k,float((2*t+1)*k),float(k),fg);
+				}
+			} else {
+				w=text(nav[i],true,31,0,0,fg,false,0,true);
+				text(nav[i],true,31,x+98-w/2,y+14,fg);
+			}
+			auto label=fit(lang::tr(hint[i]),true,17,180);
+			w=text(label,true,17,0,0,fg,false,0,true);
+			text(label,true,17,x+98-w/2,y+65,fg);
+		}
+		wrapped("Use the D-pad or touch to navigate.",16,22,438,596,2,p.muted);
 		be->endScreen();
 	}
 
@@ -1492,7 +1575,11 @@ namespace banana
 	}
 	void Settings::rpgPanelFrame()
 	{
-		if(saQuickPanel() && gRpgMenu && !gRpgConfirm) { saMenuFrame(); return; }
+		if(saQuickPanel() && gRpgMenu && !gRpgConfirm) {
+			if(gRpgTopMenu) {saMenuNavFrame();saMenuFrame(1-gScreen);}
+			else saMenuFrame(gScreen);
+			return;
+		}
 		if (gRpgMenu && !gRpgTopMenu && !gRpgConfirm) { rpgMenuFrame(gScreen); return; }
 		SPal p=pal(light);
 		be->beginScreen(gScreen);
@@ -1511,16 +1598,20 @@ namespace banana
 			wrapped(gRpgConfirm==1?"Restart this game? Unsaved progress will be lost.":"Quit this game? Unsaved progress will be lost.",24,32,110,576,5,p.ink);
 			button(20,365,292,60,"Cancel"); button(328,365,292,60,"Confirm");
 			be->endScreen();
-			if (gRpgMenu && gRpgTopMenu) rpgMenuFrame(1-gScreen);
+			if (gRpgMenu && gRpgTopMenu) {
+				if(easy) saMenuFrame(1-gScreen);
+				else rpgMenuFrame(1-gScreen);
+			}
 			return;
 		}
-		box("hero",false,18,88,604,198);
+		box("hero",false,18,88,604,easy?140:198);
 		if(port || easy) {
 			const int x=gPortCover?276:38;
 			if(gPortCover) {
-				const float k=std::min(218.0f/gPortCover->w,160.0f/gPortCover->h);
+				const float hmax=easy?114.0f:160.0f;
+				const float k=std::min(218.0f/gPortCover->w,hmax/gPortCover->h);
 				float w=gPortCover->w*k,h=gPortCover->h*k;
-				be->draw(gPortCover,X(38+(218-w)/2),X(103+(160-h)/2),X(w),X(h),Color(1,1,1,1));
+				be->draw(gPortCover,X(38+(218-w)/2),X(103+(hmax-h)/2),X(w),X(h),Color(1,1,1,1));
 			}
 			const char* state=gRpgPaused?"Paused":easy && gRpgPhase=="copying"?"Copying runtime":easy && gRpgPhase=="downloading"?"Downloading runtime":easy && gRpgPhase=="verifying"?"Verifying checksum":easy && gRpgPhase=="installing"?"Installing runtime":easy && gRpgPhase=="starting"?"Starting game...":easy && gRpgPhase=="failed"?"Game could not start":"Game running";
 			text(fit(lang::tr(state),true,25,590-x),true,25,x,110,p.ink);
@@ -1533,11 +1624,17 @@ namespace banana
 			text("Battery",false,18,bx,164,p.muted);
 			text(gPortBattery>=0?std::to_string(gPortBattery)+"%":"--",true,28,bx,190,p.ink);
 			if(easy) {
-				box("slot",false,x,237,590-x,40);
-				text("Slot",true,17,x+10,248,p.muted);
-				arrow(false,x+82,248,p.ink);
-				text(std::to_string(gSaSlot),true,20,x+118,246,p.ink);
-				arrow(true,x+155,248,p.ink);
+				text("State slot",true,22,24,239,p.ink);
+				text("F + < / >",false,15,24,269,p.muted);
+				for(int i=0;i<5;i++) {
+					float sx=194+i*86;
+					bool on=gSaSlot==i+1;
+					box(on?"pick":"slot",on,sx,237,80,52);
+					Color fg=on?p.onPick:p.ink;
+					auto num=std::to_string(i+1);
+					float nw=text(num,true,29,0,0,fg,false,0,true);
+					text(num,true,29,sx+40-nw/2,248,fg);
+				}
 			} else wrapped("Save in the game before quitting.",17,x,252,590-x,1,p.muted);
 		} else if (gRpgMenu) {
 			if (gRpgRow>=0 && gRpgRow<int(pgRpgChoices.size())) {

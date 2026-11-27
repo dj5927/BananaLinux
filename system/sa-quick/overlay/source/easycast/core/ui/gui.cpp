@@ -1453,20 +1453,31 @@ void gui_display_ui()
 static u64 LastFPSTime;
 static int lastFrameCount = 0;
 static float fps = -1;
+extern std::atomic<uint64_t> bananaVblankCount;
+static uint64_t bananaLastVblank=0;
+static float bananaVps=-1;
+static bool bananaWasFast=false;
 
 static std::string getFPSNotification()
 {
 	if (config::ShowFPS)
 	{
 		u64 now = getTimeMs();
-		if (now - LastFPSTime >= 1000) {
-			fps = ((float)MainFrameCount - lastFrameCount) * 1000.f / (now - LastFPSTime);
-			LastFPSTime = now;
-			lastFrameCount = MainFrameCount;
-		}
+        const uint64_t vb=bananaVblankCount.load(std::memory_order_relaxed);
+        const bool fast=settings.input.fastForwardMode;
+        if (!LastFPSTime || bananaWasFast!=fast) {
+            LastFPSTime=now;lastFrameCount=MainFrameCount;bananaLastVblank=vb;
+            fps=bananaVps=-1;bananaWasFast=fast;
+        } else if (now - LastFPSTime >= 1000) {
+            fps = ((float)MainFrameCount - lastFrameCount) * 1000.f / (now - LastFPSTime);
+            bananaVps = float(vb-bananaLastVblank)*1000.f/(now-LastFPSTime);
+            LastFPSTime = now;lastFrameCount = MainFrameCount;bananaLastVblank=vb;
+        }
 		if (fps >= 0.f && fps < 9999.f) {
-			char text[32];
-			snprintf(text, sizeof(text), "F:%4.1f%s", fps, settings.input.fastForwardMode ? " >>" : "");
+            char text[64];
+            if(settings.input.fastForwardMode && bananaVps>=0)
+                snprintf(text,sizeof(text),"F:%4.1f V:%4.1f >>",fps,bananaVps);
+            else snprintf(text,sizeof(text),"F:%4.1f",fps);
 
 			return std::string(text);
 		}

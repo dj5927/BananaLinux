@@ -1096,8 +1096,10 @@ bool Emulator::render()
 	return rend_single_frame(true); // FIXME stop flag?
 }
 
+std::atomic<uint64_t> bananaVblankCount{0};
 void Emulator::vblank()
 {
+    bananaVblankCount.fetch_add(1,std::memory_order_relaxed);
 	EventManager::event(Event::VBlank);
 	runner.execTasks();
 	// Time out if a frame hasn't been rendered for 50 ms

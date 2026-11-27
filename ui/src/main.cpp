@@ -1467,14 +1467,22 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			const bool changed = settings.gameButton(code, now);
 			logf("gbutton %s: %s view %s", b.c_str(), changed ? "switched" : "nothing", settings.gamePanelView().c_str());
 		}
-		else if (op == "gtouch")
+		else if (op == "saslotassert")
+		{
+			int slot=0; cs>>slot;
+			if(settings.saQuickSlot()!=slot) {logf("FAIL SA slot expected=%d actual=%d",slot,settings.saQuickSlot());return 2;}
+			logf("PASS SA slot %d",slot);
+		}
+		else if (op == "gtouch" || op == "satoptouch")
 		{
 			// gtouch <x> <y>: a tap on the game panel, in px of a 640x480 panel
 			float x = 0, y = 0;
 			cs >> x >> y;
 			float k = o.h / 480.0f;
-			settings.gameTouch(x * k, y * k, true);
-			const Settings::GameAction act = settings.gameTouch(x * k, y * k, false);
+			const bool top=op=="satoptouch";
+			if(top) settings.saTopTouch(x*k,y*k,true);
+			else settings.gameTouch(x*k,y*k,true);
+			const Settings::GameAction act = top?settings.saTopTouch(x*k,y*k,false):settings.gameTouch(x*k,y*k,false);
 			settings.gameUpdate(now);
 			logf("gtouch %.0f %.0f: action %d keys %d view %s", x, y, (int)act, settings.gameKeysOpen() ? 1 : 0, settings.gamePanelView().c_str());
 			std::string expected;
@@ -2831,7 +2839,7 @@ int main(int argc, char** argv)
 			settingsView.swanNative(swanNative);
 			settingsView.gameKeyboard(keysOn ? &vkbd : nullptr);
 			settingsView.gameOpen(title, sysName, panelScreen, input.hasTouch(panelScreen));
-			if (nativeControl) settingsView.rpgSetTopMenu(nativeRpg && disp.rpgMenuAvailable());
+			if (nativeControl) settingsView.rpgSetTopMenu((nativeRpg || nativeEasy) && paint && disp.rpgMenuAvailable());
 			if (nativePort || nativeEasy) { settingsView.portHotkeyOnly(!paint); if(paint) settingsView.portCover(cover); }
 			settingsView.gbaAttach(gbaHost.get());
 		}
@@ -2903,8 +2911,8 @@ int main(int argc, char** argv)
 				{
 					settingsView.gameRender();
 					const bool volumeActive=volume && volume->active(t);
-					const bool topMenu=nativeRpg && settingsView.rpgMenuActive() && settingsView.rpgTopMenu();
-					if (nativeRpg && settingsView.rpgMenuActive() && settingsView.rpgTopMenu()) {
+					const bool topMenu=(nativeRpg || nativeEasy) && settingsView.rpgMenuActive() && settingsView.rpgTopMenu();
+					if (topMenu) {
 						const uint32_t* frame=be.pixels(gameScreen);
 						std::vector<uint32_t> menu;
 						if(volumeActive) {
@@ -3052,7 +3060,8 @@ int main(int argc, char** argv)
 							if (nativeControl) { std::lock_guard<std::mutex> l(worker.uiLock); Settings::GameAction a; settingsView.rpgKeyEvent(ev,a); }
 							return;
 						}
-						if (!paint || ev.screen != panelScreen) return;	// touch only on the panel
+						const bool saTop=nativeEasy && ev.screen==gameScreen && settingsView.rpgMenuActive() && settingsView.rpgTopMenu();
+						if (!paint || (ev.screen != panelScreen && !saTop)) return;
 						if (ev.type == InputEvent::TOUCH_MOVE)	// (the GBA companion's pages scroll by drag)
 						{
 							std::lock_guard<std::mutex> l(worker.uiLock);
@@ -3068,7 +3077,8 @@ int main(int argc, char** argv)
 						Settings::GameAction a;
 						{
 							std::lock_guard<std::mutex> l(worker.uiLock);
-							a = settingsView.gameTouch(ev.x, ev.y, ev.type == InputEvent::TOUCH_DOWN);
+							a = saTop ? settingsView.saTopTouch(ev.x,ev.y,ev.type==InputEvent::TOUCH_DOWN) :
+								settingsView.gameTouch(ev.x, ev.y, ev.type == InputEvent::TOUCH_DOWN);
 							syncRpgPause();
 						}
 						want = true;
