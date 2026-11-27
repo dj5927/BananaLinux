@@ -22,6 +22,7 @@
 #include "arrival.h"
 #include "lang.h"
 #include "settings.h"
+#include "rpg_volume.h"
 #include "complink.h"
 #include "nds/overlay.h"
 #include "nds/pages_page.h"
@@ -1462,6 +1463,59 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			if (!save(0, o.headless + name + "-top.png") || !save(1, o.headless + name + "-bot.png")) { logf("can't write %s", name.c_str()); return 1; }
 			logf("gshot %s", name.c_str());
 		}
+		else if (op == "rpgvolumecheck")
+		{
+			const std::string path=o.headless+"volume-event";
+			auto event=[&](const char* text) {
+				std::ofstream f(path+".new"); f<<text; f.close();
+				return rename((path+".new").c_str(),path.c_str())==0;
+			};
+			if(!event("volume 20\n")) return 2;
+			RpgVolume v(path);
+			if(v.check(1000)||v.active(1000)) return 2;
+			if(!event("brightness 50\n")||v.check(1100)) return 2;
+			if(!event("volume 65\n")||!v.check(1200)||v.value()!=65||!v.active(1200)) return 2;
+			v.render(settings,o.w,o.h,1200);
+			if(std::any_of(v.pixels.begin(),v.pixels.end(),[](uint32_t p){return p!=0;})) return 2;
+			v.render(settings,o.w,o.h,1360);
+			auto middle=v.pixels;
+			if(v.width!=o.w||v.height!=int(std::lround(46.0*o.w/640.0))) return 2;
+			if(middle.empty()||middle[0]!=0) return 2;
+			int opaque=0; for(auto p:middle) if((p>>24)==255) opaque++;
+			if(opaque<1000) return 2;
+			// Compare to the existing renderer, over a colored test frame.
+			const uint32_t bg=0x00406382;
+			SoftBackend reference(o.w,v.height);
+			reference.beginScreen(0);
+			reference.fill(0,0,o.w,v.height,rnds::Color::hex(bg));
+			settings.levelOn(&reference,"Volume",65);
+			reference.endScreen();
+			std::vector<uint32_t> composed(size_t(o.w)*o.h,bg);
+			v.composite(composed.data(),o.w);
+			for(size_t i=0;i<middle.size();i++)
+				for(int sh:{0,8,16}) if(std::abs(int((composed[i]>>sh)&255)-int((reference.pixels(0)[i]>>sh)&255))>3) {
+					logf("FAIL volume composition pixel %zu",i); return 2;
+				}
+			for(size_t i=middle.size();i<composed.size();i++) if(composed[i]!=bg) return 2;
+			settings.gameRender();
+			v.composite(be.canvas(0),o.w);
+			if(!save(0,o.headless+"volume-65-top.png")) return 2;
+			if(v.check(1400)||!event("volume 0\n")||!v.check(1500)||v.value()!=0) return 2;
+			v.render(settings,o.w,o.h,1700);
+			if(v.pixels==middle) return 2;
+			settings.gameRender();
+			v.composite(be.canvas(0),o.w);
+			if(!save(0,o.headless+"volume-0-top.png")) return 2;
+			if(!event("volume 100\n")||!v.check(1800)||v.value()!=100||!v.active(3200)||v.active(3300)) return 2;
+			v.render(settings,o.w,o.h,2000);
+			settings.gameRender();
+			v.composite(be.canvas(0),o.w);
+			if(!save(0,o.headless+"volume-100-top.png")) return 2;
+			v.render(settings,o.w,o.h,3300);
+			if(std::any_of(v.pixels.begin(),v.pixels.end(),[](uint32_t p){return p!=0;})) return 2;
+			unlink(path.c_str());
+			logf("PASS RPG volume identical level card, alpha composition, stale/brightness rejection, slide, repeat, timeout");
+		}
 		else if (op == "swipe")
 		{
 			// swipe <x1> <y1> <x2> <y2>: a finger down at one point and up at the other, on the settings' bottom panel
@@ -2682,7 +2736,11 @@ int main(int argc, char** argv)
 		const std::string pausePath="/run/banana/rpg-pause-"+std::to_string(pid);
 		const std::string launchStatusPath="/run/banana/mkxp-status-"+std::to_string(pid);
 		double nextStatus=0, nextOverlayRefresh=0;
-		bool pauseApplied=false, overlayShown=false;
+		bool pauseApplied=false, overlayShown=false, volumeShown=false, volumeBottom=false;
+		std::unique_ptr<RpgVolume> volume;
+		if(nativeRpg) volume=std::make_unique<RpgVolume>();
+		bool topVolumeFailed=false;
+		double nextVolumeFrame=0;
 		auto syncRpgPause=[&]() {
 			if (!nativeRpg) return;
 			const bool pause=settingsView.rpgPauseRequested();
@@ -2730,6 +2788,11 @@ int main(int argc, char** argv)
 			pid_t w = waitpid(pid, &status, WNOHANG);
 			if (w == pid || (w < 0 && errno != EINTR)) break;
 			double t = nowMs();
+			if(volume) {
+				if(volume->check(t)) { want=true; bottomIdle.activity(t); }
+				if((volumeShown||volumeBottom) && !volume->active(t)) want=true;
+				if(volume->animating(t) && t>=nextVolumeFrame) { want=true; nextVolumeFrame=t+33; }
+			}
 			bottomIdle.tick(t);	// the bottom game panel dims on its own idle timer too (the game is on the other)
 			if (outFd >= 0)
 			{
@@ -2769,7 +2832,7 @@ int main(int argc, char** argv)
 				if (nativeRpg && overlayShown && t>=nextOverlayRefresh) {
 					want=true; nextOverlayRefresh=t+2000;
 				}
-				if (nativeRpg && overlayShown && !settingsView.rpgMenuActive()) {
+				if (nativeRpg && overlayShown && !settingsView.rpgMenuActive() && !(volume && volume->active(t))) {
 					disp.rpgMenuHide(); overlayShown=false;
 				}
 				if (settingsView.gameUpdate(t)) want = true;
@@ -2777,15 +2840,44 @@ int main(int argc, char** argv)
 				if (want && !disp.flipPending())
 				{
 					settingsView.gameRender();
+					const bool volumeActive=volume && volume->active(t);
+					const bool topMenu=nativeRpg && settingsView.rpgMenuActive() && settingsView.rpgTopMenu();
 					if (nativeRpg && settingsView.rpgMenuActive() && settingsView.rpgTopMenu()) {
-						if (disp.rpgMenuPresent(be.pixels(gameScreen))) overlayShown=true;
+						const uint32_t* frame=be.pixels(gameScreen);
+						std::vector<uint32_t> menu;
+						if(volumeActive) {
+							volume->render(settingsView,disp.width(),disp.height(),t);
+							menu.assign(frame,frame+size_t(disp.width())*disp.height());
+							volume->composite(menu.data(),disp.width()); frame=menu.data();
+						}
+						if (disp.rpgMenuPresent(frame)) { overlayShown=true; volumeShown=volumeActive; }
 						else {
 							logf("RPG top menu unavailable; using accessible bottom settings");
-							disp.rpgMenuClose(); overlayShown=false;
+							disp.rpgMenuClose(); overlayShown=false; volumeShown=false;
 							settingsView.rpgSetTopMenu(false);
 							settingsView.gameRender();
 						}
 					}
+					if(nativeRpg && (!topMenu || !settingsView.rpgTopMenu())) {
+						if(volumeActive && disp.rpgMenuAvailable() && disp.rpgWidgetAlpha() && !topVolumeFailed) {
+							volume->render(settingsView,disp.width(),disp.height(),t);
+							if(disp.rpgWidgetPresent(volume->pixels.data(),volume->width,volume->height)) {
+								volumeShown=true; overlayShown=true;
+							} else {
+								logf("RPG volume top overlay failed; using bottom panel");
+								disp.rpgMenuHide(); overlayShown=false; volumeShown=false; topVolumeFailed=true;
+							}
+						} else if(overlayShown) {
+							disp.rpgMenuHide(); overlayShown=false; volumeShown=false;
+						}
+						if(volumeActive && !volumeShown) {
+							volume->render(settingsView,disp.width(),disp.height(),t);
+							volume->composite(be.canvas(panelScreen),disp.width());
+							volumeBottom=true;
+						}
+					}
+					if(!volumeActive) volumeShown=false;
+					if(!volumeActive || volumeShown) volumeBottom=false;
 					const uint32_t* scr[2] = { be.pixels(0), be.pixels(1) };
 					Damage dmg[2] = { be.takeDamage(0), be.takeDamage(1) };
 					disp.present(scr, dmg);
@@ -2827,7 +2919,7 @@ int main(int argc, char** argv)
 			for (int i = 0; i < ni; i++) fds[nf++] = { in[i], POLLIN, 0 };
 			if (outFd >= 0) { outAt = nf; fds[nf++] = { outFd, POLLIN, 0 }; }
 			if (pidFd >= 0) { pidAt = nf; fds[nf++] = { pidFd, POLLIN, 0 }; }
-			if (poll(fds, nf, compLink.waiting() ? 10 : 100) <= 0) continue;	// (an export's answer is looked for, not signalled)
+			if (poll(fds, nf, compLink.waiting() ? 10 : (volume && volume->active(t) ? 33 : 100)) <= 0) continue;	// (an export's answer is looked for, not signalled)
 			if (pidAt >= 0 && (fds[pidAt].revents & POLLIN)) continue;	// it ended: waitpid above
 			if (fds[0].revents & POLLIN) disp.handleEvents();
 			if (outAt >= 0 && (fds[outAt].revents & POLLIN))

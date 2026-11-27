@@ -2290,6 +2290,13 @@ namespace banana
 		}
 	}
 
+	void Settings::levelOn(rnds::Backend* target,const std::string& label,int percent)
+	{
+		struct Restore { rnds::Backend*& ref; rnds::Backend* previous; ~Restore(){ref=previous;} } restore{be,be};
+		be=target;
+		level(label,percent);
+	}
+
 	// the groups: a grid of tiles in the in-game menu's look (its main page), the group's icon, name and what is in it;
 	// the top panel says what the selected group holds
 	static double steadyMs()

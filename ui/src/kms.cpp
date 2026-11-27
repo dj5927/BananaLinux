@@ -534,9 +534,12 @@ namespace banana
 		if (rpgFd<0) return false;
 		drmModePlane* plane=drmModeGetPlane(rpgFd,leasedOverlay);
 		bool supported=false;
+		rpgAlpha=false;
 		if (plane) {
-			for (uint32_t i=0;i<plane->count_formats;i++)
+			for (uint32_t i=0;i<plane->count_formats;i++) {
 				if (plane->formats[i]==0x34325258) supported=true;
+				if (plane->formats[i]==0x34325241) rpgAlpha=true; // ARGB8888
+			}
 			drmModeFreePlane(plane);
 		}
 		if (!supported) { rpgMenuClose(); return false; }
@@ -545,7 +548,21 @@ namespace banana
 
 	bool Display::rpgMenuPresent(const uint32_t* pixels)
 	{
-		if (rpgFd<0 || leased<0 || !pixels) return false;
+		return rpgPresent(pixels,W,H,false);
+	}
+
+	bool Display::rpgWidgetPresent(const uint32_t* pixels,int width,int height)
+	{
+		return rpgPresent(pixels,width,height,true);
+	}
+
+	bool Display::rpgPresent(const uint32_t* pixels,int width,int height,bool widget)
+	{
+		if (rpgFd<0 || leased<0 || !pixels || width<=0 || height<=0 || width>W || height>H) return false;
+		if (widget && !rpgAlpha) return false;
+		const uint32_t format=widget?0x34325241:0x34325258;
+		if(rpgFormat && rpgFormat!=format) rpgMenuHide();
+		rpgFormat=format;
 		auto zvalue=[&](uint32_t plane,uint64_t& value,uint64_t& max)->uint32_t {
 			uint32_t id=0;
 			drmModeObjectProperties* ps=drmModeObjectGetProperties(rpgFd,plane,DRM_MODE_OBJECT_PLANE);
@@ -578,15 +595,19 @@ namespace banana
 			if (drmIoctl(rpgFd,DRM_IOCTL_MODE_CREATE_DUMB,&c)) return false;
 			b.handle=c.handle; b.pitch=c.pitch; b.size=c.size;
 			uint32_t handles[4]={b.handle}, pitches[4]={b.pitch}, offsets[4]={0};
-			if (drmModeAddFB2(rpgFd,W,H,0x34325258,handles,pitches,offsets,&b.fb,0)) return false;
+			if (drmModeAddFB2(rpgFd,W,H,format,handles,pitches,offsets,&b.fb,0)) return false;
 			drm_mode_map_dumb m={}; m.handle=b.handle;
 			if (drmIoctl(rpgFd,DRM_IOCTL_MODE_MAP_DUMB,&m)) return false;
 			void* map=mmap(nullptr,b.size,PROT_READ|PROT_WRITE,MAP_SHARED,rpgFd,m.offset);
 			if (map==MAP_FAILED) return false;
 			b.map=static_cast<uint8_t*>(map);
 		}
-		for (int y=0;y<H;y++) memcpy(b.map+size_t(y)*b.pitch,pixels+size_t(y)*W,size_t(W)*4);
-		if (drmModeSetPlane(rpgFd,leasedOverlay,p[leased].crtc,b.fb,0,0,0,W,H,0,0,uint32_t(W)<<16,uint32_t(H)<<16)) {
+		for (int y=0;y<height;y++) {
+			auto* dst=reinterpret_cast<uint32_t*>(b.map+size_t(y)*b.pitch);
+			const uint32_t* src=pixels+size_t(y)*width;
+			for(int x=0;x<width;x++) dst[x]=widget?src[x]:(src[x]|0xff000000u);
+		}
+		if (drmModeSetPlane(rpgFd,leasedOverlay,p[leased].crtc,b.fb,0,0,0,width,height,0,0,uint32_t(width)<<16,uint32_t(height)<<16)) {
 			fprintf(stderr,"RPG menu overlay: %s\n",strerror(errno));
 			return false;
 		}
@@ -615,7 +636,7 @@ namespace banana
 					drmModeObjectSetProperty(rpgFd,leasedOverlay,DRM_MODE_OBJECT_PLANE,rpgZProp,rpgZOld);
 			if (ps) drmModeFreeObjectProperties(ps);
 		}
-		rpgZProp=0; rpgFront=-1;
+		rpgZProp=0; rpgFront=-1; rpgFormat=0;
 	}
 
 	void Display::rpgMenuClose()
@@ -624,5 +645,6 @@ namespace banana
 		rpgMenuHide();
 		::close(rpgFd);
 		rpgFd=-1;
+		rpgAlpha=false;
 	}
 }

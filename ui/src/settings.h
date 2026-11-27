@@ -221,6 +221,7 @@ namespace banana
 		// the volume or brightness keys' level: a small bubble near the bottom of the panel, its label, the percent and
 		// a bar (drawn like notice)
 		void level(const std::string& label, int percent);
+		void levelOn(rnds::Backend* target,const std::string& label,int percent);
 		// a pop-up along the top of the top panel in ROCKNIXDS's look (the RetroAchievements account check's result);
 		// the host draws it over the top panel while Settings is open
 		void drawToast(double nowMs);

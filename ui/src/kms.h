@@ -57,6 +57,9 @@ namespace banana
 		bool prepareRpgMenu(int leaseFd);
 		bool rpgMenuAvailable() const { return rpgFd>=0; }
 		bool rpgMenuPresent(const uint32_t* pixels);
+		// A small top-left widget; does not cover the game outside its bounds.
+		bool rpgWidgetPresent(const uint32_t* pixels,int width,int height);
+		bool rpgWidgetAlpha() const { return rpgAlpha; }
 		void rpgMenuHide();
 		void rpgMenuClose();
 		int leasedScreen() const { return leased; }
@@ -78,6 +81,9 @@ namespace banana
 		Panel p[2];
 		uint32_t leasedPrimary=0, leasedOverlay=0;
 		int rpgFd=-1, rpgFront=-1;
+		bool rpgAlpha=false;
+		uint32_t rpgFormat=0;
+		bool rpgPresent(const uint32_t* pixels,int width,int height,bool widget);
 		Buf rpgBuf[2];
 		uint32_t rpgZProp=0;
 		uint64_t rpgZOld=0, rpgZSet=0;
