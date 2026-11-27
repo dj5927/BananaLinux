@@ -1158,6 +1158,23 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			settings.gameOpen("RPG test", sys, 1, true);
 			logf("rpgpanel %s: %s", sys.c_str(), key.c_str());
 		}
+		else if (op == "rpgmenutop")
+		{
+			int on=0; cs>>on; settings.rpgSetTopMenu(on!=0);
+		}
+		else if (op == "rpgmenukey")
+		{
+			std::string key; cs>>key;
+			settings.rpgMenuKey(key=="up"?Key::UP:key=="down"?Key::DOWN:key=="left"?Key::LEFT:key=="right"?Key::RIGHT:key=="a"?Key::A:Key::B);
+		}
+		else if (op == "rpgmenuassert")
+		{
+			int menu=0,pause=0; cs>>menu>>pause;
+			if (settings.rpgMenuActive()!=(menu!=0) || settings.rpgPauseRequested()!=(pause!=0)) {
+				logf("FAIL rpgmenu menu=%d pause=%d",int(settings.rpgMenuActive()),int(settings.rpgPauseRequested())); return 2;
+			}
+			logf("PASS rpgmenu menu=%d pause=%d",menu,pause);
+		}
 		else if (op == "gamepanel")
 		{
 			// gamepanel <screen> <rom>: the game panel for a RetroArch game on the other screen, with the Pokémon
@@ -2635,7 +2652,32 @@ int main(int argc, char** argv)
 	bool keysOn = false;
 	auto gamePanel = [&](pid_t pid, int& status, int gameScreen, int cmdFd, int outFd, const std::string& title, const std::string& sysName, const std::string& projectKey)
 	{
+		auto markMkxpQuit = [&]() {
+			if (gameSysId != "mkxp") return;
+			std::ofstream f("/run/banana/mkxp-quit-"+std::to_string(pid));
+			f << "quit\n"; f.close();
+			if (!f) logf("MKXP quit marker could not be written");
+		};
 		const int panelScreen = 1 - gameScreen;
+		const bool nativeRpg=gameSysId=="mkxp" || gameSysId=="easyrpg";
+		const std::string pausePath="/run/banana/rpg-pause-"+std::to_string(pid);
+		const std::string launchStatusPath="/run/banana/mkxp-status-"+std::to_string(pid);
+		double nextStatus=0, nextOverlayRefresh=0;
+		bool pauseApplied=false, overlayShown=false, fHeld=false;
+		auto syncRpgPause=[&]() {
+			if (!nativeRpg) return;
+			const bool pause=settingsView.rpgPauseRequested();
+			if (pause==pauseApplied) return;
+			if (pause) {
+				int pfd=::open(pausePath.c_str(),O_WRONLY|O_CREAT|O_CLOEXEC|O_NOFOLLOW,0600);
+				if (pfd<0) { logf("RPG pause marker: %s",strerror(errno)); return; }
+				::close(pfd);
+			} else if (unlink(pausePath.c_str()) && errno!=ENOENT) {
+				logf("RPG resume marker: %s",strerror(errno)); return;
+			}
+			pauseApplied=pause;
+			logf("RPG panel: %s",pause?"pause requested":"resume requested");
+		};
 		// the GBA Pokémon companion's pages (gba/panel.h, their data gba/host.h): every game the companion opens
 		std::unique_ptr<gba::Host> gbaHost;
 		if (outFd >= 0 && companion.active())
@@ -2655,6 +2697,7 @@ int main(int argc, char** argv)
 			settingsView.gameProjectKey(projectKey);
 			settingsView.gameKeyboard(keysOn ? &vkbd : nullptr);
 			settingsView.gameOpen(title, sysName, panelScreen, input.hasTouch(panelScreen));
+			if (nativeRpg) settingsView.rpgSetTopMenu(disp.rpgMenuAvailable());
 			settingsView.gbaAttach(gbaHost.get());
 		}
 		be.invalidate();
@@ -2696,11 +2739,34 @@ int main(int argc, char** argv)
 			}
 			{
 				std::lock_guard<std::mutex> l(worker.uiLock);
+				syncRpgPause();
+				if (gameSysId=="mkxp" && t>=nextStatus) {
+					nextStatus=t+250;
+					std::ifstream f(launchStatusPath);
+					std::string phase,runtime;
+					if (std::getline(f,phase) && std::getline(f,runtime) &&
+						phase.size()<32 && runtime.size()<32 && settingsView.rpgLaunchStatus(phase,runtime)) want=true;
+				}
+				if (nativeRpg && overlayShown && t>=nextOverlayRefresh) {
+					want=true; nextOverlayRefresh=t+2000;
+				}
+				if (nativeRpg && overlayShown && !settingsView.rpgMenuActive()) {
+					disp.rpgMenuHide(); overlayShown=false;
+				}
 				if (settingsView.gameUpdate(t)) want = true;
 				if (settingsView.gameWake()) bottomIdle.activity(t);	// an achievement on the panel: shown lit
 				if (want && !disp.flipPending())
 				{
 					settingsView.gameRender();
+					if (nativeRpg && settingsView.rpgMenuActive() && settingsView.rpgTopMenu()) {
+						if (disp.rpgMenuPresent(be.pixels(gameScreen))) overlayShown=true;
+						else {
+							logf("RPG top menu unavailable; using accessible bottom settings");
+							disp.rpgMenuClose(); overlayShown=false;
+							settingsView.rpgSetTopMenu(false);
+							settingsView.gameRender();
+						}
+					}
 					const uint32_t* scr[2] = { be.pixels(0), be.pixels(1) };
 					Damage dmg[2] = { be.takeDamage(0), be.takeDamage(1) };
 					disp.present(scr, dmg);
@@ -2724,6 +2790,8 @@ int main(int argc, char** argv)
 					settingsView.gameTouch(tx * k, ty * k, true);
 					// (the tap's command goes to the emulator as a finger's would: a slot loaded from the States view...)
 					Settings::GameAction a = settingsView.gameTouch(tx * k, ty * k, false);
+					syncRpgPause();
+					if (a == Settings::G_QUIT) markMkxpQuit();
 					char slotCmd[32];
 					snprintf(slotCmd, sizeof slotCmd, "LOAD_STATE_SLOT %d\n", settingsView.gameSlot());
 					const char* c = a == Settings::G_LOADSLOT ? slotCmd : a == Settings::G_SAVE ? "SAVE_STATE\n" : a == Settings::G_LOAD ? "LOAD_STATE\n" :
@@ -2767,14 +2835,19 @@ int main(int argc, char** argv)
 						if (ev.type == InputEvent::PRESS)
 						{
 							std::lock_guard<std::mutex> l(worker.uiLock);
-							if ((gameSysId == "mkxp" || gameSysId == "easyrpg") && ev.code == BTN_MODE) {
-								const char cmd[] = "MENU_TOGGLE\n";
-								if (!pipeWrite(cmdFd, cmd, sizeof(cmd)-1)) logf("RPG panel: command pipe closed");
-								want = true;
+							if (nativeRpg) {
+								if (ev.code==BTN_MODE) { fHeld=true; return; }
+								if (fHeld && ev.key==Key::X) {
+									settingsView.rpgMenuToggle(); syncRpgPause();
+									bottomIdle.activity(nowMs()); want=true;
+								} else if (settingsView.rpgMenuActive()) {
+									settingsView.rpgMenuKey(ev.key); syncRpgPause();
+									bottomIdle.activity(nowMs()); want=true;
+								}
 							} else if (settingsView.gameButton(ev.code, nowMs())) want = true;
 							return;
 						}
-						if (ev.type == InputEvent::RELEASE) return;
+						if (ev.type == InputEvent::RELEASE) { if (ev.code==BTN_MODE) fHeld=false; return; }
 						if (ev.screen != panelScreen) return;	// touch only on the panel
 						if (ev.type == InputEvent::TOUCH_MOVE)	// (the GBA companion's pages scroll by drag)
 						{
@@ -2792,6 +2865,7 @@ int main(int argc, char** argv)
 						{
 							std::lock_guard<std::mutex> l(worker.uiLock);
 							a = settingsView.gameTouch(ev.x, ev.y, ev.type == InputEvent::TOUCH_DOWN);
+							syncRpgPause();
 						}
 						want = true;
 						char slotCmd[32];
@@ -2799,6 +2873,7 @@ int main(int argc, char** argv)
 						const char* c = a == Settings::G_LOADSLOT ? slotCmd : a == Settings::G_SAVE ? "SAVE_STATE\n" : a == Settings::G_LOAD ? "LOAD_STATE\n" :
 							a == Settings::G_MENU ? "MENU_TOGGLE\n" : a == Settings::G_FFWD ? "FAST_FORWARD\n" :
 							a == Settings::G_RESET ? "RESET\n" : a == Settings::G_QUIT ? "QUIT\n" : nullptr;
+						if (a == Settings::G_QUIT) markMkxpQuit();
 						if (c)
 						{
 							logf("game panel: %.*s", (int)strlen(c) - 1, c);
@@ -2807,6 +2882,7 @@ int main(int argc, char** argv)
 					});
 		}
 		if (pidFd >= 0) ::close(pidFd);
+		if (nativeRpg) { disp.rpgMenuClose(); unlink(pausePath.c_str()); unlink(launchStatusPath.c_str()); }
 		if (gbaHost)
 		{
 			// (before gbaHost goes: the panel's pages let go of it; the Session saves the journey as it stops)
@@ -2881,6 +2957,8 @@ int main(int argc, char** argv)
 				leaseFd = cmdFd = -1;
 				panel = false;
 			}
+			if (panel && nativeRpg && !disp.prepareRpgMenu(leaseFd))
+				logf("RPG menu: no suitable leased overlay plane; bottom menu fallback");
 		}
 		// the idle dim is armed for a RetroArch game in Mode A with its panel on the bottom (the game on the top): the
 		// only case where the bottom screen is Banana's own while a game runs. A game drawing on the bottom, or on
@@ -3037,7 +3115,20 @@ int main(int argc, char** argv)
 			setenv("BANANA_ROM", rom.c_str(), 1);
 			setenv("BANANA_SYSTEM", sd.id.c_str(), 1);
 			setenv("BANANA_GAME_KEY", lib.gameKey(game).c_str(), 1);
+			if (nativeRpg && panel) {
+				const std::string pausePath="/run/banana/rpg-pause-"+std::to_string(getpid());
+				unlink(pausePath.c_str());
+				setenv("BANANA_SA_PAUSE_FILE",pausePath.c_str(),1);
+			}
 			setenv("BANANA_RA_PROGRESS", PROGRESS, 1);
+			if (sd.id == "mkxp") {
+				const std::string phasePath="/run/banana/mkxp-status-"+std::to_string(getpid());
+				unlink(phasePath.c_str());
+				setenv("BANANA_MKXP_STATUS_FILE",phasePath.c_str(),1);
+				const std::string marker="/run/banana/mkxp-quit-"+std::to_string(getpid());
+				unlink(marker.c_str());
+				setenv("BANANA_MKXP_QUIT_FILE",marker.c_str(),1);
+			}
 			if (panel)
 			{
 				setenv("BANANA_DRM_LEASE_FD", std::to_string(leaseFd).c_str(), 1);
@@ -3117,6 +3208,7 @@ int main(int argc, char** argv)
 			}
 			else while (waitpid(pid, &status, 0) < 0 && errno == EINTR) {}
 			unlink("/run/banana/game.pid");
+			if (sd.id == "mkxp") unlink(("/run/banana/mkxp-quit-"+std::to_string(pid)).c_str());
 		}
 		nas::pauseRunner(fetchPaths, false);
 		if (ndsPage)

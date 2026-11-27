@@ -1,0 +1,20 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Keep UTF-8 filenames visible in SSH/SCP listings
+
+Noninteractive SSH clients may omit LANG or explicitly use the C locale
+to parse ls timestamps. Use UTF-8 for filename display if the requested
+character locale is not Unicode. Keep sanitizing invalid/control bytes.
+
+--- a/coreutils/ls.c
++++ b/coreutils/ls.c
+@@ -1101,6 +1101,10 @@
+ 	INIT_G();
+ 
+ 	init_unicode();
++	/* Banana stores filesystem names as UTF-8 even in noninteractive SSH. */
++	if (unicode_status != UNICODE_ON)
++		reinit_unicode("C.UTF-8");
++
+ 
+ #if ENABLE_FEATURE_LS_WIDTH
+ 	/* obtain the terminal width */

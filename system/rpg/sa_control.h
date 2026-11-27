@@ -21,6 +21,12 @@ inline bool requestRestart() {
 }
 inline int finish(int status) {
     if (status || !restartRequested()) return status;
+    const char *restartFile=std::getenv("BANANA_MKXP_RESTART_FILE");
+    const char *supervised=std::getenv("BANANA_MKXP_SUPERVISED");
+    if (restartFile && *restartFile && supervised && !std::strcmp(supervised,"1")) {
+        int fd=open(restartFile,O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC|O_NOFOLLOW,0600);
+        if (fd>=0) { close(fd); return 86; }
+    }
     setenv("BANANA_SA_RESTARTING","1",1);
     const char *launcher=std::getenv("BANANA_SA_LAUNCHER");
     const char *entry=std::getenv("BANANA_SA_ENTRY");
@@ -47,6 +53,15 @@ public:
     Channel(const Channel&) = delete;
     Channel& operator=(const Channel&) = delete;
     bool enabled() const { return fd_>=0; }
+    // A level-triggered flag survives a runtime fallback or engine restart.
+    bool pauseManaged() const {
+        const char* path=std::getenv("BANANA_SA_PAUSE_FILE");
+        return path && *path;
+    }
+    bool pauseRequested() const {
+        const char* path=std::getenv("BANANA_SA_PAUSE_FILE");
+        return path && *path && access(path,F_OK)==0;
+    }
     Command next() {
         if (fd_<0) return None;
         for (unsigned n=0;n<128;n++) {

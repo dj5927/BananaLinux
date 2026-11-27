@@ -127,6 +127,16 @@ namespace banana
 		bool gameWake() { bool w = wake; wake = false; return w; }
 		void gameRender();
 		GameAction gameTouch(float x, float y, bool down);	// device px on the panel's screen
+		bool rpgMenuActive() const { return gRpgMenu; }
+		bool rpgPauseRequested() const { return gRpgPaused || gRpgMenu || gRpgConfirm != 0; }
+		bool rpgTopMenu() const { return gRpgTopMenu; }
+		void rpgSetTopMenu(bool on) { gRpgTopMenu=on; }
+		void rpgMenuToggle() { gRpgConfirm=0; gRpgMenu=!gRpgMenu; gDown=-1; }
+		void rpgMenuKey(Key key);
+		bool rpgLaunchStatus(const std::string& phase,const std::string& runtime) {
+			if (phase==gRpgPhase && runtime==gRpgRuntime) return false;
+			gRpgPhase=phase; gRpgRuntime=runtime; return true;
+		}
 		bool gameKeysOpen() const { return gKeysOpen; }	// (tests: the panel's keyboard page is up)
 		// (tests: what the GBA Pokémon companion's panel shows: "game" (the tiles), "pages:<page>", "" without one; the
 		// game companion's: "game" or "gc:<page>")
@@ -307,7 +317,7 @@ namespace banana
 		std::string pgTitle, pgRom;
 		int pgRow = 0, pgTop = 0, pgEmu = 0, pgShader = 0, pg3d = 0, pgMic = 0, pgRes = 0, pgTiming = 0, pgCpu = 0;	// (pg3d, pgMic, pgRes, pgTiming, pgCpu: 0 as in Settings)
 		bool pgNds = true;
-		enum PgRow { PG_EMU, PG_SHADER, PG_3D, PG_MIC, PG_NAME, PG_SORT, PG_ART, PG_DELETE, PG_RES, PG_TIMING, PG_CPU, PG_ACH, PG_RPG_RGSS, PG_RPG_SCALE, PG_RPG_FONT1, PG_RPG_FONT2, PG_RPG_FONT1_SIZE, PG_RPG_FONT2_SIZE, PG_RPG_MIDI, PG_RPG_ENCODING, PG_RPG_MKXP_FONT, PG_RPG_FONT_HINT, PG_RPG_FONT_SCALE, PG_RPG_RENDER, PG_RPG_FILENAME_ENCODING };
+		enum PgRow { PG_EMU, PG_SHADER, PG_3D, PG_MIC, PG_NAME, PG_SORT, PG_ART, PG_DELETE, PG_RES, PG_TIMING, PG_CPU, PG_ACH, PG_RPG_RGSS, PG_RPG_SCALE, PG_RPG_FONT1, PG_RPG_FONT2, PG_RPG_FONT1_SIZE, PG_RPG_FONT2_SIZE, PG_RPG_MIDI, PG_RPG_ENCODING, PG_RPG_MKXP_FONT, PG_RPG_FONT_HINT, PG_RPG_FONT_SCALE, PG_RPG_RENDER, PG_RPG_FILENAME_ENCODING, PG_RPG_RUBY };
 		struct RpgChoice { PgRow row; const char* key; const char* label; const char* help; std::vector<std::string> names, values; };
 		std::vector<RpgChoice> rpgChoices(const std::string& system);
 		void loadRpgChoices(const std::string& system, const std::string& key);
@@ -770,6 +780,10 @@ namespace banana
 		int gRpgPage = 0;
 		int gRpgConfirm = 0;
 		bool gRpgDirty = false;
+		bool gRpgMenu = false, gRpgPaused = false, gRpgTopMenu = false;
+		int gRpgRow = 0;
+		std::string gRpgPhase, gRpgRuntime;
+		void rpgMenuFrame(int screen);
 		void rpgPanelFrame();
 		GameAction rpgPanelTouch(float x, float y, bool down);
 		bool gAchOpen = false;

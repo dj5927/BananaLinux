@@ -406,12 +406,14 @@ namespace banana
 
 	void Display::close()
 	{
+		rpgMenuClose();
 		if (fd < 0) return;
 		for (auto& pn : p) { freeBuf(pn.buf[0]); freeBuf(pn.buf[1]); }
 		::close(fd);	// (a lease ends with its lessor's master)
 		fd = -1;
 		pending = 0;
 		leased = -1;
+		leasedPrimary=leasedOverlay=0;
 	}
 
 	bool Display::present(const uint32_t* const screens[2], const Damage dmg[2])
@@ -516,8 +518,111 @@ namespace banana
 		const uint32_t over = overlayPlane(fd, p[s].crtc);
 		uint32_t objs[4] = { p[s].conn, p[s].crtc, plane, over }, lessee = 0;
 		int l = drmModeCreateLease(fd, objs, over ? 4 : 3, 0, &lessee);	// (no CLOEXEC: the game's process inherits it)
+		leasedPrimary=leasedOverlay=0;
 		if (l < 0 && over) l = drmModeCreateLease(fd, objs, 3, 0, &lessee);
-		if (l >= 0) leased = s;
+		else if (l >= 0) leasedOverlay=over;
+		if (l >= 0) { leased = s; leasedPrimary=plane; }
 		return l;
+	}
+
+	bool Display::prepareRpgMenu(int leaseFd)
+	{
+		rpgMenuClose();
+		if (leaseFd<0 || leased<0 || !leasedOverlay || !leasedPrimary) return false;
+		// Separate descriptor, same lease; never read the engine's flip events.
+		rpgFd=fcntl(leaseFd,F_DUPFD_CLOEXEC,3);
+		if (rpgFd<0) return false;
+		drmModePlane* plane=drmModeGetPlane(rpgFd,leasedOverlay);
+		bool supported=false;
+		if (plane) {
+			for (uint32_t i=0;i<plane->count_formats;i++)
+				if (plane->formats[i]==0x34325258) supported=true;
+			drmModeFreePlane(plane);
+		}
+		if (!supported) { rpgMenuClose(); return false; }
+		return true;
+	}
+
+	bool Display::rpgMenuPresent(const uint32_t* pixels)
+	{
+		if (rpgFd<0 || leased<0 || !pixels) return false;
+		auto zvalue=[&](uint32_t plane,uint64_t& value,uint64_t& max)->uint32_t {
+			uint32_t id=0;
+			drmModeObjectProperties* ps=drmModeObjectGetProperties(rpgFd,plane,DRM_MODE_OBJECT_PLANE);
+			for (uint32_t i=0;ps && i<ps->count_props;i++) {
+				drmModePropertyRes* pr=drmModeGetProperty(rpgFd,ps->props[i]);
+				if (!pr) continue;
+				if (!strcmp(pr->name,"zpos")) {
+					id=pr->prop_id; value=ps->prop_values[i]; max=value;
+					if (!(pr->flags & DRM_MODE_PROP_IMMUTABLE) && pr->count_values>=2)
+						max=pr->values[1];
+				}
+				drmModeFreeProperty(pr);
+			}
+			if (ps) drmModeFreeObjectProperties(ps);
+			return id;
+		};
+		if (rpgFront<0) {
+			uint64_t primary=0, primaryMax=0, overlay=0, overlayMax=0;
+			const uint32_t pz=zvalue(leasedPrimary,primary,primaryMax);
+			const uint32_t oz=zvalue(leasedOverlay,overlay,overlayMax);
+			if (pz && oz && overlay<=primary) {
+				if (overlayMax<=primary || drmModeObjectSetProperty(rpgFd,leasedOverlay,DRM_MODE_OBJECT_PLANE,oz,overlayMax)) return false;
+				rpgZProp=oz; rpgZOld=overlay; rpgZSet=overlayMax;
+			}
+		}
+		int back=rpgFront==0?1:0;
+		Buf& b=rpgBuf[back];
+		if (!b.map) {
+			drm_mode_create_dumb c={}; c.width=W; c.height=H; c.bpp=32;
+			if (drmIoctl(rpgFd,DRM_IOCTL_MODE_CREATE_DUMB,&c)) return false;
+			b.handle=c.handle; b.pitch=c.pitch; b.size=c.size;
+			uint32_t handles[4]={b.handle}, pitches[4]={b.pitch}, offsets[4]={0};
+			if (drmModeAddFB2(rpgFd,W,H,0x34325258,handles,pitches,offsets,&b.fb,0)) return false;
+			drm_mode_map_dumb m={}; m.handle=b.handle;
+			if (drmIoctl(rpgFd,DRM_IOCTL_MODE_MAP_DUMB,&m)) return false;
+			void* map=mmap(nullptr,b.size,PROT_READ|PROT_WRITE,MAP_SHARED,rpgFd,m.offset);
+			if (map==MAP_FAILED) return false;
+			b.map=static_cast<uint8_t*>(map);
+		}
+		for (int y=0;y<H;y++) memcpy(b.map+size_t(y)*b.pitch,pixels+size_t(y)*W,size_t(W)*4);
+		if (drmModeSetPlane(rpgFd,leasedOverlay,p[leased].crtc,b.fb,0,0,0,W,H,0,0,uint32_t(W)<<16,uint32_t(H)<<16)) {
+			fprintf(stderr,"RPG menu overlay: %s\n",strerror(errno));
+			return false;
+		}
+		rpgFront=back;
+		return true;
+	}
+
+	void Display::rpgMenuHide()
+	{
+		if (rpgFd<0) return;
+		if (drmModePlane* pl=drmModeGetPlane(rpgFd,leasedOverlay)) {
+			if (pl->fb_id && (pl->fb_id==rpgBuf[0].fb || pl->fb_id==rpgBuf[1].fb))
+				drmModeSetPlane(rpgFd,leasedOverlay,0,0,0,0,0,0,0,0,0,0,0);
+			drmModeFreePlane(pl);
+		}
+		for (auto& b:rpgBuf) {
+			if (b.map) munmap(b.map,b.size);
+			if (b.fb) drmModeRmFB(rpgFd,b.fb);
+			if (b.handle) { drm_mode_destroy_dumb d={}; d.handle=b.handle; drmIoctl(rpgFd,DRM_IOCTL_MODE_DESTROY_DUMB,&d); }
+			b=Buf();
+		}
+		if (rpgZProp) {
+			drmModeObjectProperties* ps=drmModeObjectGetProperties(rpgFd,leasedOverlay,DRM_MODE_OBJECT_PLANE);
+			for (uint32_t i=0;ps && i<ps->count_props;i++)
+				if (ps->props[i]==rpgZProp && ps->prop_values[i]==rpgZSet)
+					drmModeObjectSetProperty(rpgFd,leasedOverlay,DRM_MODE_OBJECT_PLANE,rpgZProp,rpgZOld);
+			if (ps) drmModeFreeObjectProperties(ps);
+		}
+		rpgZProp=0; rpgFront=-1;
+	}
+
+	void Display::rpgMenuClose()
+	{
+		if (rpgFd<0) return;
+		rpgMenuHide();
+		::close(rpgFd);
+		rpgFd=-1;
 	}
 }

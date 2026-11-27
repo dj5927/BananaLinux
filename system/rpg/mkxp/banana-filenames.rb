@@ -1,5 +1,31 @@
 # BananaOS native MKXP: Windows-compatible read-only resource paths.
 # Keep writes, absolute paths, and paths outside resource directories untouched.
+STDOUT.sync = true
+STDERR.sync = true
+puts "[MKXP] Ruby #{RUBY_VERSION} (#{RUBY_PLATFORM})"
+
+# Ruby 3.2 removed these legacy APIs, which were already no-ops in 3.1.
+# Do not reintroduce security-sensitive $SAFE behavior.
+class Object
+  def taint; self; end unless method_defined?(:taint)
+  def untaint; self; end unless method_defined?(:untaint)
+  def tainted?; false; end unless method_defined?(:tainted?)
+  def trust; self; end unless method_defined?(:trust)
+  def untrust; self; end unless method_defined?(:untrust)
+  def untrusted?; false; end unless method_defined?(:untrusted?)
+  alias_method :id, :object_id unless method_defined?(:id)
+  alias_method :type, :class unless method_defined?(:type)
+  TRUE = true unless const_defined?(:TRUE)
+  FALSE = false unless const_defined?(:FALSE)
+  NIL = nil unless const_defined?(:NIL)
+end
+class Hash
+  alias_method :index, :key unless method_defined?(:index)
+end
+class << Dir
+  alias_method :exists?, :exist? unless method_defined?(:exists?)
+end
+
 module BananaResourceNames
   ORIGINAL_EXISTS = File.method(:exist?)
   ORIGINAL_FILE = File.method(:file?)
@@ -68,3 +94,27 @@ end
 File.singleton_class.prepend(BananaResourceNames::FileReads) unless File.singleton_class.ancestors.include?(BananaResourceNames::FileReads)
 FileTest.singleton_class.prepend(BananaResourceNames::FileTestReads) unless FileTest.singleton_class.ancestors.include?(BananaResourceNames::FileTestReads)
 Dir.singleton_class.prepend(BananaResourceNames::DirReads) unless Dir.singleton_class.ancestors.include?(BananaResourceNames::DirReads)
+
+# Supervisor readiness signal: a game script has completed a Graphics.update.
+# This does not assert that the game has reached its title/menu.
+class << Graphics
+  unless method_defined?(:banana_supervisor_original_update)
+    alias_method :banana_supervisor_original_update, :update
+    def update(*args, &block)
+      result = banana_supervisor_original_update(*args, &block)
+      unless @banana_supervisor_ready
+        marker = ENV['BANANA_MKXP_READY_FILE']
+        if marker && !marker.empty?
+          begin
+            File.open(marker, 'wb') { |f| f.write("frame\n") }
+            @banana_supervisor_ready = true
+          rescue StandardError => e
+            warn("Banana MKXP readiness marker: #{e.class}: #{e.message}")
+            @banana_supervisor_ready = true
+          end
+        end
+      end
+      result
+    end
+  end
+end

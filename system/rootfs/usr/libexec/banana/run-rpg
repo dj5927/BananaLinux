@@ -8,7 +8,6 @@ case "$sys" in
     mkxp) exe=mkxp-z ;;
     *) echo "Unknown RPG system: $sys" >&2; exit 2 ;;
 esac
-[ -f "$entry" ] || { echo "Missing RPG project entry: $entry" >&2; exit 2; }
 case "$entry" in /*) ;; *) echo "Project entry must be absolute" >&2; exit 2 ;; esac
 case "$sys" in
     easyrpg) case "$(basename "$entry" | tr '[:upper:]' '[:lower:]')" in rpg_rt.ldb|*.zip|*.easyrpg) ;; *) exit 2 ;; esac ;;
@@ -22,9 +21,12 @@ hex=$(printf '%s' "$key" | od -An -tx1 | tr -d ' \n')
 id=$(printf '%s' "$key" | sha256sum | cut -d ' ' -f1)
 cfg="$D/banana/rpg/$sys/$id"
 mkdir -p "$cfg" "$D/banana/logs" "$D/bios/easyrpg-player/Font" "$D/bios/easyrpg-player/Soundfont" "$D/bios/mkxp/fonts" "$D/bios/mkxp/soundfonts" "$D/bios/mkxp/rtp"
+if [ "$sys" = mkxp ]; then
+    mkdir -p "$D/bios/mkxp/rtp/xp" "$D/bios/mkxp/rtp/vx" "$D/bios/mkxp/rtp/vxace" "$D/bios/mkxp/rtp/fonts"
+fi
 get_raw() {
     v=$(awk -v k="$hex.$1" 'index($0,k " = ")==1 {v=substr($0,length(k)+4)} END{print v}' "$D/banana/rpg-per-game.conf" 2>/dev/null || :)
-    if [ -z "$v" ]; then
+    if [ -z "$v" ] || [ "$v" = inherit ]; then
         v=$(awk -v k="$sys.$1" 'index($0,k " = ")==1 {v=substr($0,length(k)+4)} END{print v}' "$D/banana/emulator-defaults.conf" 2>/dev/null || :)
     fi
     printf '%s' "$v"
@@ -44,8 +46,8 @@ num() {
     [ "${#v}" -le 2 ] && [ "$v" -ge 8 ] && [ "$v" -le 48 ] && printf '%s' "$v" || :
 }
 B="$R/$sys/$exe"
-[ -x "$B" ] || { echo "Standalone RPG runtime not installed: $B" >&2; exit 3; }
 export BANANA_SYSTEM="$sys" BANANA_RPG_ID="$id" BANANA_RPG_CONFIG="$cfg"
+export BANANA_RPG_RUNTIME="$R"
 export BANANA_SA_CMD="${BANANA_RA_CMD:-}"
 export BANANA_SA_LAUNCHER="${BANANA_SA_LAUNCHER:-/usr/libexec/banana/run-rpg}"
 export BANANA_SA_ENTRY="$entry"
@@ -64,16 +66,21 @@ if [ "$sys" = mkxp ]; then
     fi
 fi
 if [ "${BANANA_SA_RESTARTING:-}" != 1 ]; then
-    if [ -s "$log" ]; then mv -f "$log" "$previous" 2>/dev/null || :; fi
-    : > "$log"
+    if [ -s "$log" ]; then
+        mv -f "$log" "$previous" 2>/dev/null || printf '\nWARNING: log rotation failed; appending new session\n' >> "$log"
+    fi
+    : >> "$log"
 fi
-printf '%s\n' "$log" > "$D/banana/logs/rpg-last-log-path.txt"
-if [ "${BANANA_RPG_LOG:-1}" != 0 ]; then
+printf '%s\n' "$log" > "$D/banana/logs/rpg-last-log-path.txt" || :
+export BANANA_MKXP_LOG_PATH="$log"
+if [ "$sys" = mkxp ] || [ "${BANANA_RPG_LOG:-1}" != 0 ]; then
     exec >> "$log" 2>&1
 fi
 printf 'RPG %s launch %s restart=%s\n' "$sys" "$entry" "${BANANA_SA_RESTARTING:-0}"
 printf 'log=%s\n' "$log"
-for opt in rgss scale encoding filename_encoding font_hint font_scale render; do
+[ -f "$entry" ] || { echo "Missing RPG project entry: $entry" >&2; exit 2; }
+if [ "$sys" = mkxp ]; then printf 'attempt_journal=%s\n' "$cfg/ruby-last-attempts.json"; fi
+for opt in rgss scale encoding filename_encoding font_hint font_scale render ruby_runtime; do
     printf '%s=%s\n' "$opt" "$(get "$opt")"
 done
 export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-kmsdrm}"
@@ -94,6 +101,7 @@ case "$BANANA_RPG_FILENAME_ENCODING" in
 esac
 cd "$game"
 if [ "$sys" = easyrpg ]; then
+    [ -x "$B" ] || { echo "Standalone RPG runtime not installed: $B" >&2; exit 3; }
     fonts="$D/bios/easyrpg-player/Font"; midi="$D/bios/easyrpg-player/Soundfont"
     project="$game"; save="$game"
     case "$(basename "$entry" | tr '[:upper:]' '[:lower:]')" in
@@ -131,4 +139,7 @@ if [ -d "$R/mkxp/ruby/stdlib" ] && [ -d "$R/mkxp/ruby/extensions" ]; then
 fi
 case "$BANANA_RPG_RGSS" in 1|2|3|'') ;; *) BANANA_RPG_RGSS= ;; esac
 case "$BANANA_RPG_SCALE" in aspect|integer|smooth|'') ;; *) BANANA_RPG_SCALE= ;; esac
-exec "$B"
+export BANANA_MKXP_MODE="$(get_raw ruby_runtime)"
+case "$BANANA_MKXP_MODE" in ruby18|ruby19|ruby31|ruby32|auto) ;; *) BANANA_MKXP_MODE=auto ;; esac
+supervisor="$(dirname "$0")/mkxp-supervisor.py"
+exec python3 "$supervisor"

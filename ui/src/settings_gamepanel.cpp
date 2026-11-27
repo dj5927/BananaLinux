@@ -364,6 +364,8 @@ namespace banana
 		gKeysOpen = false; gKeyPage = 0; gKeyShift = 0; gKeyTyped.clear();
 		if (rpg::isSystem(gSysId)) {
 			raw.reset(); gRpgPage = gRpgConfirm = 0; gRpgDirty = false;
+			gRpgMenu = gRpgPaused = gRpgTopMenu = false; gRpgRow = 0;
+			gRpgPhase=gSysId=="mkxp"?"preflight":"running"; gRpgRuntime.clear();
 			loadRpgChoices(gSysId,gProjectKey);
 			return;
 		}
@@ -941,41 +943,99 @@ namespace banana
 	}
 
 	// Independent SA panel. No RetroAchievements or Libretro state slots.
-	Settings::GameAction Settings::rpgPanelTouch(float x,float y,bool down)
+	void Settings::rpgMenuKey(Key key)
 	{
-		if (down) return G_NONE;
-		if (gRpgConfirm) {
-			const int action = gRpgConfirm;
-			gRpgConfirm = 0;
-			if (y >= 365 && y < 425 && x >= 320) { if (action == 1) gRpgDirty = false; return action == 1 ? G_RESET : G_QUIT; }
-			return G_NONE;
-		}
-		if (y >= 364 && y < 425) {
-			if (x < 212) return G_MENU;
-			gRpgConfirm = x < 424 ? 1 : 2;
-			return G_NONE;
-		}
-		if (y >= 305 && y < 353) {
-			const int pages = std::max(1, int(pgRpgChoices.size()+3)/4);
-			if (x < 150) gRpgPage = (gRpgPage+pages-1)%pages;
-			if (x >= 490) gRpgPage = (gRpgPage+1)%pages;
-			return G_NONE;
-		}
-		if (y >= 88 && y < 296) {
-			const size_t i = size_t(gRpgPage*4 + int((y-88)/52));
-			if (i >= pgRpgChoices.size() || x < 320) return G_NONE;
-			const auto& c = pgRpgChoices[i];
-			int& v = pgRpg[c.row]; int n = int(c.values.size());
-			if (n > 0) {
-				v=(v+(x<475?-1:1)+n)%n;
+		if (!gRpgMenu) return;
+		if (gRpgConfirm) { if (key==Key::B) gRpgConfirm=0; return; }
+		if (key == Key::B) { gRpgMenu=false; return; }
+		const int count=int(pgRpgChoices.size());
+		if (!count) return;
+		if (key == Key::UP) gRpgRow=(gRpgRow+count-1)%count;
+		if (key == Key::DOWN) gRpgRow=(gRpgRow+1)%count;
+		if (key == Key::LEFT || key == Key::RIGHT || key == Key::A) {
+			const auto& c=pgRpgChoices[gRpgRow];
+			const int n=int(c.values.size());
+			if (n>0) {
+				int& v=pgRpg[c.row]; v=(v+(key==Key::LEFT?-1:1)+n)%n;
 				setPerGame("rpg-per-game.conf",rpg::key(gProjectKey)+"."+c.key,c.values[v]);
-				gRpgDirty = true;
+				gRpgDirty=true;
 			}
 		}
+		gRpgPage=gRpgRow/5;
+	}
+	Settings::GameAction Settings::rpgPanelTouch(float x,float y,bool down)
+	{
+		int hit=-1;
+		if (x>=18 && x<622 && y>=300 && y<420) {
+			int i=int((x-18)/153);
+			if (i>=0 && i<4 && x<18+i*153+145) hit=i;
+		}
+		if (gRpgConfirm) {
+			if (down) return G_NONE;
+			const int action = gRpgConfirm;
+			gRpgConfirm = 0;
+			if (y >= 365 && y < 425 && x >= 328 && x < 622) { gRpgMenu=false; gRpgPaused=false; if (action == 1) gRpgDirty = false; return action == 1 ? G_RESET : G_QUIT; }
+			return G_NONE;
+		}
+		if (gRpgMenu && !gRpgTopMenu) {
+			if (down) return G_NONE;
+			if (y>=420) { gRpgMenu=false; return G_NONE; }
+			if (y>=78 && y<378) {
+				int i=gRpgPage*5+int((y-78)/60);
+				if (i>=0 && i<int(pgRpgChoices.size())) {
+					gRpgRow=i;
+					if (x>=325) rpgMenuKey(x<470?Key::LEFT:Key::RIGHT);
+				}
+			} else if (y>=380 && y<420) {
+				if (x<320) rpgMenuKey(Key::UP); else rpgMenuKey(Key::DOWN);
+			}
+			return G_NONE;
+		}
+		if (gRpgMenu && y>=110 && y<270 && !down) {
+			if (y<190) rpgMenuKey(x<320?Key::UP:Key::DOWN);
+			else rpgMenuKey(x<320?Key::LEFT:Key::RIGHT);
+			return G_NONE;
+		}
+		if (down) { gDown=gFlash=hit; return G_NONE; }
+		int was=gDown; gDown=gFlash=-1;
+		if (hit<0 || hit!=was) return G_NONE;
+		if (hit==0) { if (gRpgMenu) { gRpgMenu=false; gRpgPaused=false; } else gRpgPaused=!gRpgPaused; }
+		else if (hit==1) rpgMenuToggle();
+		else gRpgConfirm=hit==2?1:2;
 		return G_NONE;
+	}
+	void Settings::rpgMenuFrame(int screen)
+	{
+		SPal p=pal(light);
+		be->beginScreen(screen);
+		box("screen",false,0,0,640,480);
+		box("bubble",false,18,14,604,54);
+		text("Menu",true,25,36,27,p.ink);
+		text(fit(gTitle,false,18,380),false,18,215,30,p.muted);
+		for (int j=0;j<5;j++) {
+			int i=gRpgPage*5+j;
+			if (i>=int(pgRpgChoices.size())) break;
+			const auto& c=pgRpgChoices[i];
+			float y=78+j*60; bool on=i==gRpgRow;
+			box(on?"pick":"slot",on,18,y,604,54);
+			Color fg=on?p.onPick:p.ink;
+			text(fit(lang::tr(c.label),true,19,278),true,19,32,y+17,fg);
+			const auto v=fit(lang::tr(c.names[pgRpg[c.row]]),true,18,246);
+			float vw=text(v,true,18,0,0,fg,false,0,true);
+			arrow(false,320,y+20,fg);
+			text(v,true,18,460-vw/2,y+17,fg);
+			arrow(true,592,y+20,fg);
+		}
+		int pages=std::max(1,int(pgRpgChoices.size()+4)/5);
+		text(std::to_string(gRpgPage+1)+" / "+std::to_string(pages),true,18,290,386,p.muted);
+		if (!gRpgTopMenu) { text("Up",true,18,35,386,p.ink); text("Down",true,18,540,386,p.ink); }
+		wrapped("Settings apply next launch.",16,145,431,465,1,p.muted);
+		face("B","Back",18,faceWidth("B","Back"));
+		be->endScreen();
 	}
 	void Settings::rpgPanelFrame()
 	{
+		if (gRpgMenu && !gRpgTopMenu && !gRpgConfirm) { rpgMenuFrame(gScreen); return; }
 		SPal p=pal(light);
 		be->beginScreen(gScreen);
 		box("screen",false,0,0,640,480);
@@ -990,29 +1050,41 @@ namespace banana
 		if (gRpgConfirm) {
 			wrapped(gRpgConfirm==1?"Restart this game? Unsaved progress will be lost.":"Quit this game? Unsaved progress will be lost.",24,32,110,576,5,p.ink);
 			button(20,365,292,60,"Cancel"); button(328,365,292,60,"Confirm");
-			be->endScreen(); return;
+			be->endScreen();
+			if (gRpgMenu && gRpgTopMenu) rpgMenuFrame(1-gScreen);
+			return;
 		}
-		for (int j=0;j<4;j++) {
-			size_t i=size_t(gRpgPage*4+j);
-			if (i>=pgRpgChoices.size()) break;
-			const auto& c=pgRpgChoices[i];
-			float y=88+j*52;
-			box("slot",false,18,y,604,47);
-			text(fit(lang::tr(c.label),true,18,288),true,18,30,y+12,p.ink);
-			text("<",true,18,318,y+12,p.accent);
-			const auto v=fit(lang::tr(c.names[pgRpg[c.row]]),false,17,248);
-			text(v,false,17,342,y+13,p.ink);
-			text(">",true,18,598,y+12,p.accent);
+		box("hero",false,18,88,604,198);
+		if (gRpgMenu) {
+			text("Menu",true,23,36,99,p.accent);
+			button(36,132,276,55,"Up"); button(328,132,276,55,"Down");
+			button(36,202,276,55,"Left"); button(328,202,276,55,"Right");
+		} else {
+			const char* status=gRpgPaused?"Paused":gRpgPhase=="preflight"?"Checking scripts...":gRpgPhase=="starting"?"Starting game...":gRpgPhase=="retry"?"Trying another Ruby runtime...":gRpgPhase=="restart"?"Restarting game...":gRpgPhase=="failed"?"Game could not start":"Game running";
+			text(fit(lang::tr(status),true,25,550),true,25,38,110,p.ink);
+			if (!gRpgRuntime.empty()) text(fit(gRpgRuntime,false,20,550),false,20,38,151,p.accent);
+			wrapped(gRpgDirty?"Settings saved. Apply / restart to use them.":"Save in the game. Settings apply next launch.",17,38,194,552,3,p.muted);
 		}
-		button(18,305,132,43,"Previous");
-		button(490,305,132,43,"Next");
-		int pages=std::max(1,int(pgRpgChoices.size()+3)/4);
-		text(std::to_string(gRpgPage+1)+" / "+std::to_string(pages),true,18,290,315,p.muted);
-		button(18,364,190,60,"Pause / Resume");
-		button(224,364,190,60,gRpgDirty?"Apply / restart":"Restart");
-		button(430,364,192,60,"Quit");
-		wrapped(gRpgDirty?"Settings saved. Apply / restart to use them.":"Save in the game. Settings apply next launch.",15,22,438,596,2,p.muted);
+		static const char* const pauseIcon[12]={"............","..###..###..","..###..###..","..###..###..","..###..###..","..###..###..","..###..###..","..###..###..","..###..###..","..###..###..","..###..###..","............"};
+		static const char* const restartIcon[12]={"....####....","..##....##..",".##......##.","##........#.","##..........","##..........","##......####",".##.....####","..##.....###","....####..##","............","............"};
+		const char* const* icons[]={pauseIcon,IC_LIST,restartIcon,IC_EXIT};
+		const char* labels[]={gRpgPaused?"Resume":"Pause","Menu","Restart","Quit"};
+		for(int i=0;i<4;i++) {
+			float x=18+i*153;
+			bool on=gFlash==i || (i==1 && gRpgMenu) || (i==0 && gRpgPaused);
+			box(on?"pick":"slot",on,x,300,145,120);
+			Color fg=on?p.onPick:(i==3?Color::hex(0xff8a96):p.ink);
+			int k=std::max(1,int(std::lround(3*s)));
+			float ix=std::round(X(x+72.5f)-6*k), iy=std::round(X(314));
+			for(int r=0;r<12;r++) for(int c=0;c<12;c++) if(icons[i][r][c]=='#') be->fill(ix+c*k,iy+r*k,float(k),float(k),fg);
+			std::string label=fit(lang::tr(labels[i]),true,20,135);
+			float tw=text(label,true,20,0,0,fg,false,0,true);
+			text(label,true,20,x+(145-tw)/2,364,fg);
+			if(i==1) text("F + X",false,15,x+47,394,fg);
+		}
+		if (gRpgMenu) wrapped("Settings apply next launch.",16,22,438,596,2,p.muted);
 		be->endScreen();
+		if (gRpgMenu && gRpgTopMenu) rpgMenuFrame(1-gScreen);
 	}
 
 	void Settings::gameFrame()

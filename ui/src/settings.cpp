@@ -5788,6 +5788,19 @@ namespace banana
 		const bool mkxp = system == "mkxp";
 		const std::string bios = (rpg::fs::path(data).parent_path() / "bios").string();
 		if (mkxp) result.push_back({PG_RPG_RGSS, "rgss", "RGSS version", "Automatically detect XP, VX or VX Ace, or select a version for this game only. The setting takes effect next launch.", {"Auto","RPG Maker XP","RPG Maker VX","RPG Maker VX Ace"}, {"","1","2","3"}});
+		if (mkxp) {
+			RpgChoice c{PG_RPG_RUBY,"ruby_runtime","Ruby runtime","Auto checks scripts and tries other installed runtimes after failure. Manual selection uses only that runtime. Changes apply next launch.",{"Auto"},{" "}};
+			c.values[0]="";
+			const char* rt=getenv("BANANA_RPG_RUNTIME");
+			const std::string runtime=rt && *rt ? std::string(rt)+"/mkxp/" : "/usr/lib/banana/rpg/mkxp/";
+			for (const auto& v : std::vector<std::pair<std::string,std::string>>{{"ruby18","Ruby 1.8.7"},{"ruby19","Ruby 1.9.3"},{"ruby31","Ruby 3.1"},{"ruby32","Ruby 3.2.3"}}) {
+				if (access((runtime+"runtimes/"+v.first+"/mkxp-z").c_str(),X_OK)==0 ||
+					(v.first=="ruby32" && access((runtime+"mkxp-z").c_str(),X_OK)==0)) {
+					c.names.push_back(v.second); c.values.push_back(v.first);
+				}
+			}
+			result.push_back(std::move(c));
+		}
 		result.push_back({PG_RPG_SCALE, "scale", "RPG screen scale", "Choose the screen scaling for this game. Integer scaling preserves pixel boundaries. Original aspect uses the largest size that fits.", {"Auto","Original aspect","Integer scale","Smooth"}, {"","aspect","integer","smooth"}});
 		auto files = [&](PgRow row,const char* name,const char* label,const std::string& dir,bool midi) {
 			RpgChoice c{row,name,label,"Choose a file from the shared BIOS folder. Changes apply next launch.",{"Auto"},{""}};

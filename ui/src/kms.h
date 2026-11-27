@@ -53,6 +53,12 @@ namespace banana
 		// RetroArch game while the menu keeps the other panel for the game panel): the lease's fd, which is that
 		// program's DRM device, or -1. present() and restore() leave the screen alone until close().
 		int lease(int s);
+		// Native RPG menu: only the overlay plane reserved in the game's lease.
+		bool prepareRpgMenu(int leaseFd);
+		bool rpgMenuAvailable() const { return rpgFd>=0; }
+		bool rpgMenuPresent(const uint32_t* pixels);
+		void rpgMenuHide();
+		void rpgMenuClose();
 		int leasedScreen() const { return leased; }
 		// the display controller's interrupt storm (VOP2 POST_BUF_EMPTY, a panel's scanout underflowing ~100k times a
 		// second, seen after RetroArch's leased panel was given back): measured over 200 ms, and when it storms both
@@ -70,6 +76,11 @@ namespace banana
 		int fd = -1, W = 0, H = 0, pending = 0, leased = -1;
 		int lightWaiting = 0;	// lightBoth's flips still to come (a member: an event late past its wait lands here)
 		Panel p[2];
+		uint32_t leasedPrimary=0, leasedOverlay=0;
+		int rpgFd=-1, rpgFront=-1;
+		Buf rpgBuf[2];
+		uint32_t rpgZProp=0;
+		uint64_t rpgZOld=0, rpgZSet=0;
 		bool makeBuf(Buf& b);
 		bool lightBoth();
 		void freeBuf(Buf& b);
