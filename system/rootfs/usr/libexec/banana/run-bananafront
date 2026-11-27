@@ -9,6 +9,7 @@ case $1 in /*) CORE=$1 ;; esac          # (tests: a core by its path)
 ROM=$2
 # Per-system defaults are separate from global settings and the core's own overrides.
 . "$(dirname "$0")/emulator-defaults"
+export BANANA_FACE_LAYOUT="$(face_layout)"
 setting() {
     v=$(emu_override "$1")
     if [ -n "$v" ]; then printf '%s' "$v"; return; fi

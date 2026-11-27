@@ -59,6 +59,7 @@ export BANANA_NO_WARNINGS=1 BANANA_SHORT_MENU=1 BANANA_UI_HEIGHT=$PH BANANA_FONT
 export HOME=$D
 # the pad as an SDL game controller (its line in SDL's community database)
 export SDL_GAMECONTROLLERCONFIG="190000004b4800000111000000010000,RetroGame Joypad,a:b1,b:b0,back:b8,dpdown:b14,dpleft:b15,dpright:b16,dpup:b13,leftshoulder:b4,leftstick:b11,lefttrigger:b6,leftx:a0,lefty:a1,rightshoulder:b5,rightstick:b12,righttrigger:b7,rightx:a2,righty:a3,start:b9,x:b2,y:b3,platform:Linux,"
+face_sdl_mapping "$(face_layout)"
 # the LCDs drawn at most as wide as they are shown (a panel; half of one side by side): the SVG is drawn on the CPU
 export BANANA_SVG_MAXW=$PW
 VIEW="Background"

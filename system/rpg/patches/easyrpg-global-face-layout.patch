@@ -1,0 +1,28 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Respect forced BananaOS face layout without double swapping
+
+--- a/src/input_source.cpp
++++ b/src/input_source.cpp
+@@ -19,6 +19,7 @@
+ 
+ #include <algorithm>
+ #include <cstring>
++#include <cstdlib>
+ #include <cerrno>
+ #include <ctime>
+ #include <cmath>
+@@ -223,7 +224,13 @@
+ 		bit_swap(Input::Keys::JOY_DPAD_RIGHT, Input::Keys::JOY_B);
+ 	}
+ 
+-	if (cfg.gamepad_swap_ab_and_xy.Get()) {
++	// The launcher supplies the built-in SDL controller's final face mapping.
++	// Keep the saved input setting for Individual mode, but do not apply it
++	// a second time when the OS has selected Nintendo or Xbox.
++	const char* layout = std::getenv("BANANA_FACE_LAYOUT");
++	const bool forced = layout && (std::strcmp(layout, "nintendo") == 0 ||
++	                              std::strcmp(layout, "xbox") == 0);
++	if (!forced && cfg.gamepad_swap_ab_and_xy.Get()) {
+ 		bit_swap(Input::Keys::JOY_A, Input::Keys::JOY_B);
+ 		bit_swap(Input::Keys::JOY_X, Input::Keys::JOY_Y);
+ 	}

@@ -14,6 +14,10 @@ case "$sys" in
     mkxp) case "$(basename "$entry" | tr '[:upper:]' '[:lower:]')" in game.ini|mkxp.json|*.rxproj|*.rvproj|*.rvproj2) ;; *) exit 2 ;; esac ;;
 esac
 D=${BANANA_RPG_DATA:-/data}
+. "$(dirname "$0")/emulator-defaults"
+layout=$(BANANA_FACE_SETTINGS="$D/banana/settings.conf" face_layout)
+export BANANA_FACE_LAYOUT="$layout"
+face_sdl_mapping "$layout"
 R=${BANANA_RPG_RUNTIME:-/usr/lib/banana/rpg}
 game=$(dirname "$entry")
 key=${BANANA_GAME_KEY:-$sys/$game}
@@ -80,6 +84,7 @@ printf 'RPG %s launch %s restart=%s\n' "$sys" "$entry" "${BANANA_SA_RESTARTING:-
 printf 'log=%s\n' "$log"
 [ -f "$entry" ] || { echo "Missing RPG project entry: $entry" >&2; exit 2; }
 if [ "$sys" = mkxp ]; then printf 'attempt_journal=%s\n' "$cfg/ruby-last-attempts.json"; fi
+printf 'face_layout=%s\n' "$layout"
 for opt in rgss scale encoding filename_encoding font_hint font_scale render ruby_runtime script_patches font_effects; do
     printf '%s=%s\n' "$opt" "$(get "$opt")"
 done
@@ -149,6 +154,14 @@ configure_mkxp_buttons() {
             auto|inherit|'') button="$original" ;;
             *) printf '[MKXP] Invalid key_%s ignored: %s\n' "$action" "$button"; button="$original" ;;
         esac
+        # Forced layout owns face actions and face destinations. SDL's mapping
+        # already performs the A/B and X/Y permutation, so do not swap twice.
+        if [ "$layout" != individual ]; then
+            case "$original:$button" in
+                A:*|B:*|X:*|Y:*|*:A|*:B|*:X|*:Y) button="$original" ;;
+            esac
+            custom=1
+        fi
         printf '%s=%s\n' "$original" "$button" >> "$remap_tmp" || { rm -f "$remap_tmp"; return 1; }
     done
     if [ "$custom" = 1 ]; then

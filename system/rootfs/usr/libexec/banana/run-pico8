@@ -11,6 +11,7 @@ if [ -f $DIR/pico8_64 ] && [ "$(emu_override pico_engine)" != fake08 ]; then
     chmod 755 $DIR/pico8_64 2>/dev/null
     # its settings and saves in the folder itself; SDL straight to the panels (KMS) and ALSA
     export HOME=$DIR SDL_VIDEODRIVER=kmsdrm SDL_AUDIODRIVER=alsa
+    face_sdl_mapping "$(face_layout)"
     if [ -n "$SPLORE" ]; then exec $DIR/pico8_64 -home $DIR -root_path $DIR -joystick 0 -splore
     else exec $DIR/pico8_64 -home $DIR -root_path $DIR -joystick 0 -run "$1"; fi
 fi

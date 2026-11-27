@@ -9,3 +9,20 @@ emu_override() {
     esac
     awk -v k="${BANANA_SYSTEM}.$1" 'index($0,k " = ")==1 {v=substr($0,length(k)+4)} END{if(v!="inherit")print v}' "${BANANA_DEFAULTS_FILE:-/data/banana/emulator-defaults.conf}" 2>/dev/null || :
 }
+
+# Card wins over image defaults. Invalid/missing values preserve individual layouts.
+face_layout() {
+    value=$(awk -F= '$1 ~ /^[[:space:]]*face_layout[[:space:]]*$/ {v=$2; gsub(/^[[:space:]]+|[[:space:]]+$/,"",v)} END {print v}' "${BANANA_FACE_SETTINGS:-/data/banana/settings.conf}" 2>/dev/null || :)
+    case "$value" in nintendo|xbox) printf '%s' "$value" ;; *) printf '%s' individual ;; esac
+}
+
+# The built-in controller's printed Nintendo layout, and its Xbox equivalent.
+# Other controllers retain SDL's own database. Only set the mapping for forced modes.
+face_sdl_mapping() {
+    case "$1" in
+        nintendo) face='a:b1,b:b0,x:b2,y:b3' ;;
+        xbox) face='a:b0,b:b1,x:b3,y:b2' ;;
+        *) return 0 ;;
+    esac
+    export SDL_GAMECONTROLLERCONFIG="190000004b4800000111000000010000,RetroGame Joypad,$face,back:b8,dpdown:b14,dpleft:b15,dpright:b16,dpup:b13,leftshoulder:b4,leftstick:b11,lefttrigger:b6,leftx:a0,lefty:a1,rightshoulder:b5,rightstick:b12,righttrigger:b7,rightx:a2,righty:a3,start:b9,platform:Linux,"
+}

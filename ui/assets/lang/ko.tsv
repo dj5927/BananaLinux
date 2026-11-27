@@ -2932,6 +2932,13 @@ settings		FinalBurn Neo defaults	파이널번 네오 기본 설정
 settings		PICO-8 defaults	PICO-8 기본 설정
 settings		EasyRPG defaults	이지RPG 기본 설정
 settings		MKXP defaults	MKXP 기본 설정
+settings		MKXP buttons	MKXP 버튼
+settings		Global button layout	전체 버튼 배치
+settings		Individual	개별 설정 사용
+settings		Nintendo	닌텐도식
+settings		Xbox	엑스박스식
+settings		Individual uses each emulator's mapping. Nintendo uses the printed A/B/X/Y. Xbox swaps A/B and X/Y. Forced layouts override individual face buttons. Function shortcuts stay printed.	개별 설정은 각 에뮬레이터의 배치를 따릅니다. 닌텐도식은 기기 표기대로, 엑스박스식은 A/B와 X/Y를 교환합니다. 공통 배치는 개별 버튼보다 우선하며 F 단축키는 유지됩니다.
+settings		MKXP controller assignments are in Other systems > Buttons > MKXP.	MKXP 버튼 설정은 기타 게임기 > 버튼 > MKXP에서 변경합니다.
 settings		Script compatibility patches	스크립트 호환 패치
 settings		Apply narrowly matched fixes for known RGSS script errors in memory. Original game files stay unchanged.	알려진 RGSS 스크립트 오류를 실행 중에 보정합니다. 원본 게임 파일은 변경하지 않습니다.
 settings		Font effects	글꼴 효과

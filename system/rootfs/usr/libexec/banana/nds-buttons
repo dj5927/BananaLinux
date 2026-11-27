@@ -16,7 +16,14 @@ get() {
     case $v in a|b|x|y|l|r|start|select|swap|save|load|ff|blow|menu|none) echo "$v"; return ;; esac
     case $1 in l2) echo swap ;; r2) echo ff ;; l3) echo blow ;; *) echo none ;; esac
 }
-swapab() { [ "$(sed -n '/^ *nds_swap_ab *= */{s///;s/ *$//;h};${x;p}' $S 2>/dev/null)" = on ] && echo on || echo off; }
+swapab() {
+    . "$(dirname "$0")/emulator-defaults"
+    case "$(BANANA_FACE_SETTINGS="$S" face_layout)" in
+        xbox) echo on; return ;;
+        nintendo) echo off; return ;;
+    esac
+    [ "$(sed -n '/^ *nds_swap_ab *= */{s///;s/ *$//;h};${x;p}' "$S" 2>/dev/null)" = on ] && echo on || echo off
+}
 case $1 in
 get) get "$2" ;;
 swapab) swapab ;;

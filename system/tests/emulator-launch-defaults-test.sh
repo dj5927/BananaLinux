@@ -77,6 +77,7 @@ EOF
 cat > "$r/usr/bin/bananafront" <<'EOF'
 #!/bin/sh
 printf '%s\n' "$@" > /data/bf-args
+printf '%s\n' "$BANANA_FACE_LAYOUT" > /data/bf-layout
 EOF
 cat > "$r/data/roms/pico-8/pico8_64" <<'EOF'
 #!/bin/sh
@@ -116,3 +117,15 @@ BANANA_SYSTEM=gameandwatch chroot "$r" /usr/libexec/banana/run-gw /data/roms/gam
 grep -A1 -Fx -- '-sound' "$r/data/gw-args" | grep -Fx none
 grep -A1 -Fx -- '-view' "$r/data/gw-args" | grep -Fx auto
 echo 'PASS Game & Watch audio/view defaults'
+printf 'ra_swap_ab.gba = on\nface_layout = nintendo\n' >> "$r/data/banana/settings.conf"
+BANANA_SYSTEM=gba chroot "$r" /usr/libexec/banana/run-retroarch gpsp /data/roms/gba/test.gba
+for pair in a:1 b:0 x:2 y:3; do grep -Fx "input_player1_${pair%:*}_btn = \"${pair#*:}\"" "$r/data/ra-append"; done
+printf 'ra_swap_ab.gba = off\nface_layout = xbox\n' >> "$r/data/banana/settings.conf"
+BANANA_SYSTEM=gba chroot "$r" /usr/libexec/banana/run-retroarch gpsp /data/roms/gba/test.gba
+for pair in a:0 b:1 x:3 y:2; do grep -Fx "input_player1_${pair%:*}_btn = \"${pair#*:}\"" "$r/data/ra-append"; done
+BANANA_SYSTEM=gbc chroot "$r" /usr/libexec/banana/run-retroarch gambatte /data/roms/gbc/test.gbc
+grep -Fx xbox "$r/data/bf-layout"
+printf 'face_layout = individual\n' >> "$r/data/banana/settings.conf"
+BANANA_SYSTEM=gbc chroot "$r" /usr/libexec/banana/run-retroarch gambatte /data/roms/gbc/test.gbc
+grep -Fx individual "$r/data/bf-layout"
+echo 'PASS forced Nintendo/Xbox A/B and X/Y override and individual fallback'

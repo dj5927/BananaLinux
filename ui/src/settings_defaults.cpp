@@ -27,6 +27,7 @@ namespace banana
 
 		// each list ends in nullptr: valid() walks it to the end
 		const char* const ON_OFF[] = { "on", "off", nullptr };
+		const char* const FACE_LAYOUT[] = { "individual", "nintendo", "xbox", nullptr };
 		const char* const DS_CART_ART[] = { "box", "icon", nullptr };
 		const char* const ALL_CHOSEN[] = { "all", "chosen", nullptr };
 		const char* const BSHARE_RECEIVE[] = { "off", "ask", "auto", nullptr };
@@ -91,6 +92,7 @@ namespace banana
 			{ "ra_btn_r3", "game", ENUM, RA_BTN, 0, 0, true, true },
 			{ "ra_btn_back", "companion", ENUM, RA_BTN_BACK, 0, 0, true, true },	// (the Game Boy Advance's row alone: banana-ui's)
 			{ "ra_swap_ab", "off", ENUM, ON_OFF, 0, 0, true, true },
+			{ "face_layout", "individual", ENUM, FACE_LAYOUT, 0, 0, true },
 			{ "nds_emulator", "superdrastic", ENUM, NDS, 0, 0, true },
 			{ "nds_btn_l2", "swap", ENUM, NDS_BTN, 0, 0, true },
 			{ "nds_btn_r2", "ff", ENUM, NDS_BTN, 0, 0, true },

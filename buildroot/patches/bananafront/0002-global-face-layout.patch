@@ -1,0 +1,18 @@
+From: BananaOS Korean contributors
+Subject: [PATCH] Global Nintendo/Xbox face-button layout overrides system choice
+
+--- a/src/main.c
++++ b/src/main.c
+@@ -591,7 +591,11 @@
+     bf_input_set_job_mask(job_mask);
+     // ...Swap A/B and X/Y (ra_swap_ab.<system>), and the left stick as the d-pad on every system but N64 (#142)
+     char sw[16] = "";
+-    const bool swap = bf_system_setting(DATA, ETC, "ra_swap_ab", A.system, sw, sizeof sw) && !strcmp(sw, "on");
++    const char *layout = getenv("BANANA_FACE_LAYOUT");
++    const bool swap = layout && !strcmp(layout, "xbox") ? true :
++                      layout && !strcmp(layout, "nintendo") ? false :
++                      bf_system_setting(DATA, ETC, "ra_swap_ab", A.system, sw, sizeof sw) && !strcmp(sw, "on");
++    bf_log("face layout: %s", layout ? layout : "individual");
+     const bool stick = A.system && *A.system && strcmp(A.system, "n64");
+     bf_input_set_pad(swap, stick);
+     if (swap || stick) bf_log("pad:%s%s", swap ? " A/B and X/Y swapped" : "", stick ? " left stick as d-pad" : "");

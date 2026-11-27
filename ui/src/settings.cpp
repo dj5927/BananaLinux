@@ -717,10 +717,13 @@ namespace banana
 				page(id,label);
 				add(sec.c_str(),"gamepad","Emulator","This RPG system runs as a standalone engine, not a RetroArch core.","",(id+".engine_info").c_str(), {label+" (SA)"},{""},Item::INFO);
 				for(auto c:rpgChoices(id)) {
+					if(std::string(c.key).compare(0,4,"key_")==0) continue;
 					// The first option is explicitly automatic, not a missing configuration.
 					c.values[0]="auto";
 					add(sec.c_str(),"gamepad",c.label,c.help,df,(id+"."+c.key).c_str(),std::move(c.names),std::move(c.values));
 				}
+				if(id=="mkxp")
+					add(sec.c_str(),"gamepad","Buttons","MKXP controller assignments are in Other systems > Buttons > MKXP.","","rpg_buttons.mkxp",{},{},Item::PAGE);
 			}
 			page("gameandwatch","Game & Watch");
 			const std::string gw=emulatorDefaultsSection("Game & Watch");
@@ -904,9 +907,16 @@ namespace banana
 		// the image's template (R2 fast-forwards in the 2D systems' games), else the game's own and as printed
 		{
 			const char* RB = "Other systems buttons";
+			add(RB,"gamepad","Global button layout","Individual uses each emulator's mapping. Nintendo uses the printed A/B/X/Y. Xbox swaps A/B and X/Y. Forced layouts override individual face buttons. Function shortcuts stay printed.",menu,"face_layout",{"Individual","Nintendo","Xbox"},{"individual","nintendo","xbox"});
 			for (const auto& sys : RA_SYSTEMS)
 				add(RB, "gamepad", sys.label, "This system's buttons: what L2, R2, L3 and R3 do alone in its games, and A/B and X/Y swapped or not.",
 					"", raButtonsKey(sys).c_str(), {}, {}, Item::PAGE);
+			add(RB,"gamepad","MKXP","MKXP controller assignments are in Other systems > Buttons > MKXP.","","rpg_buttons.mkxp",{},{},Item::PAGE);
+			for(auto c:rpgChoices("mkxp")) {
+				if(std::string(c.key).compare(0,4,"key_")!=0) continue;
+				c.values[0]="auto";
+				add("MKXP buttons","gamepad",c.label,c.help,data+"/emulator-defaults.conf",(std::string("mkxp.")+c.key).c_str(),std::move(c.names),std::move(c.values));
+			}
 			const std::vector<std::string> names = { "Game's own", "Fast-forward", "Save state", "Load state", "Menu", "Pause", "Screenshot", "Nothing" };
 			const std::vector<std::string> values = { "game", "ff", "save", "load", "menu", "pause", "screenshot", "none" };
 			for (const auto& sys : RA_SYSTEMS)
@@ -1347,6 +1357,7 @@ namespace banana
 				{ "menu_look", "Menu look" },
 				{ "ds_buttons", "DS buttons" },
 				{ "ra_buttons", "Other systems buttons" },
+				{ "rpg_buttons.mkxp", "MKXP buttons" },
 				{ "homesync", "Home server" },
 				{ "hs_systems", "Home server systems" },
 				{ "developer", "Developer options" },	// (PR #94: System's last row, once unlocked)
@@ -2526,7 +2537,16 @@ namespace banana
 		}
 		// Verify the actual global and library per-game controls, not just
 		// the option catalogue. Auto explicitly cancels a global remap.
-		const std::string sec=emulatorDefaultsSection("MKXP");
+		const std::string sec="MKXP buttons";
+		openSection("Other systems buttons");
+		for(size_t i=0;i<items.size();++i) if(items[i].section=="Other systems buttons" && items[i].key=="face_layout") sel=int(i);
+		if(items[sel].key!="face_layout") return false;
+		items[sel].at=1;
+		if(press(Key::RIGHT)!=CHANGED || getConfValue(data+"/settings.conf","face_layout","")!="xbox") return false;
+		items[sel].at=0;
+		if(press(Key::RIGHT)!=CHANGED || getConfValue(data+"/settings.conf","face_layout","")!="nintendo") return false;
+		log("PASS global button layout saves Nintendo and Xbox");
+		for(const auto& it:items) if(it.section==emulatorDefaultsSection("MKXP") && it.key.compare(0,9,"mkxp.key_")==0) return false;
 		openSection(sec);
 		for(size_t i=0;i<items.size();++i) if(items[i].section==sec && items[i].key=="mkxp.key_c") sel=int(i);
 		if(items[sel].key!="mkxp.key_c") return false;
