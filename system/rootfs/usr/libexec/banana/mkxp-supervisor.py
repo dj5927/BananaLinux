@@ -14,13 +14,67 @@ import time
 import zlib
 
 MODES = ("ruby18", "ruby19", "ruby31", "ruby32")
-REV = 3
+REV = 4
 MAX_ARCHIVE = 32 * 1024 * 1024
 MAX_SOURCE = 32 * 1024 * 1024
 STOP_SIGNALS = tuple(getattr(signal,n) for n in ("SIGTERM","SIGINT","SIGHUP") if hasattr(signal,n))
 
 def log(message):
     print(time.strftime("%Y-%m-%d %H:%M:%S") + " [MKXP] " + str(message), flush=True)
+
+_missing_codecs=set()
+_reported_codecs=set()
+
+def iconv_decode(raw, encoding):
+    """Use the firmware's existing glibc gconv modules when Python lacks CJK codecs."""
+    import ctypes as c
+    libc=c.CDLL("libc.so.6",use_errno=True)
+    libc.iconv_open.argtypes=[c.c_char_p,c.c_char_p]
+    libc.iconv_open.restype=c.c_void_p
+    libc.iconv.argtypes=[c.c_void_p,c.POINTER(c.c_void_p),c.POINTER(c.c_size_t),c.POINTER(c.c_void_p),c.POINTER(c.c_size_t)]
+    libc.iconv.restype=c.c_size_t
+    libc.iconv_close.argtypes=[c.c_void_p]
+    libc.iconv_close.restype=c.c_int
+    cd=libc.iconv_open(b"UTF-8",encoding.upper().encode("ascii"))
+    if cd is None or cd==c.c_void_p(-1).value:
+        raise LookupError("system iconv unavailable: "+encoding)
+    try:
+        src=c.create_string_buffer(raw)
+        dst=c.create_string_buffer(len(raw)*4+4)
+        ip=c.c_void_p(c.addressof(src)); op=c.c_void_p(c.addressof(dst))
+        il=c.c_size_t(len(raw)); ol=c.c_size_t(len(dst))
+        ret=libc.iconv(cd,c.byref(ip),c.byref(il),c.byref(op),c.byref(ol))
+        if ret==c.c_size_t(-1).value or il.value:
+            raise UnicodeError("invalid "+encoding+" path")
+        return dst.raw[:len(dst)-ol.value].decode("utf-8")
+    finally:
+        libc.iconv_close(cd)
+
+def decoded_paths(raw):
+    # ASCII paths are identical in all these encodings. Never load optional
+    # codecs just to decode the standard Data/Scripts.* member.
+    if raw.isascii():
+        yield raw.decode("ascii")
+        return
+    seen=set()
+    for encoding in ("utf-8","cp949","cp932"):
+        try:
+            if encoding in _missing_codecs: raise LookupError(encoding)
+            name=raw.decode(encoding)
+        except LookupError:
+            _missing_codecs.add(encoding)
+            try:
+                name=iconv_decode(raw,encoding)
+            except (LookupError,ImportError,OSError,AttributeError,UnicodeError):
+                if encoding not in _reported_codecs:
+                    log("Optional path codec unavailable or invalid: "+encoding)
+                    _reported_codecs.add(encoding)
+                continue
+        except UnicodeError:
+            continue
+        if name not in seen:
+            seen.add(name)
+            yield name
 
 class MarshalReader:
     # Restricted data-only subset of Marshal 4.8. No user-defined objects,
@@ -119,11 +173,7 @@ def read_rgss_scripts(path, wanted):
     wanted={p.replace("\\","/").casefold() for p in wanted}
     def advance(k): return (k*7+3)&mask
     def matches(raw):
-        for encoding in ("utf-8","cp949","cp932"):
-            try:
-                if raw.decode(encoding).replace("\\","/").casefold() in wanted: return True
-            except UnicodeError: pass
-        return False
+        return any(name.replace("\\","/").casefold() in wanted for name in decoded_paths(raw))
     with path.open("rb") as f:
         length=path.stat().st_size
         def take(n):
@@ -213,9 +263,7 @@ def inspect(root, cfg):
         paths = []
         match = re.search(rb"(?im)^\s*Scripts\s*=\s*([^\r\n]+)", raw)
         if match:
-            for encoding in ("utf-8", "cp949", "cp932"):
-                try: paths.append(match[1].strip().decode(encoding))
-                except UnicodeError: pass
+            paths.extend(decoded_paths(match[1].strip()))
         paths += ["Data/Scripts.rxdata", "Data/Scripts.rvdata", "Data/Scripts.rvdata2"]
         archive = next((p for n in paths if (p := project_file(root,n))), None)
         if archive:
@@ -240,7 +288,7 @@ def inspect(root, cfg):
             if sum(map(len,sources)) >= MAX_SOURCE: break
             data=bounded_read(p,min(256*1024, MAX_SOURCE-sum(map(len,sources))))
             collect(p,data); sources.append(data)
-    except (OSError,ValueError,zlib.error) as e:
+    except (OSError,ValueError,LookupError,zlib.error) as e:
         log("Preflight incomplete (not a compatibility rejection): "+str(e))
         # Do not cache an incomplete scan as a successful syntax check.
         sources=[]
@@ -304,11 +352,11 @@ def save_json(path, value):
     try:
         with tempfile.NamedTemporaryFile(mode="w",encoding="utf-8",prefix=path.name+".",suffix=".tmp",dir=path.parent,delete=False) as stream:
             tmp=Path(stream.name)
-            json.dump(value,stream,ensure_ascii=False)
+            json.dump(value,stream,ensure_ascii=True)
             stream.flush()
             os.fsync(stream.fileno())
         tmp.replace(path)
-    except OSError as e: log("Journal/cache write failed: "+str(e))
+    except (OSError,ValueError,TypeError) as e: log("Journal/cache write failed: "+str(e))
     finally:
         if tmp is not None:
             try: tmp.unlink(missing_ok=True)
@@ -364,7 +412,17 @@ def main():
             except ProcessLookupError: pass
     for sig in STOP_SIGNALS: signal.signal(sig,stop)
     event("preflight")
-    sources,score,fingerprint=inspect(game,cfg)
+    sources,score,fingerprint=[],dict.fromkeys(MODES,0),"unavailable"
+    if mode=="auto":
+        try:
+            sources,score,fingerprint=inspect(game,cfg)
+        except Exception as e:
+            import traceback
+            log("Optional preflight failed; continuing with installed runtimes: "+repr(e))
+            traceback.print_exc()
+            journal["preflight_error"]=repr(e)
+    else:
+        log("Manual runtime selected; skipping optional script inspection")
     identity={}
     for key,(folder,exe) in runtimes.items():
         st=exe.stat()
@@ -381,7 +439,11 @@ def main():
         for key,(folder,exe) in runtimes.items():
             if cancelled(): log("User exit during preflight"); event("user-exit"); return 0
             if results.get(key) not in ("pass","fail"):
-                results[key]=probe(sources,folder,runtime_env(base,folder,key),time.monotonic()+30,cancelled)
+                try:
+                    results[key]=probe(sources,folder,runtime_env(base,folder,key),time.monotonic()+30,cancelled)
+                except Exception as e:
+                    log("Optional syntax probe failed for "+key+": "+repr(e))
+                    results[key]="unknown"
             log("Syntax probe %s=%s"%(key,results[key]))
         last=cache.get("last_success") if valid else None
         order=sorted(runtimes,key=lambda k:(results.get(k)=="fail",k!=last,results.get(k)!="pass",-score[k],k!="ruby32"))
