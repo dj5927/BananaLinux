@@ -129,6 +129,8 @@ namespace banana
 		GameAction gameTouch(float x, float y, bool down);	// device px on the panel's screen
 		bool rpgMenuActive() const { return gRpgMenu; }
 		bool rpgPauseRequested() const { return gRpgPaused || gRpgMenu || gRpgConfirm != 0; }
+		void portHotkeyOnly(bool on) { gPortBlind=on; }
+		void portCover(const std::string& path);
 		bool rpgTopMenu() const { return gRpgTopMenu; }
 		void rpgSetTopMenu(bool on) { gRpgTopMenu=on; }
 		void rpgMenuToggle() { gRpgConfirm=0; gRpgMenu=!gRpgMenu; gDown=-1; }
@@ -788,6 +790,10 @@ namespace banana
 		std::set<Key> gRpgHeld;
 		int gRpgRow = 0;
 		std::string gRpgPhase, gRpgRuntime;
+		bool gPortBlind=false;
+		double gPortStart=-1;
+		int gPortSeconds=0, gPortBattery=-1, gPortBatteryTick=-1;
+		rnds::TexPtr gPortCover;
 		void rpgMenuFrame(int screen);
 		void rpgPanelFrame();
 		GameAction rpgPanelTouch(float x, float y, bool down);

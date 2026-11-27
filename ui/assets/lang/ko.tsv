@@ -2889,6 +2889,11 @@ settings		Select the game's original encoding. Changes apply next launch.	게임
 settings		Pause / Resume	일시 정지 / 계속
 settings		Paused	일시 정지
 settings		Game running	게임 실행 중
+settings		Port game panel	포트 게임 하단 화면
+settings		Play time	플레이 시간
+settings		Show play time and controls on the bottom screen. Turn off for ports with incompatible graphics libraries. F shortcuts work in both modes.	하단에 플레이 시간과 조작 버튼을 표시합니다. 화면 호환 문제가 있는 포트는 끄세요. F 단축키는 두 모드에서 작동합니다.
+settings		Save in the game before quitting.	종료하기 전에 게임에서 저장하세요.
+settings		Touch a tile or use F shortcuts.	버튼을 터치하거나 F 단축키를 사용하세요.
 settings		Checking scripts...	스크립트 검사 중...
 settings		Starting game...	게임 실행 준비 중...
 settings		Trying another Ruby runtime...	다른 Ruby로 재시도 중...

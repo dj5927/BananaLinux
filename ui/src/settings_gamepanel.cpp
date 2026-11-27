@@ -362,12 +362,13 @@ namespace banana
 		gTitle = title; gSystem = system; gScreen = screen; gTouch = touch;
 		gFlash = gDown = -1; gSeen = -1; awardsSeen = 0; wake = false;
 		gKeysOpen = false; gKeyPage = 0; gKeyShift = 0; gKeyTyped.clear();
-		if (rpg::isSystem(gSysId)) {
+		if (rpg::isSystem(gSysId) || gSysId=="ports") {
 			raw.reset(); gRpgPage = gRpgConfirm = 0; gRpgDirty = false;
 			gRpgMenu = gRpgPaused = gRpgTopMenu = false; gRpgRow = 0;
 			gRpgFHeld = false; gRpgHeld.clear();
 			gRpgPhase=gSysId=="mkxp"?"preflight":"running"; gRpgRuntime.clear();
-			loadRpgChoices(gSysId,gProjectKey);
+			gPortBlind=false; gPortStart=-1; gPortSeconds=0; gPortBattery=-1; gPortBatteryTick=-1; gPortCover.reset();
+			if(gSysId!="ports") loadRpgChoices(gSysId,gProjectKey);
 			return;
 		}
 		gcView = gcLast = gcomp::P_STATUS; gcScreen = 0; gcScreens = 1; gcList = gcRow = -1; gcBattle = false; gcHits.clear();
@@ -598,6 +599,7 @@ namespace banana
 
 	void Settings::gameClose()
 	{
+		gPortCover.reset();
 		// the unlocks of this game's run kept for the library's list (on a thread: the card's write isn't the menu's wait)
 		if (raw) { auto w = raw; std::thread([w] { RaWatch::save(w); }).detach(); }
 		raw.reset();
@@ -609,6 +611,16 @@ namespace banana
 		gStateName.clear();
 		gBadges.clear();
 		gbaRelease();
+	}
+
+	void Settings::portCover(const std::string& path)
+	{
+		gPortCover.reset();
+		if(path.empty()) return;
+		struct stat st{};
+		if(stat(path.c_str(),&st)!=0 || !S_ISREG(st.st_mode) || st.st_size>16*1024*1024) return;
+		rnds::Bitmap b=rnds::decodeFile(path);
+		if(!b.empty()) gPortCover=be->upload(b,true);
 	}
 
 	void Settings::gbaAttach(gba::Host* host)
@@ -698,6 +710,24 @@ namespace banana
 	bool Settings::gameUpdate(double t)
 	{
 		now = t;
+		if(gSysId=="ports") {
+			if(gPortStart<0) gPortStart=t;
+			int seconds=int((t-gPortStart)/1000);
+			if(seconds==gPortSeconds && gPortBatteryTick>=0) return false;
+			if(gPortBatteryTick<0 || seconds-gPortBatteryTick>=10) {
+				gPortBatteryTick=seconds;
+				if(DIR* d=opendir("/sys/class/power_supply")) {
+					while(dirent* e=readdir(d)) {
+						std::string path=std::string("/sys/class/power_supply/")+e->d_name;
+						std::string type; std::ifstream(path+"/type")>>type;
+						if(type=="Battery") { int b=-1; std::ifstream(path+"/capacity")>>b; gPortBattery=b>=0&&b<=100?b:-1; break; }
+					}
+					closedir(d);
+				}
+			}
+			bool changed=seconds!=gPortSeconds; gPortSeconds=seconds;
+			return changed;
+		}
 		if (rpg::isSystem(gSysId)) return false;
 		bool changed = false;
 		if (raw)
@@ -753,7 +783,7 @@ namespace banana
 	Settings::GameAction Settings::gameTouch(float x, float y, bool down)
 	{
 		float lx = x / s, ly = y / s;
-		if (rpg::isSystem(gSysId)) return rpgPanelTouch(lx,ly,down);
+		if (rpg::isSystem(gSysId) || gSysId=="ports") return rpgPanelTouch(lx,ly,down);
 		int hit = -1;
 		// the on-screen keyboard (the Keys tile): a key types on the press, the bar's pages and Done on the release
 		if (gKeysOpen)
@@ -947,7 +977,7 @@ namespace banana
 	bool Settings::rpgKeyEvent(const InputEvent& ev, GameAction& action)
 	{
 		action=G_NONE;
-		if (!rpg::isSystem(gSysId)) return false;
+		if (!rpg::isSystem(gSysId) && gSysId!="ports") return false;
 		if (ev.type==InputEvent::RELEASE) {
 			gRpgHeld.erase(ev.key);
 			if (ev.key==Key::MENU) gRpgFHeld=false;
@@ -963,8 +993,11 @@ namespace banana
 				if (gRpgMenu) { gRpgMenu=false; gRpgPaused=false; }
 				else gRpgPaused=!gRpgPaused;
 				return true;
-			case Key::X: rpgMenuToggle(); return true;
-			case Key::SELECT: gRpgConfirm=1; return true;
+			case Key::X: if(gSysId!="ports") { rpgMenuToggle(); return true; } return false;
+			case Key::SELECT:
+				if(gSysId=="ports" && gPortBlind) { gRpgConfirm=0; gRpgPaused=false; action=G_RESET; }
+				else gRpgConfirm=1;
+				return true;
 			case Key::START:
 				gRpgConfirm=0; gRpgMenu=false; gRpgPaused=false;
 				gDown=gFlash=-1; action=G_QUIT; return true;
@@ -1008,8 +1041,10 @@ namespace banana
 	{
 		int hit=-1;
 		if (x>=18 && x<622 && y>=300 && y<420) {
-			int i=int((x-18)/153);
-			if (i>=0 && i<4 && x<18+i*153+145) hit=i;
+			const bool port=gSysId=="ports";
+			const int step=port?204:153, width=port?196:145;
+			int i=int((x-18)/step);
+			if (i>=0 && i<(port?3:4) && x<18+i*step+width) hit=port&&i>0?i+1:i;
 		}
 		if (gRpgConfirm) {
 			if (down) return G_NONE;
@@ -1077,7 +1112,8 @@ namespace banana
 		be->beginScreen(gScreen);
 		box("screen",false,0,0,640,480);
 		text(fit(gTitle,true,25,600),true,25,20,12,p.ink);
-		text(gSysId=="mkxp"?"mkxp-z SA":"EasyRPG Player SA",false,18,20,48,p.muted);
+		const bool port=gSysId=="ports";
+		text(port?"PortMaster":gSysId=="mkxp"?"mkxp-z SA":"EasyRPG Player SA",false,18,20,48,p.muted);
 		auto button = [&](float x,float y,float w,float h,const std::string& label) {
 			box("slot",false,x,y,w,h);
 			auto l=fit(lang::tr(label),true,19,w-12);
@@ -1092,7 +1128,23 @@ namespace banana
 			return;
 		}
 		box("hero",false,18,88,604,198);
-		if (gRpgMenu) {
+		if(port) {
+			const int x=gPortCover?276:38;
+			if(gPortCover) {
+				const float k=std::min(218.0f/gPortCover->w,160.0f/gPortCover->h);
+				float w=gPortCover->w*k,h=gPortCover->h*k;
+				be->draw(gPortCover,X(38+(218-w)/2),X(103+(160-h)/2),X(w),X(h),Color(1,1,1,1));
+			}
+			text(gRpgPaused?"Paused":"Game running",true,25,x,110,p.ink);
+			char elapsed[32];
+			snprintf(elapsed,sizeof elapsed,"%02d:%02d:%02d",gPortSeconds/3600,(gPortSeconds/60)%60,gPortSeconds%60);
+			text("Play time",false,18,x,164,p.muted);
+			text(elapsed,true,28,x,190,p.accent);
+			const int bx=gPortCover?475:350;
+			text("Battery",false,18,bx,164,p.muted);
+			text(gPortBattery>=0?std::to_string(gPortBattery)+"%":"--",true,28,bx,190,p.ink);
+			wrapped("Save in the game before quitting.",17,x,252,590-x,1,p.muted);
+		} else if (gRpgMenu) {
 			if (gRpgRow>=0 && gRpgRow<int(pgRpgChoices.size())) {
 				const auto& c=pgRpgChoices[gRpgRow];
 				text(fit(lang::tr(c.label),true,23,552),true,23,36,103,p.accent);
@@ -1110,27 +1162,30 @@ namespace banana
 		const char* labels[]={gRpgPaused?"Resume":"Pause","Menu","Restart","Quit"};
 		const char* shortcuts[]={"F + A","F + X","F + SELECT","F + START"};
 		for(int i=0;i<4;i++) {
-			float x=18+i*153;
+			if(port && i==1) continue;
+			float w=port?196:145;
+			float x=18+(port?(i>1?i-1:i)*204:i*153);
 			bool on=gFlash==i || (i==1 && gRpgMenu) || (i==0 && gRpgPaused);
-			box(on?"pick":"slot",on,x,300,145,120);
+			box(on?"pick":"slot",on,x,300,w,120);
 			Color fg=on?p.onPick:(i==3?Color::hex(0xff8a96):p.ink);
 			int k=std::max(1,int(std::lround(3*s)));
-			float ix=std::round(X(x+72.5f)-6*k), iy=std::round(X(314));
+			float ix=std::round(X(x+w/2)-6*k), iy=std::round(X(314));
 			for(int r=0;r<12;r++) for(int c=0;c<12;c++) if(icons[i][r][c]=='#') be->fill(ix+c*k,iy+r*k,float(k),float(k),fg);
-			std::string label=fit(lang::tr(labels[i]),true,20,135);
+			std::string label=fit(lang::tr(labels[i]),true,20,w-10);
 			float tw=text(label,true,20,0,0,fg,false,0,true);
-			text(label,true,20,x+(145-tw)/2,364,fg);
+			text(label,true,20,x+(w-tw)/2,364,fg);
 			float sw=text(shortcuts[i],false,15,0,0,fg,false,0,true);
-			text(shortcuts[i],false,15,x+(145-sw)/2,394,fg);
+			text(shortcuts[i],false,15,x+(w-sw)/2,394,fg);
 		}
-		if (gRpgMenu) wrapped("Settings apply next launch.",16,22,438,596,2,p.muted);
+		if(port) wrapped("Touch a tile or use F shortcuts.",16,22,438,596,2,p.muted);
+		else if (gRpgMenu) wrapped("Settings apply next launch.",16,22,438,596,2,p.muted);
 		be->endScreen();
 		if (gRpgMenu && gRpgTopMenu) rpgMenuFrame(1-gScreen);
 	}
 
 	void Settings::gameFrame()
 	{
-		if (rpg::isSystem(gSysId)) { rpgPanelFrame(); return; }
+		if (rpg::isSystem(gSysId) || gSysId=="ports") { rpgPanelFrame(); return; }
 		SPal p = pal(light);
 		int state;
 		std::string game;

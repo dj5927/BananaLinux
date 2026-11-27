@@ -1151,7 +1151,7 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			std::string sys, key;
 			cs >> sys;
 			std::getline(cs >> std::ws, key);
-			if (sys != "mkxp" && sys != "easyrpg") return 2;
+			if (sys != "mkxp" && sys != "easyrpg" && sys!="ports") return 2;
 			settings.gameClose();
 			settings.companion = nullptr; settings.gameComp = nullptr; settings.link = nullptr;
 			settings.gameSystem(sys);
@@ -1159,6 +1159,8 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			settings.gameOpen("RPG test", sys, 1, true);
 			logf("rpgpanel %s: %s", sys.c_str(), key.c_str());
 		}
+		else if(op=="portblind") { int on=0; cs>>on; settings.portHotkeyOnly(on!=0); }
+		else if(op=="porttick") { double t=0; cs>>t; settings.gameUpdate(t); }
 		else if (op == "rpgmenutop")
 		{
 			int on=0; cs>>on; settings.rpgSetTopMenu(on!=0);
@@ -2723,7 +2725,7 @@ int main(int argc, char** argv)
 	// starts so the emulator sees it as a keyboard plugged in, gone when the game ends (vkbd.h)
 	VirtualKeyboard vkbd;
 	bool keysOn = false;
-	auto gamePanel = [&](pid_t pid, int& status, int gameScreen, int cmdFd, int outFd, const std::string& title, const std::string& sysName, const std::string& projectKey)
+	auto gamePanel = [&](pid_t pid, int& status, int gameScreen, int cmdFd, int outFd, const std::string& title, const std::string& sysName, const std::string& projectKey, bool paint, const std::string& cover)
 	{
 		auto markMkxpQuit = [&]() {
 			if (gameSysId != "mkxp") return;
@@ -2733,16 +2735,18 @@ int main(int argc, char** argv)
 		};
 		const int panelScreen = 1 - gameScreen;
 		const bool nativeRpg=gameSysId=="mkxp" || gameSysId=="easyrpg";
+		const bool nativePort=gameSysId=="ports";
+		const bool nativeControl=nativeRpg || nativePort;
 		const std::string pausePath="/run/banana/rpg-pause-"+std::to_string(pid);
 		const std::string launchStatusPath="/run/banana/mkxp-status-"+std::to_string(pid);
 		double nextStatus=0, nextOverlayRefresh=0;
 		bool pauseApplied=false, overlayShown=false, volumeShown=false, volumeBottom=false;
 		std::unique_ptr<RpgVolume> volume;
-		if(nativeRpg) volume=std::make_unique<RpgVolume>();
+		if(nativeControl && paint) volume=std::make_unique<RpgVolume>();
 		bool topVolumeFailed=false;
 		double nextVolumeFrame=0;
 		auto syncRpgPause=[&]() {
-			if (!nativeRpg) return;
+			if (!nativeControl) return;
 			const bool pause=settingsView.rpgPauseRequested();
 			if (pause==pauseApplied) return;
 			if (pause) {
@@ -2774,7 +2778,8 @@ int main(int argc, char** argv)
 			settingsView.gameProjectKey(projectKey);
 			settingsView.gameKeyboard(keysOn ? &vkbd : nullptr);
 			settingsView.gameOpen(title, sysName, panelScreen, input.hasTouch(panelScreen));
-			if (nativeRpg) settingsView.rpgSetTopMenu(disp.rpgMenuAvailable());
+			if (nativeControl) settingsView.rpgSetTopMenu(nativeRpg && disp.rpgMenuAvailable());
+			if (nativePort) { settingsView.portHotkeyOnly(!paint); if(paint) settingsView.portCover(cover); }
 			settingsView.gbaAttach(gbaHost.get());
 		}
 		be.invalidate();
@@ -2829,15 +2834,15 @@ int main(int argc, char** argv)
 					if (std::getline(f,phase) && std::getline(f,runtime) &&
 						phase.size()<32 && runtime.size()<32 && settingsView.rpgLaunchStatus(phase,runtime)) want=true;
 				}
-				if (nativeRpg && overlayShown && t>=nextOverlayRefresh) {
+				if (nativeControl && overlayShown && t>=nextOverlayRefresh) {
 					want=true; nextOverlayRefresh=t+2000;
 				}
-				if (nativeRpg && overlayShown && !settingsView.rpgMenuActive() && !(volume && volume->active(t))) {
+				if (nativeControl && overlayShown && !settingsView.rpgMenuActive() && !(volume && volume->active(t))) {
 					disp.rpgMenuHide(); overlayShown=false;
 				}
 				if (settingsView.gameUpdate(t)) want = true;
 				if (settingsView.gameWake()) bottomIdle.activity(t);	// an achievement on the panel: shown lit
-				if (want && !disp.flipPending())
+				if (paint && want && !disp.flipPending())
 				{
 					settingsView.gameRender();
 					const bool volumeActive=volume && volume->active(t);
@@ -2858,7 +2863,7 @@ int main(int argc, char** argv)
 							settingsView.gameRender();
 						}
 					}
-					if(nativeRpg && (!topMenu || !settingsView.rpgTopMenu())) {
+					if(nativeControl && (!topMenu || !settingsView.rpgTopMenu())) {
 						if(volumeActive && disp.rpgMenuAvailable() && disp.rpgWidgetAlpha() && !topVolumeFailed) {
 							volume->render(settingsView,disp.width(),disp.height(),t);
 							if(disp.rpgWidgetPresent(volume->pixels.data(),volume->width,volume->height)) {
@@ -2886,7 +2891,7 @@ int main(int argc, char** argv)
 			}
 			// for testing over SSH (as /run/banana/launch): "x y" in /run/banana/panel-tap, a tap on the game panel at
 			// that place of a 640x480 panel (the companion's tabs and pages, with no hands on the handheld)
-			if (access("/run/banana/panel-tap", F_OK) == 0)
+			if (paint && access("/run/banana/panel-tap", F_OK) == 0)
 			{
 				// ("tab N": the game companion's page N, 0-6, 7 the Game tab)
 				float tx = -1, ty = -1;
@@ -2915,7 +2920,7 @@ int main(int argc, char** argv)
 			pollfd fds[40];
 			int in[32], ni = input.fds(in, 32), nf = 0;
 			int outAt = -1, pidAt = -1;
-			fds[nf++] = { disp.pollFd(), POLLIN, 0 };
+			fds[nf++] = { paint?disp.pollFd():-1, POLLIN, 0 };
 			for (int i = 0; i < ni; i++) fds[nf++] = { in[i], POLLIN, 0 };
 			if (outFd >= 0) { outAt = nf; fds[nf++] = { outFd, POLLIN, 0 }; }
 			if (pidFd >= 0) { pidAt = nf; fds[nf++] = { pidFd, POLLIN, 0 }; }
@@ -2946,7 +2951,7 @@ int main(int argc, char** argv)
 						if (ev.type == InputEvent::PRESS)
 						{
 							std::lock_guard<std::mutex> l(worker.uiLock);
-							if (nativeRpg) {
+							if (nativeControl) {
 								Settings::GameAction a;
 								if (settingsView.rpgKeyEvent(ev,a)) {
 									syncRpgPause();
@@ -2962,10 +2967,10 @@ int main(int argc, char** argv)
 							return;
 						}
 						if (ev.type == InputEvent::RELEASE) {
-							if (nativeRpg) { std::lock_guard<std::mutex> l(worker.uiLock); Settings::GameAction a; settingsView.rpgKeyEvent(ev,a); }
+							if (nativeControl) { std::lock_guard<std::mutex> l(worker.uiLock); Settings::GameAction a; settingsView.rpgKeyEvent(ev,a); }
 							return;
 						}
-						if (ev.screen != panelScreen) return;	// touch only on the panel
+						if (!paint || ev.screen != panelScreen) return;	// touch only on the panel
 						if (ev.type == InputEvent::TOUCH_MOVE)	// (the GBA companion's pages scroll by drag)
 						{
 							std::lock_guard<std::mutex> l(worker.uiLock);
@@ -2999,7 +3004,7 @@ int main(int argc, char** argv)
 					});
 		}
 		if (pidFd >= 0) ::close(pidFd);
-		if (nativeRpg) { disp.rpgMenuClose(); unlink(pausePath.c_str()); unlink(launchStatusPath.c_str()); }
+		if (nativeControl) { if(paint) disp.rpgMenuClose(); unlink(pausePath.c_str()); unlink(launchStatusPath.c_str()); }
 		if (gbaHost)
 		{
 			// (before gbaHost goes: the panel's pages let go of it; the Session saves the journey as it stops)
@@ -3009,7 +3014,7 @@ int main(int argc, char** argv)
 		}
 	};
 
-	auto runGame = [&](int game)
+	auto runGameOnce = [&](int game,bool forcePortSingle)
 	{
 		const SystemDef& sd = lib.systemOf(game);
 		std::string rom = lib.gameAt(game).path;
@@ -3053,18 +3058,22 @@ int main(int argc, char** argv)
 			sd.run.find("run-rpg") != std::string::npos ||
 			(sd.run.find("run-pico8") != std::string::npos && (emulatorDefault("pico_engine","auto")=="fake08" || access("/data/roms/pico-8/pico8_64", F_OK) != 0));
 		const bool nativeRpg = sd.id == "mkxp" || sd.id == "easyrpg";
-		bool panel = ra && (nativeRpg || emulatorDefault("retroarch_panel",settings["retroarch_panel"]) != "off") && disp.isOpen();
+		const bool nativePort = sd.id == "ports";
+		const bool portManager = nativePort && rom.substr(rom.rfind('/')+1)=="PortMaster.sh";
+		const bool portPanel = nativePort && !forcePortSingle && !portManager && getConfValue(o.data+"/settings.conf","ports_panel","panel")!="off" &&
+			access("/usr/lib/banana/ports/lib/libSDL2-2.0.so.0",R_OK)==0;
+		bool panel = ((ra && (nativeRpg || emulatorDefault("retroarch_panel",settings["retroarch_panel"]) != "off")) || portPanel) && disp.isOpen();
 		int gameScreen = 0, leaseFd = -1, cmdFd = -1, outFd = -1;
 		const char* OUT = "/run/banana/retroarch.out";	// RetroArch's stdout, for the Pokémon companion
 		if (panel)
 		{
 			// the panel RetroArch is set to use (Settings > Other systems > Screen: video_monitor_index 2 the top, 1 the
 			// bottom)
-			gameScreen = nativeRpg ? 0 : (emulatorDefault("video_monitor_index",getConfValue("/data/retroarch/retroarch.cfg", "video_monitor_index", "2")) == "1" ? 1 : 0);
+			gameScreen = nativeRpg || nativePort ? 0 : (emulatorDefault("video_monitor_index",getConfValue("/data/retroarch/retroarch.cfg", "video_monitor_index", "2")) == "1" ? 1 : 0);
 			leaseFd = disp.lease(gameScreen);
 			unlink(FIFO);
 			unlink("/run/banana/retroarch.log");	// (the last game's: the panel must not read it as this one's)
-			if (!nativeRpg && !compLink.create()) logf("companion: no shared memory: %s", strerror(errno));
+			if (!nativeRpg && !nativePort && !compLink.create()) logf("companion: no shared memory: %s", strerror(errno));
 			if (leaseFd >= 0 && mkfifo(FIFO, 0600) == 0) cmdFd = ::open(FIFO, O_RDWR | O_NONBLOCK | O_CLOEXEC);	// (read too: RetroArch never sees an end)
 			if (leaseFd < 0 || cmdFd < 0)
 			{
@@ -3074,8 +3083,14 @@ int main(int argc, char** argv)
 				leaseFd = cmdFd = -1;
 				panel = false;
 			}
-			if (panel && nativeRpg && !disp.prepareRpgMenu(leaseFd))
+			if (panel && (nativeRpg || nativePort) && !disp.prepareRpgMenu(leaseFd))
 				logf("RPG menu: no suitable leased overlay plane; bottom menu fallback");
+		}
+		// The hotkey command channel remains available in single-screen mode.
+		if(nativePort && !panel) {
+			unlink(FIFO);
+			if(mkfifo(FIFO,0600)==0) cmdFd=::open(FIFO,O_RDWR|O_NONBLOCK|O_CLOEXEC);
+			if(cmdFd<0) logf("Port hotkey command pipe unavailable: %s",strerror(errno));
 		}
 		// the idle dim is armed for a RetroArch game in Mode A with its panel on the bottom (the game on the top): the
 		// only case where the bottom screen is Banana's own while a game runs. A game drawing on the bottom, or on
@@ -3108,7 +3123,7 @@ int main(int argc, char** argv)
 		// (gamecomp.h; the Pokémon games are the Pokémon companion's)
 		bool pkOn = panel && sd.id == "gba" && settings["pokemon_companion"] == "on" && companion.open(rom);
 		// (any system with a definition: the GBA's in the folder itself, another system's in <folder>/<system>/, schema 2)
-		bool gcOn = !nativeRpg && !pkOn && panel && settings["game_companion"] == "on" &&
+		bool gcOn = !nativeRpg && !nativePort && !pkOn && panel && settings["game_companion"] == "on" &&
 			((access("/data/banana/companions", F_OK) == 0 && gameComp.open(rom, "/data/banana/companions", sd.id)) ||
 				gameComp.open(rom, "/usr/share/banana/companions", sd.id));	// (the card's own first)
 		if (pkOn || gcOn)
@@ -3202,7 +3217,7 @@ int main(int argc, char** argv)
 		}
 		if (!panel)
 		{
-			input.close();
+			if(!nativePort) input.close();
 			disp.close();
 		}
 		drawn = false;	// the menu is drawn afresh when the panels come back
@@ -3232,7 +3247,7 @@ int main(int argc, char** argv)
 			setenv("BANANA_ROM", rom.c_str(), 1);
 			setenv("BANANA_SYSTEM", sd.id.c_str(), 1);
 			setenv("BANANA_GAME_KEY", lib.gameKey(game).c_str(), 1);
-			if (nativeRpg && panel) {
+			if ((nativeRpg && panel) || nativePort) {
 				const std::string pausePath="/run/banana/rpg-pause-"+std::to_string(getpid());
 				unlink(pausePath.c_str());
 				setenv("BANANA_SA_PAUSE_FILE",pausePath.c_str(),1);
@@ -3253,6 +3268,7 @@ int main(int argc, char** argv)
 				if (compLink.open()) setenv(BCOMP_ENV, BCOMP_DEFAULT_PATH, 1);
 				if (outFd >= 0) setenv("BANANA_RA_OUT", OUT, 1);
 			}
+			else if(nativePort && cmdFd>=0) setenv("BANANA_RA_CMD",FIFO,1);
 			if (ndsPage)
 			{
 				setenv(BOVL_ENV, ndsOverlay.file().c_str(), 1);
@@ -3276,9 +3292,9 @@ int main(int argc, char** argv)
 				if (!f || rename("/run/banana/game.pid.new", "/run/banana/game.pid") != 0)
 					logf("game.pid not written: %s", strerror(errno));
 			}
-			if (panel)
+			if (panel || nativePort)
 			{
-				gamePanel(pid, status, gameScreen, cmdFd, outFd, lib.gameAt(game).title, sd.name, lib.gameKey(game));
+				gamePanel(pid, status, gameScreen, cmdFd, outFd, lib.gameAt(game).title, sd.name, lib.gameKey(game), panel, lib.gameAt(game).box);
 			}
 			else if (ndsPage)
 			{
@@ -3337,7 +3353,7 @@ int main(int argc, char** argv)
 			compLink.close();
 		}
 		const double ended = nowMs();
-		if (panel)
+		if (panel || nativePort)
 		{
 			{
 				std::lock_guard<std::mutex> l(worker.uiLock);
@@ -3350,7 +3366,7 @@ int main(int argc, char** argv)
 				settingsView.link = nullptr;
 			}
 			vkbd.close();	// (the game's keyboard gone from /dev/input as the game is)
-			::close(cmdFd);
+			if(cmdFd>=0) ::close(cmdFd);
 			unlink(FIFO);
 			if (outFd >= 0) { ::close(outFd); unlink(OUT); }
 			compLink.close();
@@ -3427,6 +3443,15 @@ int main(int argc, char** argv)
 			opened - ended, openTries);
 		dirty = true;
 		batteryDue = true;	// a step passed during the game shows now
+		// Retry once only for a short failed start, never for a successful
+		// natural exit or deliberate quit (the supervisor returns zero).
+		return nativePort && panel && pid>0 && secs<8 && WIFEXITED(status) && WEXITSTATUS(status)!=0;
+	};
+	auto runGame=[&](int game) {
+		if(runGameOnce(game,false)) {
+			logf("Port dual-screen start failed; retrying once with original single-screen display");
+			runGameOnce(game,true);
+		}
 	};
 
 	if (system("banana-perf ui") != 0) {}

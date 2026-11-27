@@ -2,7 +2,7 @@
 # Ports: a port's script (PortMaster's, or any .sh in roms/ports) with bash, as ROCKNIX runs them. PortMaster itself
 # is the "PortMaster" entry, installed from the Store (0.5.3 on; before, its release came in the image and was put on
 # the card the first time) into roms/ports/PortMaster, where it updates itself. Ports draw on the top panel (SDL's
-# KMSDRM display 0: SDL_KMSDRM_FIRST, Banana's SDL patch); the bottom one stays dark. Their files and settings go under
+# KMSDRM display 0: SDL_KMSDRM_FIRST, Banana's SDL patch); the optional lease leaves the other panel with Banana UI.
 # /data/home, not the read-only root.
 #   run-port <script>
 P=/data/roms/ports
@@ -24,21 +24,12 @@ export PYSDL2_DLL_PATH=/usr/lib
 # the window is made, once the splash has gone.
 export SDL_KMSDRM_REQUIRE_DRM_MASTER=0
 . /usr/libexec/banana/one-panel
-one_panel_dark top
-cd "$(dirname "$1")"
-# the port in its own session (its process group = $C): a quit from the menu, and the port's end, reach everything it
-# started. PortMaster's script runs its menu (python3 pugwash) as a child: a TERM to the script alone left that
-# running, holding the display, and the menu's next game got no panel
-setsid bash "$1" &
-C=$!
-trap 'kill -TERM -$C 2>/dev/null' TERM INT HUP
-wait $C; S=$?
-while kill -0 $C 2>/dev/null; do wait $C; S=$?; done
-# whatever of it is still running (the script gone, a child left behind): asked to stop, then stopped
-if kill -0 -$C 2>/dev/null; then
-    kill -TERM -$C 2>/dev/null
-    for i in 1 2 3 4 5 6 7 8 9 10; do kill -0 -$C 2>/dev/null || break; sleep 0.2; done
-    kill -KILL -$C 2>/dev/null
+if [ -n "${BANANA_DRM_LEASE_FD:-}" ]; then
+    # Only the lease-aware SDL ABI is exposed, not the RPG engine's other
+    # dependencies. Ports which bundle an incompatible SDL can use one panel.
+    export LD_LIBRARY_PATH="/usr/lib/banana/ports/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+else
+    one_panel_dark top
 fi
-one_panel_restore
-exit $S
+export BANANA_PORT_DARK_BACKLIGHT="$ONE_PANEL_BL"
+exec /usr/bin/python3 /usr/libexec/banana/port-supervisor.py "$1"

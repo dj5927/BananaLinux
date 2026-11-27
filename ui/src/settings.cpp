@@ -639,6 +639,8 @@ namespace banana
 			add(SS, "gamepad", "Second screen", "What the other screen shows while a game plays. A Commodore 64 or ZX Spectrum game also gets a touch keyboard there: put the game on the top screen.",
 				menu, "retroarch_panel", { "Game panel", "Off" }, { "panel", "off" });
 			items.back().hints = { "Achievements and tiles to save, load, open the menu, fast-forward and quit (by touch on the bottom screen).", "The other screen stays dark." };
+			add(SS, "gamepad", "Port game panel", "Show play time and controls on the bottom screen. Turn off for ports with incompatible graphics libraries. F shortcuts work in both modes.",
+				menu, "ports_panel", { "Game panel", "Off" }, { "panel", "off" });
 			add(SS, "picture", "Game panel when idle", "What the game panel does when you leave it alone.",
 				menu, "bottom_idle_mode", { "Dims", "Turns off", "Stays on" }, { "dim", "off", "on" });
 			items.back().hints = { "It dims. A touch or a button lights it again.", "It turns off. A touch or a button lights it again.", "It stays on." };

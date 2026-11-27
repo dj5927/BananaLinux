@@ -17,6 +17,13 @@ printf 'NAME=BananaOS\nID=bananaos\nID_LIKE=buildroot\nVERSION="%s"\nVERSION_ID=
 ln -sf ../usr/lib/os-release "$T/etc/os-release"
 # /roms: the card's games where ports and PortMaster look for them (/roms/ports/PortMaster), as on other firmware
 ln -sfn data/roms "$T/roms"
+# The incremental RPG bundle supplies a lease-aware SDL2. Reuse only
+# that library for compatible PortMaster games, when it is installed.
+if [ -f "$T/usr/lib/banana/rpg/common/lib/libSDL2-2.0.so.0" ]; then
+    mkdir -p "$T/usr/lib/banana/ports/lib"
+    ln -sfn ../../rpg/common/lib/libSDL2-2.0.so.0 "$T/usr/lib/banana/ports/lib/libSDL2-2.0.so.0"
+    ln -sfn libSDL2-2.0.so.0 "$T/usr/lib/banana/ports/lib/libSDL2.so"
+fi
 rm -rf "$T/usr/share/man" "$T/usr/share/doc" "$T/usr/share/info"
 # BlueZ keeps its pairings in /var/lib/bluetooth, on the read-only root: in /run instead, where the bluetooth script
 # unpacks them from the card (banana/bluetooth.tar) when Bluetooth comes on
