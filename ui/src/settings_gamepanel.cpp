@@ -366,7 +366,7 @@ namespace banana
 			raw.reset(); gRpgPage = gRpgConfirm = 0; gRpgDirty = false;
 			gRpgMenu = gRpgPaused = gRpgTopMenu = false; gRpgRow = 0;
 			gRpgFHeld = false; gRpgHeld.clear();
-			gRpgPhase=gSysId=="mkxp"?"preflight":"running"; gRpgRuntime.clear();
+			gRpgPhase=gSysId=="mkxp"?"preflight":(gSysId=="psp" || gSysId=="dreamcast")?"starting":"running"; gRpgRuntime.clear();
 			gPortBlind=false; gPortStart=-1; gPortSeconds=0; gPortBattery=-1; gPortBatteryTick=-1; gPortCover.reset();
 			if(gSysId!="ports") loadRpgChoices(gSysId,gProjectKey);
 			return;
@@ -1142,7 +1142,9 @@ namespace banana
 				float w=gPortCover->w*k,h=gPortCover->h*k;
 				be->draw(gPortCover,X(38+(218-w)/2),X(103+(160-h)/2),X(w),X(h),Color(1,1,1,1));
 			}
-			text(gRpgPaused?"Paused":"Game running",true,25,x,110,p.ink);
+			const char* state=gRpgPaused?"Paused":easy && gRpgPhase=="copying"?"Copying runtime":easy && gRpgPhase=="downloading"?"Downloading runtime":easy && gRpgPhase=="verifying"?"Verifying checksum":easy && gRpgPhase=="installing"?"Installing runtime":easy && gRpgPhase=="starting"?"Starting game...":easy && gRpgPhase=="failed"?"Game could not start":"Game running";
+			text(fit(lang::tr(state),true,25,590-x),true,25,x,110,p.ink);
+			if(easy && !gRpgRuntime.empty()) text(fit(lang::tr(gRpgRuntime),false,17,590-x),false,17,x,140,p.accent);
 			char elapsed[32];
 			snprintf(elapsed,sizeof elapsed,"%02d:%02d:%02d",gPortSeconds/3600,(gPortSeconds/60)%60,gPortSeconds%60);
 			text("Play time",false,18,x,164,p.muted);

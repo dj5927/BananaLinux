@@ -2899,6 +2899,12 @@ settings		Starting game...	게임 실행 준비 중...
 settings		Trying another Ruby runtime...	다른 Ruby로 재시도 중...
 settings		Restarting game...	게임 재시작 중...
 settings		Game could not start	게임 실행 실패
+settings		Copying runtime	런타임 복사 중
+settings		Downloading runtime	런타임 다운로드 중
+settings		Installing runtime	런타임 설치 중
+settings		Boot file missing	게임 부팅 파일 없음
+settings		Check Wi-Fi / runtime	Wi-Fi 및 런타임 확인
+settings		See game log	게임 로그 확인
 settings		Down	아래
 settings		Left	왼쪽
 settings		Right	오른쪽

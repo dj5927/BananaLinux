@@ -59,7 +59,53 @@ def valid_bundle(runtime, manifest):
         "lib/mali.json", "mali_kbase.ko"))
 
 
-def install_bundle(data, manifest, log, cancelled=lambda: False):
+def recover_bundle_from_ota(data, manifest, archive, log, cancelled, progress):
+    """Old OTA installers retain the downloaded tar; recover only the pinned runtime."""
+    ver = manifest.get("ota_version", "")
+    if not re.fullmatch(r"[0-9.]+", ver):
+        return False
+    name = archive.name
+    for folder in (data / "banana/updates", data / "updates"):
+        for board in ("rgds", "rgds-plus", "universal"):
+            stem = "banana-" + board + "-" + ver + ".update"
+            package = folder / (stem + ".tar")
+            if not package.is_file():
+                continue
+            temp = archive.with_suffix(".ota-part")
+            try:
+                with tarfile.open(package, "r:") as tf:
+                    # Only a single regular file of the manifest's exact size is accepted.
+                    member = tf.getmember(stem + "/" + name)
+                    if not member.isfile() or member.size != manifest["size"]:
+                        raise RuntimeError("invalid embedded runtime")
+                    log("recovering runtime from OTA " + package.name)
+                    with tf.extractfile(member) as src, temp.open("wb") as dst:
+                        done = 0
+                        while True:
+                            if cancelled():
+                                raise InterruptedError("runtime recovery cancelled")
+                            chunk = src.read(1024 * 1024)
+                            if not chunk:
+                                break
+                            dst.write(chunk)
+                            done += len(chunk)
+                            progress("copying", str(min(100, done * 100 // member.size)) + "%")
+                progress("verifying", "")
+                if temp.stat().st_size != manifest["size"] or sha256(temp) != manifest["sha256"]:
+                    raise RuntimeError("embedded runtime checksum mismatch")
+                os.replace(temp, archive)
+                log("embedded runtime checksum verified")
+                return True
+            except InterruptedError:
+                raise
+            except (OSError, KeyError, tarfile.TarError, RuntimeError) as e:
+                log("OTA runtime recovery failed: " + repr(e))
+            finally:
+                temp.unlink(missing_ok=True)
+    return False
+
+
+def install_bundle(data, manifest, log, cancelled=lambda: False, progress=lambda phase, detail: None):
     version = manifest["version"]
     digest = manifest["sha256"]
     size = manifest["size"]
@@ -72,30 +118,52 @@ def install_bundle(data, manifest, log, cancelled=lambda: False):
     parent.mkdir(parents=True, exist_ok=True)
     dest = parent / version
     if valid_bundle(dest, manifest):
+        log("using installed runtime " + version)
         return dest
     archive = data / "updates" / ("banana-easyemu-" + version + ".tar.gz")
     archive.parent.mkdir(parents=True, exist_ok=True)
-    if not archive.is_file() or archive.stat().st_size != size or sha256(archive) != digest:
+    def archive_ok():
+        return archive.is_file() and archive.stat().st_size == size and sha256(archive) == digest
+    if not archive_ok():
+        recover_bundle_from_ota(data, manifest, archive, log, cancelled, progress)
+    if not archive_ok():
         log("runtime missing; downloading pinned bundle " + version)
         temp = archive.with_suffix(".part")
         temp.unlink(missing_ok=True)
         try:
-            downloader = subprocess.Popen(["curl", "-fL", "--retry", "2", "--connect-timeout", "15",
-                            "--max-time", "180", "-o", str(temp), url],
-                           stdout=subprocess.DEVNULL,
-                           stderr=subprocess.STDOUT)
-            try:
-                deadline = time.monotonic() + 200
-                while downloader.poll() is None:
-                    if cancelled() or time.monotonic() >= deadline:
-                        raise InterruptedError("runtime download cancelled or timed out")
+            deadline = time.monotonic() + 200
+            # Curl's ordinary --retry does not retry DNS failure (exit 6).
+            # Use bounded explicit retries and preserve the panel while preparing.
+            for attempt in range(3):
+                progress("downloading", "0%")
+                downloader = subprocess.Popen(["curl", "-fL", "--connect-timeout", "15",
+                                "--max-time", "60", "-o", str(temp), url],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                try:
+                    while downloader.poll() is None:
+                        if cancelled():
+                            raise InterruptedError("runtime download cancelled")
+                        if time.monotonic() >= deadline:
+                            raise TimeoutError("runtime download timed out")
+                        have = temp.stat().st_size if temp.exists() else 0
+                        progress("downloading", str(min(100, have * 100 // size)) + "%")
+                        time.sleep(.1)
+                    code = downloader.returncode
+                finally:
+                    if downloader.poll() is None:
+                        downloader.kill()
+                        downloader.wait()
+                if not code:
+                    break
+                log("runtime download attempt " + str(attempt + 1) + " failed: " + str(code))
+                if code not in (6, 7, 18, 28, 52, 55, 56, 92) or attempt == 2:
+                    raise RuntimeError("runtime download failed: " + str(code))
+                temp.unlink(missing_ok=True)
+                for _ in range(30):
+                    if cancelled(): raise InterruptedError("runtime download cancelled")
+                    if time.monotonic() >= deadline: raise TimeoutError("runtime download timed out")
                     time.sleep(.1)
-                if downloader.returncode:
-                    raise RuntimeError("runtime download failed: " + str(downloader.returncode))
-            finally:
-                if downloader.poll() is None:
-                    downloader.kill()
-                    downloader.wait()
+            progress("verifying", "")
             if temp.stat().st_size != size or sha256(temp) != digest:
                 raise RuntimeError("runtime archive checksum mismatch")
             os.replace(temp, archive)
@@ -111,10 +179,11 @@ def install_bundle(data, manifest, log, cancelled=lambda: False):
                 p = Path(m.name)
                 if p.is_absolute() or ".." in p.parts or not (m.isfile() or m.isdir()):
                     raise RuntimeError("unsafe runtime member " + m.name)
-            for m in members:
+            for i, m in enumerate(members):
                 if cancelled():
                     raise InterruptedError("runtime install cancelled")
                 tf.extract(m, staging, filter="data")
+                progress("installing", str((i + 1) * 100 // max(1, len(members))) + "%")
         for exe in ("psp/PPSSPPSDL", "dreamcast/flycast"):
             (staging / exe).chmod(0o755)
         (staging / ".ready").write_text(digest + "\n")
@@ -246,6 +315,27 @@ def main():
 
 def run(system, rom, data, key, log, logf):
     stopping = False
+    status_path = os.environ.get("BANANA_EASY_STATUS_FILE", "")
+    last_status = None
+    def progress(phase, detail=""):
+        nonlocal last_status
+        current = (phase, detail)
+        if current == last_status:
+            return
+        last_status = current
+        if not re.fullmatch(r"/run/banana/mkxp-status-[0-9]+", status_path):
+            return
+        try:
+            target = Path(status_path)
+            temp = target.with_suffix(".new")
+            temp.write_text(phase + "\n" + detail + "\n", encoding="utf-8")
+            os.replace(temp, target)
+        except OSError:
+            pass
+    def show_failure(detail):
+        progress("failed", detail)
+        if os.environ.get("BANANA_DRM_LEASE_FD") and not stopping:
+            time.sleep(2)
     def stop(sig, frame):
         nonlocal stopping
         stopping = True
@@ -312,8 +402,10 @@ def run(system, rom, data, key, log, logf):
                 if any(line.strip()==b"QUIT" for line in lines): stopping=True
             return stopping
         manifest = json.loads(Path("/usr/share/banana/easyemu/bundle.json").read_text())
-        runtime = install_bundle(data, manifest, log, startup_cancelled)
+        progress("starting", "")
+        runtime = install_bundle(data, manifest, log, startup_cancelled, progress)
         if startup_cancelled(): return 0
+        progress("starting", "")
         module = runtime / "mali_kbase.ko"
         magic = re.search(rb"vermagic=([^\0]+)", module.read_bytes())
         if not magic or magic[1].split()[0].decode() != os.uname().release or os.uname().machine != "aarch64":
@@ -350,9 +442,11 @@ def run(system, rom, data, key, log, logf):
         buf = b""
         while not stopping:
             menu.unlink(missing_ok=True); quitfile.unlink(missing_ok=True)
+            offset = os.fstat(logf.fileno()).st_size
             child = subprocess.Popen(args + [rom], cwd=cwd, env=env, stdout=logf,
                                      stderr=subprocess.STDOUT, start_new_session=True, pass_fds=passfds)
             log("started pid=" + str(child.pid))
+            progress("running", "")
             paused = False
             restart = False
             while not stopping and child.poll() is None:
@@ -384,10 +478,24 @@ def run(system, rom, data, key, log, logf):
             if system == "psp" and code == 75 and restarts < 4:
                 restarts += 1
                 continue
+            if system == "dreamcast":
+                try:
+                    with open(logf.name, "rb") as f:
+                        f.seek(max(offset, os.fstat(f.fileno()).st_size - 131072))
+                        output = f.read()
+                    if b"Failed to locate bootfile" in output:
+                        show_failure("Boot file missing")
+                        return 1
+                except OSError as e:
+                    log("cannot inspect boot result: " + str(e))
+            if code:
+                show_failure("See game log")
             return code if code is not None and code >= 0 else 128 - (code or 0)
         return 0
     except Exception as e:
         log("ERROR " + repr(e))
+        if not stopping:
+            show_failure("Check Wi-Fi / runtime" if "runtime" in str(e).lower() else "See game log")
         return 0 if stopping else 1
     finally:
         cleanup()

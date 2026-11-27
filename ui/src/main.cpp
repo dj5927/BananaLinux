@@ -2835,7 +2835,7 @@ int main(int argc, char** argv)
 			{
 				std::lock_guard<std::mutex> l(worker.uiLock);
 				syncRpgPause();
-				if (gameSysId=="mkxp" && t>=nextStatus) {
+				if ((gameSysId=="mkxp" || nativeEasy) && t>=nextStatus) {
 					nextStatus=t+250;
 					std::ifstream f(launchStatusPath);
 					std::string phase,runtime;
@@ -3272,6 +3272,11 @@ int main(int argc, char** argv)
 				unlink(marker.c_str());
 				setenv("BANANA_MKXP_QUIT_FILE",marker.c_str(),1);
 			}
+			if (nativeEasy) {
+				const std::string phasePath="/run/banana/mkxp-status-"+std::to_string(getpid());
+				unlink(phasePath.c_str());
+				setenv("BANANA_EASY_STATUS_FILE",phasePath.c_str(),1);
+			}
 			if (panel)
 			{
 				setenv("BANANA_DRM_LEASE_FD", std::to_string(leaseFd).c_str(), 1);
@@ -3353,6 +3358,7 @@ int main(int argc, char** argv)
 			else while (waitpid(pid, &status, 0) < 0 && errno == EINTR) {}
 			unlink("/run/banana/game.pid");
 			if (sd.id == "mkxp") unlink(("/run/banana/mkxp-quit-"+std::to_string(pid)).c_str());
+			if (nativeEasy) unlink(("/run/banana/mkxp-status-"+std::to_string(pid)).c_str());
 		}
 		nas::pauseRunner(fetchPaths, false);
 		if (ndsPage)
@@ -3456,7 +3462,9 @@ int main(int argc, char** argv)
 		batteryDue = true;	// a step passed during the game shows now
 		// Retry once only for a short failed start, never for a successful
 		// natural exit or deliberate quit (the supervisor returns zero).
-		return (nativePort || nativeEasy) && panel && pid>0 && secs<8 && WIFEXITED(status) && WEXITSTATUS(status)!=0;
+		// EasyEMU can fail before starting a renderer (network/config/ROM).
+		// Never retry these failures with both screens released.
+		return nativePort && panel && pid>0 && secs<8 && WIFEXITED(status) && WEXITSTATUS(status)!=0;
 	};
 	auto runGame=[&](int game) {
 		if(runGameOnce(game,false)) {
