@@ -1,5 +1,5 @@
 panel	on	Second screen	Auto keeps the lower game panel. Off uses the original single-screen mode; F shortcuts still work.	on|off	Game panel|Off
-GPU.Renderer	OpenGL	GPU renderer	Use OpenGL hardware for enhanced resolution. Software stays at 1x.	OpenGL|Software	Hardware (OpenGL)|Software
+GPU.Renderer	Vulkan	GPU renderer	Vulkan uses the dedicated Mali GPU driver. Renderer changes apply next launch.	Vulkan|OpenGL|Software	Hardware (Vulkan)|Hardware (OpenGL)|Software
 GPU.ResolutionScale	2	Internal resolution	Higher resolution improves image quality but may reduce speed.	1|2|3|4|5|6|7|8	1x|2x|3x|4x|5x|6x|7x|8x
 CPU.ExecutionMode	Recompiler	CPU execution	Recompiler is fastest.	Recompiler|CachedInterpreter|Interpreter	Recompiler|Cached interpreter|Interpreter
 CPU.FastmemMode	MMap	Fast memory access	MMap is the fastest option. Use LUT if a game crashes.	MMap|LUT|Disabled	MMap|LUT|Off
@@ -27,8 +27,8 @@ GPU.PGXPVertexCache	false	PGXP vertex cache	Optional PGXP accuracy and caching.	
 GPU.PGXPCPU	false	PGXP CPU mode	Full CPU tracking costs additional performance.	true|false	On|Off
 GPU.PGXPPreserveProjFP	false	PGXP projection precision	Optional projection precision correction.	true|false	On|Off
 Display.VSync	true	VSync	Whether frames wait for the screen's refresh.	true|false	On|Off
-Display.ShowFPS	false	Show FPS	Display the rendered frame rate.	true|false	On|Off
-Display.ShowSpeed	false	Show speed	Display emulation speed.	true|false	On|Off
+Display.ShowFPS	true	Show FPS	Display the rendered frame rate.	true|false	On|Off
+Display.ShowSpeed	true	Show speed	Display emulation speed.	true|false	On|Off
 Display.LinearFiltering	true	Linear filtering	Smooth final display scaling.	true|false	On|Off
 Display.IntegerScaling	false	Integer scaling	Scale by whole pixels instead of fractional enlargement.	true|false	On|Off
 Display.AspectRatio	4:3	Aspect ratio	Choose the game's display aspect ratio.	4:3|16:9|Stretch To Fill	4:3|16:9|Stretch
@@ -42,3 +42,7 @@ CDROM.ReadSpeedup	1	CD-ROM read speed	Faster loading may break some games.	1|2|3
 CDROM.SeekSpeedup	1	CD-ROM seek speed	Faster seeks may break some games.	1|2|3|4|6|8|10	1x|2x|3x|4x|6x|8x|10x
 BIOS.PatchFastBoot	true	Fast boot	Skip the BIOS animation when supported.	true|false	On|Off
 Audio.BufferMS	50	Audio buffer	Larger audio buffers can reduce audio interruptions.	32|50|64|100|128	32 ms|50 ms|64 ms|100 ms|128 ms
+Audio.StretchMode	Resample	Audio stretch mode	Resampling costs less CPU than time stretching.	None|Resample|TimeStretch	Off|Resampling|Time stretching
+Audio.OutputLatencyMS	25	Audio output latency	Increase latency if audio crackles.	15|25|40|60|100	15 ms|25 ms|40 ms|60 ms|100 ms
+Audio.OutputMuted	false	Mute audio	Disable game audio.	true|false	On|Off
+Audio.OutputVolume	100	Audio volume	Control the emulator output volume.	0|10|20|30|40|50|60|70|80|90|100	0%|10%|20%|30%|40%|50%|60%|70%|80%|90%|100%

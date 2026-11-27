@@ -3122,3 +3122,15 @@ settings		Stretch	화면 채우기
 settings		Adaptive	적응형
 settings		Box	박스
 settings		Nearest	최근접
+settings		Hardware (Vulkan)	하드웨어 (Vulkan)
+settings		Vulkan uses the dedicated Mali GPU driver. Renderer changes apply next launch.	Vulkan은 전용 Mali GPU 드라이버를 사용합니다. 렌더러 변경은 다음 실행부터 적용됩니다.
+settings		Audio stretch mode	오디오 늘이기 방식
+settings		Resampling costs less CPU than time stretching.	리샘플링은 타임 스트레칭보다 CPU 부하가 적습니다.
+settings		Audio output latency	오디오 출력 지연
+settings		Increase latency if audio crackles.	소리가 끊기면 지연 시간을 늘려 보세요.
+settings		Mute audio	음소거
+settings		Disable game audio.	게임 소리를 끕니다.
+settings		Audio volume	오디오 볼륨
+settings		Control the emulator output volume.	에뮬레이터 출력 볼륨을 조절합니다.
+settings		Resampling	리샘플링
+settings		Time stretching	타임 스트레칭

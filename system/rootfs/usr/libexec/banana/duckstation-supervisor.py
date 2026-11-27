@@ -2,9 +2,12 @@
 """Standalone DuckStation with the Banana SA panel's command/lease contract."""
 import fcntl
 import hashlib
+import importlib.util
+import json
 import os
 import re
 import resource
+import shutil
 import select
 import signal
 import stat
@@ -73,7 +76,38 @@ def update_ini(path, changes):
         flush()
     atomic_write(path, "\n".join(output)+"\n")
 
-def prepare(data, schema=SCHEMA):
+def import_bios(data, bios, log):
+    # FAT/exFAT data partitions may not support symbolic links.
+    # Keep all original files, especially existing private BIOS copies.
+    for folder in (data/"bios", data/"bios/psx"):
+        if not folder.is_dir(): continue
+        for src in sorted(folder.iterdir()):
+            try:
+                if not src.is_file() or src.stat().st_size not in (524288,4194304):
+                    continue
+                dest=bios/src.name
+                if dest.exists() and not dest.is_symlink():
+                    continue
+                tmp=bios/("."+src.name+".banana-import")
+                try:
+                    with src.open("rb") as inp, tmp.open("xb") as out:
+                        shutil.copyfileobj(inp,out)
+                        out.flush();os.fsync(out.fileno())
+                    if tmp.stat().st_size!=src.stat().st_size:
+                        raise OSError("BIOS size changed during copy")
+                    os.replace(tmp,dest)
+                    log("BIOS imported: "+str(src)+" -> "+str(dest))
+                finally:
+                    tmp.unlink(missing_ok=True)
+            except OSError as e:
+                log("BIOS import failed: "+str(src)+" "+str(e))
+    log("BIOS directory: "+str(bios))
+    for f in sorted(bios.iterdir()):
+        try:
+            if f.is_file(): log("BIOS candidate: "+f.name+" bytes="+str(f.stat().st_size))
+        except OSError as e: log("BIOS candidate unavailable: "+f.name+" "+str(e))
+
+def prepare(data, schema=SCHEMA, log=lambda msg: None):
     opts = options(schema)
     user = data/"banana/duckstation"
     cfg = data/"banana/duckstation.conf"
@@ -114,20 +148,73 @@ def prepare(data, schema=SCHEMA):
         updates.update({"Pad"+str(n)+".Type":"None" for n in range(2,9)})
     # The lower panel/F+X owns menu dispatch; avoid an overlapping SDL chord.
     updates["Hotkeys.OpenPauseMenu"]=""
-    # Use the normal BIOS directory. Import PS1 BIOS files from its psx
-    # subfolder via a private directory of symlinks, without changing originals.
+    # Use private BIOS copies without relying on filesystem symlink support.
     bios=user/"bios"
-    for folder in (data/"bios",data/"bios/psx"):
-        if folder.is_dir():
-            for f in folder.iterdir():
-                try:
-                    if f.is_file() and f.stat().st_size in (524288,4194304):
-                        dest=bios/f.name
-                        if not dest.exists() and not dest.is_symlink(): dest.symlink_to(f)
-                except OSError: pass
+    import_bios(data,bios,log)
     updates["BIOS.SearchDirectory"]=str(bios)
     update_ini(ini, updates)
     return user, ini, cfg, opts, selected
+
+class MaliSession:
+    """Use the same pinned runtime/module transaction as EasyPSP/EasyCast."""
+    def __init__(self, log, logfile):
+        self.log=log
+        self.logfile=logfile
+        self.removed=False
+        self.loaded=False
+        self.freq=Path("/sys/class/devfreq/fde60000.gpu")
+        self.saved={}
+    def command(self,*args,required=True):
+        try:
+            rc=subprocess.run(args,stdout=self.logfile,stderr=subprocess.STDOUT,timeout=15).returncode
+        except (OSError,subprocess.TimeoutExpired) as e:
+            self.log("GPU command failed: "+repr(e))
+            if required: raise
+            return 1
+        self.log("GPU command "+" ".join(args)+" => "+str(rc))
+        if required and rc: raise RuntimeError("GPU command failed: "+" ".join(args))
+        return rc
+    def start(self,data,env,cancelled,progress):
+        spec=importlib.util.spec_from_file_location("banana_easyemu","/usr/libexec/banana/easyemu-supervisor.py")
+        mod=importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        manifest=json.loads(Path("/usr/share/banana/easyemu/bundle.json").read_text())
+        runtime=mod.install_bundle(data,manifest,self.log,cancelled,progress)
+        if cancelled(): raise RuntimeError("cancelled")
+        module=runtime/"mali_kbase.ko"
+        magic=re.search(rb"vermagic=([^\0]+)",module.read_bytes())
+        if not magic or magic[1].split()[0].decode()!=os.uname().release or os.uname().machine!="aarch64":
+            raise RuntimeError("GPU module kernel/architecture mismatch")
+        if Path("/sys/module/mali_kbase").exists(): raise RuntimeError("Mali session already active")
+        for name in ("max_freq","min_freq","governor"):
+            try: self.saved[name]=(self.freq/name).read_text().strip()
+            except OSError: pass
+        if Path("/sys/module/panfrost").exists():
+            self.command("rmmod","panfrost");self.removed=True
+        self.command("insmod",str(module));self.loaded=True
+        if not Path("/dev/mali0").exists(): raise RuntimeError("Mali device missing")
+        for path,value in ((self.freq/"governor","performance"),
+                (Path("/sys/devices/platform/fde60000.gpu/power_policy"),"coarse_demand")):
+            try: path.write_text(value)
+            except OSError as e: self.log("GPU policy: "+str(e))
+        lib=runtime/"lib"
+        env.update(LD_LIBRARY_PATH=str(lib),VK_ICD_FILENAMES=str(lib/"mali.json"),
+                   VK_DRIVER_FILES=str(lib/"mali.json"),BANANA_DUCK_VK_DRM="1")
+        self.log("Mali Vulkan runtime="+str(runtime))
+    def close(self):
+        if self.loaded:
+            for _ in range(10):
+                if not Path("/sys/module/mali_kbase").exists(): break
+                if self.command("rmmod","mali_kbase",required=False)==0: break
+                time.sleep(.25)
+        if self.removed:
+            if Path("/sys/module/mali_kbase").exists():
+                self.log("ERROR: Mali still in use; refusing conflicting Panfrost load")
+                return
+            self.command("modprobe","panfrost",required=False)
+            for name,value in self.saved.items():
+                try: (self.freq/name).write_text(value)
+                except OSError as e: self.log("GPU restore: "+str(e))
 
 def sync_native(ini,cfg,opts,selected):
     native=read_values(ini, True)
@@ -149,7 +236,7 @@ def run(rom, data, engine=ENGINE, schema=SCHEMA, run_dir=Path("/run/banana")):
     logpath=logs/(hashlib.sha256(key.encode("utf-8","surrogateescape")).hexdigest()+".log")
     if logpath.exists(): os.replace(logpath,logpath.with_suffix(".previous.log"))
     (logs/"last-log-path.txt").write_text(str(logpath)+"\n")
-    stopped=False; child=None; fd=None; ready=False; lockfd=None
+    stopped=False; child=None; fd=None; ready=False; lockfd=None; mali=None
     markers={name:run_dir/("duck-"+name+"-"+str(os.getpid()))
              for name in ("ready","menu","quit","reset")}
     status=os.environ.get("BANANA_EASY_STATUS_FILE","")
@@ -185,7 +272,7 @@ def run(rom, data, engine=ENGINE, schema=SCHEMA, run_dir=Path("/run/banana")):
             if fifo:
                 fd=os.open(fifo,os.O_RDWR|os.O_NONBLOCK|os.O_CLOEXEC|os.O_NOFOLLOW)
                 if not stat.S_ISFIFO(os.fstat(fd).st_mode): raise RuntimeError("invalid command channel")
-            user,ini,cfg,opts,selected=prepare(data,schema)
+            user,ini,cfg,opts,selected=prepare(data,schema,msg)
             env=os.environ.copy()
             env.update(HOME=str(user/"home"),XDG_CONFIG_HOME=str(user/"config"),
                        DUCKSTATION_NOGUI_PLATFORM="vty",SDL_AUDIODRIVER="alsa",
@@ -196,14 +283,29 @@ def run(rom, data, engine=ENGINE, schema=SCHEMA, run_dir=Path("/run/banana")):
             (user/"config").mkdir(exist_ok=True)
             # DuckStation looks for a data root named duckstation beneath XDG_CONFIG_HOME.
             env["XDG_CONFIG_HOME"]=str(user.parent)
-            for k in ("LD_PRELOAD","LD_LIBRARY_PATH","VK_ICD_FILENAMES","VK_DRIVER_FILES"):
+            for k in ("LD_PRELOAD","LD_LIBRARY_PATH","VK_ICD_FILENAMES","VK_DRIVER_FILES","BANANA_DUCK_VK_DRM"):
                 env.pop(k,None)
+            env["BANANA_DUCK_RENDERER"]=selected["GPU.Renderer"]
+            if selected["GPU.Renderer"]=="Vulkan":
+                startup_buf=b""
+                def cancelled():
+                    nonlocal stopped,startup_buf
+                    if fd is not None:
+                        try: startup_buf+=os.read(fd,4096)
+                        except BlockingIOError: pass
+                        lines=startup_buf.split(b"\n");startup_buf=lines.pop()[-4096:]
+                        if any(line.strip()==b"QUIT" for line in lines): stopped=True
+                    return stopped
+                mali=MaliSession(msg,log)
+                mali.start(data,env,cancelled,progress)
+                if cancelled(): return 0
             for m in markers.values(): m.unlink(missing_ok=True)
             msg("rom="+rom+" lease="+str(bool(lease))+" settings="+str(selected))
             resource.setrlimit(resource.RLIMIT_CORE,(0,0))
             child=subprocess.Popen([str(engine),"-batch","-fullscreen","-settings",str(ini),"--",rom],
                 cwd=str(user),env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True,pass_fds=passed)
-            deadline=time.monotonic()+40;buf=b""
+            # A cold Vulkan shader/pipeline cache may take longer on RK3566.
+            deadline=time.monotonic()+(120 if mali is not None else 40);buf=b""
             while child.poll() is None and not stopped:
                 if not ready and markers["ready"].is_file():
                     ready=True;progress("running");msg("Game boot completed")
@@ -244,6 +346,7 @@ def run(rom, data, engine=ENGINE, schema=SCHEMA, run_dir=Path("/run/banana")):
                     except OSError as e: msg("settings sync: "+repr(e))
             for m in markers.values(): m.unlink(missing_ok=True)
             if fd is not None: os.close(fd)
+            if mali is not None: mali.close()
             if lockfd is not None: os.close(lockfd)
             bl=os.environ.get("BANANA_PORT_DARK_BACKLIGHT","")
             if re.fullmatch(r"/sys/class/backlight/[^/]+",bl):

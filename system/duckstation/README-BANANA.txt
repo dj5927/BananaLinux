@@ -1,2 +1,2 @@
-Upstream: https://github.com/stenzek/duckstation/tree/bfa792ddbff11c102521124f235ccb310cac6e6a
-GPLv3 legacy standalone. The compiled ARM64 NoGUI sources and bundled dependencies are included. Windows-only Qt submodule is not used. The patch is already applied to duckstation/. Build recipe records target compiler, libraries and CMake options; adjust workspace paths to your Buildroot SDK. See duckstation/LICENSE.
+Upstream: https://github.com/stenzek/duckstation/tree/bfa792ddbff11c102521124f235ccb310cac6e6a (GPLv3 legacy)
+Complete modified NoGUI sources; v26 DRM lease/panel integration plus v27 SDL audio and Vulkan scanout. The patch is already applied. Build script records the compiler, target SDK libraries and CMake options; adjust paths for your checkout. The separate existing Mali driver/runtime is distributed unchanged with v24.

@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-o=/mnt/e/BananaOS-Korean-0.5.3.6.26
+o=/mnt/e/BananaOS-Korean-0.5.3.6.27
 w=/var/tmp/banana-v26-duck
 s="$w/duckstation"
 host=/home/banana-builder/banana/output/rgds/host
@@ -50,10 +50,10 @@ cmake -S "$s" -B "$w/build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_N
   -DGBM_INCLUDE_DIR="$deps/include" -DGBM_LIBRARY="$deps/lib/libgbm.so" \
   -DLibdrm_INCLUDE_DIR="$deps/include" -DLibdrm_LIBRARY="$deps/lib/libdrm.so" \
   -DBUILD_NOGUI_FRONTEND=ON -DBUILD_QT_FRONTEND=OFF -DBUILD_REGTEST=OFF -DENABLE_CUBEB=OFF \
-  -DENABLE_OPENGL=ON -DENABLE_VULKAN=OFF -DENABLE_DISCORD_PRESENCE=OFF -DENABLE_CHEEVOS=OFF \
+  -DENABLE_OPENGL=ON -DENABLE_VULKAN=ON -DENABLE_DISCORD_PRESENCE=OFF -DENABLE_CHEEVOS=OFF \
   -DUSE_X11=OFF -DUSE_WAYLAND=OFF -DUSE_EGL=ON -DUSE_DRMKMS=ON -DUSE_FBDEV=OFF -DUSE_EVDEV=OFF -DUSE_DBUS=OFF -DUSE_SDL2=ON
 echo DUCK_CONFIGURE_PASS
-cmake --build "$w/build" --target duckstation-nogui -j5
+cmake --build "$w/build" --target duckstation-nogui -j6
 install -m755 "$w/build/bin/duckstation-nogui" "$o/binaries/duckstation-nogui"
 "$host/bin/aarch64-linux-strip" --strip-unneeded "$o/binaries/duckstation-nogui"
 file "$o/binaries/duckstation-nogui"

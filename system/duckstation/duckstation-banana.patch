@@ -1,3 +1,17 @@
+diff --git a/src/common/CMakeLists.txt b/src/common/CMakeLists.txt
+index ba996ad..a4a88f4 100644
+--- a/src/common/CMakeLists.txt
++++ b/src/common/CMakeLists.txt
+@@ -145,6 +145,9 @@ if(USE_DRMKMS)
+     drm_display.h
+   )
+   target_link_libraries(common PUBLIC Libdrm::Libdrm)
++  if(ENABLE_VULKAN)
++    target_compile_definitions(common PUBLIC WITH_BANANA_DRM_VK=1)
++  endif()
+ endif()
+ 
+ if(ENABLE_OPENGL)
 diff --git a/src/common/drm_display.cpp b/src/common/drm_display.cpp
 index be9da8f..1ebc12e 100644
 --- a/src/common/drm_display.cpp
@@ -168,6 +182,20 @@ index be9da8f..1ebc12e 100644
      }
    }
    else if (connector < resources->count_connectors)
+diff --git a/src/common/drm_display.h b/src/common/drm_display.h
+index da1ac56..77c9d39 100644
+--- a/src/common/drm_display.h
++++ b/src/common/drm_display.h
+@@ -20,6 +20,9 @@ public:
+ 
+   int GetCardID() const { return m_card_id; }
+   int GetCardFD() const { return m_card_fd; }
++  u32 GetCRTCID() const { return m_crtc_id; }
++  u32 GetConnectorID() const { return m_connector->connector_id; }
++  const drmModeModeInfo& GetMode() const { return *m_mode; }
+   u32 GetWidth() const { return m_mode->hdisplay; }
+   u32 GetHeight() const { return m_mode->vdisplay; }
+   float GetRefreshRate() const
 diff --git a/src/common/gl/context_egl_gbm.cpp b/src/common/gl/context_egl_gbm.cpp
 index 2f8c7de..5bb6bb7 100644
 --- a/src/common/gl/context_egl_gbm.cpp
@@ -215,6 +243,582 @@ index 2f8c7de..5bb6bb7 100644
      const bool wait_for_vsync = m_vsync && m_current_present_buffer;
  
      lock.unlock();
+diff --git a/src/common/vulkan/banana_scanout.h b/src/common/vulkan/banana_scanout.h
+new file mode 100644
+index 0000000..556a720
+--- /dev/null
++++ b/src/common/vulkan/banana_scanout.h
+@@ -0,0 +1,144 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++// Imported scanout buffers for Banana RG DS / Plus. No CPU pixel copying.
++#pragma once
++#include "../drm_display.h"
++#include "context.h"
++#include "../log.h"
++#include <drm_fourcc.h>
++#include <fcntl.h>
++#include <sys/ioctl.h>
++#include <poll.h>
++#include <unistd.h>
++#include <array>
++#include <cerrno>
++#include <chrono>
++#include <cstdlib>
++#include <cstdio>
++
++namespace Vulkan {
++class BananaScanout {
++  DRMDisplay display{-1};
++  struct Buffer { u32 handle=0,fb=0; VkImage image=VK_NULL_HANDLE; VkDeviceMemory memory=VK_NULL_HANDLE; bool used=false; };
++  std::array<Buffer,3> buffers{};
++  bool modeset=false, pending=false;
++  bool foreign=false;
++  static void FlipDone(int,unsigned,unsigned,unsigned,void* p) { *static_cast<bool*>(p)=false; }
++  bool WaitFlip() {
++    if(!pending) return true;
++    drmEventContext ec{};ec.version=2;ec.page_flip_handler=FlipDone;
++    const auto until=std::chrono::steady_clock::now()+std::chrono::seconds(2);
++    while(pending && std::chrono::steady_clock::now()<until) {
++      pollfd p{display.GetCardFD(),POLLIN,0};int r=poll(&p,1,100);
++      if(r<0 && errno==EINTR) continue;
++      if(r<0 || (p.revents&(POLLERR|POLLHUP|POLLNVAL))) return false;
++      if(r>0 && drmHandleEvent(display.GetCardFD(),&ec)!=0) return false;
++    }
++    return !pending;
++  }
++  static bool Check(VkResult r,const char* what) {
++    if(r==VK_SUCCESS) return true;
++    std::fprintf(stderr,"BANANA_DUCK_VK %s failed: %d\n",what,int(r));return false;
++  }
++public:
++  ~BananaScanout() {
++    // VulkanHostDisplay waits for GPU work and destroys the image views first.
++    if(modeset) {
++      WaitFlip();
++      if(!std::getenv("BANANA_DRM_LEASE_FD")) display.RestoreBuffer();
++      else drmModeSetCrtc(display.GetCardFD(),display.GetCRTCID(),0,0,0,nullptr,0,nullptr);
++    }
++    const auto device=g_vulkan_context->GetDevice();
++    for(auto& b:buffers) {
++      if(b.fb) drmModeRmFB(display.GetCardFD(),b.fb);
++      if(b.image) vkDestroyImage(device,b.image,nullptr);
++      if(b.memory) vkFreeMemory(device,b.memory,nullptr);
++      if(b.handle) { drm_mode_destroy_dumb d{};d.handle=b.handle;ioctl(display.GetCardFD(),DRM_IOCTL_MODE_DESTROY_DUMB,&d); }
++    }
++  }
++  bool Create(WindowInfo& wi) {
++    if(!display.Initialize(0,0,0)) return false;
++    const u32 w=display.GetWidth(),h=display.GetHeight();
++    if(!((w==640 && h==480)||(w==1024 && h==768))) return false;
++    wi.surface_width=w;wi.surface_height=h;
++    auto device=g_vulkan_context->GetDevice();
++    const auto getprops=reinterpret_cast<PFN_vkGetMemoryFdPropertiesKHR>(vkGetDeviceProcAddr(device,"vkGetMemoryFdPropertiesKHR"));
++    if(!getprops) return false;
++    u32 n=0;
++    const auto phys=g_vulkan_context->GetPhysicalDevice();
++    if(vkEnumerateDeviceExtensionProperties(phys,nullptr,&n,nullptr)!=VK_SUCCESS) return false;
++    std::vector<VkExtensionProperties> exts(n);
++    if(vkEnumerateDeviceExtensionProperties(phys,nullptr,&n,exts.data())!=VK_SUCCESS) return false;
++    for(auto& e:exts) if(std::strcmp(e.extensionName,VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME)==0) foreign=true;
++    for(auto& b:buffers) {
++      drm_mode_create_dumb bo{};bo.width=w;bo.height=h;bo.bpp=32;
++      if(ioctl(display.GetCardFD(),DRM_IOCTL_MODE_CREATE_DUMB,&bo)!=0) return false;
++      b.handle=bo.handle;
++      VkSubresourceLayout layout{};layout.rowPitch=bo.pitch;
++      VkImageDrmFormatModifierExplicitCreateInfoEXT mod{};
++      mod.sType=VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT;
++      mod.drmFormatModifier=0;mod.drmFormatModifierPlaneCount=1;mod.pPlaneLayouts=&layout;
++      VkExternalMemoryImageCreateInfo ext{};ext.sType=VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
++      ext.pNext=&mod;ext.handleTypes=VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
++      VkImageCreateInfo ci{};ci.sType=VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;ci.pNext=&ext;
++      ci.imageType=VK_IMAGE_TYPE_2D;ci.format=VK_FORMAT_R8G8B8A8_UNORM;
++      ci.extent={w,h,1};ci.mipLevels=1;ci.arrayLayers=1;ci.samples=VK_SAMPLE_COUNT_1_BIT;
++      ci.tiling=VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT;
++      ci.usage=VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT;
++      ci.sharingMode=VK_SHARING_MODE_EXCLUSIVE;
++      if(!Check(vkCreateImage(device,&ci,nullptr,&b.image),"create scanout image")) return false;
++      VkMemoryRequirements req{};vkGetImageMemoryRequirements(device,b.image,&req);
++      int dma=-1;
++      if(drmPrimeHandleToFD(display.GetCardFD(),b.handle,DRM_CLOEXEC|DRM_RDWR,&dma)!=0) return false;
++      VkMemoryFdPropertiesKHR props{};props.sType=VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR;
++      auto res=getprops(device,VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,dma,&props);
++      if(res!=VK_SUCCESS) {close(dma);Check(res,"dma properties");return false;}
++      u32 bits=req.memoryTypeBits&props.memoryTypeBits;
++      if(!bits||req.size>bo.size) {close(dma);return false;}
++      u32 type=0;while(!(bits&(1u<<type))) ++type;
++      VkMemoryDedicatedAllocateInfo dedicated{};dedicated.sType=VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;dedicated.image=b.image;
++      VkImportMemoryFdInfoKHR import{};import.sType=VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR;import.pNext=&dedicated;
++      import.handleType=VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;import.fd=dma;
++      VkMemoryAllocateInfo ai{};ai.sType=VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;ai.pNext=&import;
++      ai.allocationSize=req.size;ai.memoryTypeIndex=type;
++      res=vkAllocateMemory(device,&ai,nullptr,&b.memory);
++      if(res!=VK_SUCCESS) {close(dma);Check(res,"import dma memory");return false;}
++      if(!Check(vkBindImageMemory(device,b.image,b.memory,0),"bind dma memory")) return false;
++      u32 handles[4]={b.handle},pitches[4]={bo.pitch},offsets[4]={0};
++      uint64_t mods[4]={0};
++      if(drmModeAddFB2WithModifiers(display.GetCardFD(),w,h,DRM_FORMAT_ABGR8888,handles,pitches,offsets,mods,&b.fb,DRM_MODE_FB_MODIFIERS)!=0) return false;
++    }
++    std::fprintf(stderr,"BANANA_DUCK_VK imported 3 scanout buffers %ux%u\n",w,h);
++    return true;
++  }
++  std::vector<VkImage> Images() const {return {buffers[0].image,buffers[1].image,buffers[2].image};}
++  bool Acquire() {return WaitFlip();}
++  void Barrier(VkCommandBuffer cb,u32 idx,bool acquire) {
++    auto& b=buffers.at(idx);
++    VkImageMemoryBarrier bi{};bi.sType=VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
++    bi.image=b.image;bi.subresourceRange={VK_IMAGE_ASPECT_COLOR_BIT,0,1,0,1};
++    bi.oldLayout=acquire?(b.used?VK_IMAGE_LAYOUT_GENERAL:VK_IMAGE_LAYOUT_UNDEFINED):VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
++    bi.newLayout=acquire?VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:VK_IMAGE_LAYOUT_GENERAL;
++    const u32 q=g_vulkan_context->GetGraphicsQueueFamilyIndex();
++    const u32 outside=foreign?VK_QUEUE_FAMILY_FOREIGN_EXT:VK_QUEUE_FAMILY_EXTERNAL;
++    bi.srcQueueFamilyIndex=acquire?outside:q;bi.dstQueueFamilyIndex=acquire?q:outside;
++    bi.srcAccessMask=acquire?0:VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
++    bi.dstAccessMask=acquire?(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT):0;
++    vkCmdPipelineBarrier(cb,acquire?VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT:VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
++      acquire?VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT:VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,0,0,nullptr,0,nullptr,1,&bi);
++    b.used=true;
++  }
++  bool Present(u32 idx) {
++    if(!WaitFlip()) return false;
++    const u32 fb=buffers.at(idx).fb;
++    if(!modeset) {
++      u32 c=display.GetConnectorID();drmModeModeInfo mode=display.GetMode();
++      if(drmModeSetCrtc(display.GetCardFD(),display.GetCRTCID(),fb,0,0,&c,1,&mode)!=0) return false;
++      modeset=true;
++    } else {
++      if(drmModePageFlip(display.GetCardFD(),display.GetCRTCID(),fb,DRM_MODE_PAGE_FLIP_EVENT,&pending)!=0) return false;
++      pending=true;
++    }
++    return true;
++  }
++};
++}
+diff --git a/src/common/vulkan/context.cpp b/src/common/vulkan/context.cpp
+index bcdb666..c7b016e 100644
+--- a/src/common/vulkan/context.cpp
++++ b/src/common/vulkan/context.cpp
+@@ -7,6 +7,7 @@
+ #include "../string_util.h"
+ #include "../window_info.h"
+ #include "swap_chain.h"
++#include <cstdlib>
+ #include "util.h"
+ #include <algorithm>
+ #include <array>
+@@ -162,6 +163,9 @@ bool Vulkan::Context::SelectInstanceExtensions(ExtensionList* extension_list, co
+     return false;
+   };
+ 
++#ifdef WITH_BANANA_DRM_VK
++  if(wi && wi->type==WindowInfo::Type::Display && std::getenv("BANANA_DUCK_VK_DRM")) wi=nullptr;
++#endif
+   // Common extensions
+   if (wi && wi->type != WindowInfo::Type::Surfaceless && !SupportsExtension(VK_KHR_SURFACE_EXTENSION_NAME, true))
+     return false;
+@@ -282,7 +286,13 @@ bool Vulkan::Context::Create(std::string_view gpu_name, const WindowInfo* wi,
+     return false;
+   }
+ 
+-  const bool enable_surface = (wi && wi->type != WindowInfo::Type::Surfaceless);
++  const bool banana_display =
++#ifdef WITH_BANANA_DRM_VK
++    wi && wi->type==WindowInfo::Type::Display && std::getenv("BANANA_DUCK_VK_DRM");
++#else
++    false;
++#endif
++  const bool enable_surface = (wi && wi->type != WindowInfo::Type::Surfaceless && !banana_display);
+   VkInstance instance = CreateVulkanInstance(wi, enable_debug_utils, enable_validation_layer);
+   if (instance == VK_NULL_HANDLE)
+   {
+@@ -353,7 +363,7 @@ bool Vulkan::Context::Create(std::string_view gpu_name, const WindowInfo* wi,
+       !g_vulkan_context->CreateAllocator() || !g_vulkan_context->CreateGlobalDescriptorPool() ||
+       !g_vulkan_context->CreateQueryPool() || !g_vulkan_context->CreateCommandBuffers() ||
+       !g_vulkan_context->CreateTextureStreamBuffer() ||
+-      (enable_surface && (*out_swap_chain = SwapChain::Create(wi_copy, surface, vsync)) == nullptr))
++      ((enable_surface || banana_display) && (*out_swap_chain = SwapChain::Create(wi_copy, surface, vsync)) == nullptr))
+   {
+     // Since we are destroying the instance, we're also responsible for destroying the surface.
+     if (surface != VK_NULL_HANDLE)
+@@ -449,6 +459,15 @@ bool Vulkan::Context::SelectDeviceExtensions(ExtensionList* extension_list, bool
+   if (enable_surface && !SupportsExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME, true))
+     return false;
+ 
++#ifdef WITH_BANANA_DRM_VK
++  if(std::getenv("BANANA_DUCK_VK_DRM")) {
++    if(!SupportsExtension(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,true) ||
++       !SupportsExtension(VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME,true) ||
++       !SupportsExtension(VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,true)) return false;
++    SupportsExtension(VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME,false);
++    SupportsExtension(VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME,false);
++  }
++#endif
+   m_optional_extensions.vk_ext_memory_budget = SupportsExtension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, false);
+   m_optional_extensions.vk_khr_driver_properties = SupportsExtension(VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME, false);
+ 
+@@ -955,7 +974,7 @@ void Vulkan::Context::SubmitCommandBuffer(VkSemaphore wait_semaphore /* = VK_NUL
+                                           VkSemaphore signal_semaphore /* = VK_NULL_HANDLE */,
+                                           VkSwapchainKHR present_swap_chain /* = VK_NULL_HANDLE */,
+                                           uint32_t present_image_index /* = 0xFFFFFFFF */,
+-                                          bool submit_on_thread /* = false */)
++                                          bool submit_on_thread /* = false */, SwapChain* banana_chain)
+ {
+   FrameResources& resources = m_frame_resources[m_current_frame];
+ 
+@@ -982,12 +1001,14 @@ void Vulkan::Context::SubmitCommandBuffer(VkSemaphore wait_semaphore /* = VK_NUL
+   if (!submit_on_thread || !m_present_thread.joinable())
+   {
+     DoSubmitCommandBuffer(m_current_frame, wait_semaphore, signal_semaphore);
+-    if (present_swap_chain != VK_NULL_HANDLE)
++    if(banana_chain) DoBananaPresent(banana_chain,m_current_frame,present_image_index);
++    else if (present_swap_chain != VK_NULL_HANDLE)
+       DoPresent(signal_semaphore, present_swap_chain, present_image_index);
+     return;
+   }
+ 
+   m_queued_present.command_buffer_index = m_current_frame;
++  m_queued_present.banana_chain=banana_chain;
+   m_queued_present.present_swap_chain = present_swap_chain;
+   m_queued_present.present_image_index = present_image_index;
+   m_queued_present.wait_semaphore = wait_semaphore;
+@@ -1025,6 +1046,16 @@ void Vulkan::Context::DoSubmitCommandBuffer(u32 index, VkSemaphore wait_semaphor
+   }
+ }
+ 
++void Vulkan::Context::DoBananaPresent(SwapChain* chain,u32 frame,u32 image)
++{
++#ifdef WITH_BANANA_DRM_VK
++  const VkFence fence=m_frame_resources[frame].fence;
++  if(vkWaitForFences(m_device,1,&fence,VK_TRUE,2000000000ULL)!=VK_SUCCESS || !chain->BananaPresent(image)) {
++    Log_ErrorPrint("Banana Vulkan scanout failed");
++    std::abort(); // supervisor restores the display and GPU driver
++  }
++#endif
++}
+ void Vulkan::Context::DoPresent(VkSemaphore wait_semaphore, VkSwapchainKHR present_swap_chain,
+                                 uint32_t present_image_index)
+ {
+@@ -1079,8 +1110,11 @@ void Vulkan::Context::PresentThread()
+ 
+     DoSubmitCommandBuffer(m_queued_present.command_buffer_index, m_queued_present.wait_semaphore,
+                           m_queued_present.signal_semaphore);
+-    DoPresent(m_queued_present.signal_semaphore, m_queued_present.present_swap_chain,
+-              m_queued_present.present_image_index);
++    if(m_queued_present.banana_chain)
++      DoBananaPresent(m_queued_present.banana_chain,m_queued_present.command_buffer_index,m_queued_present.present_image_index);
++    else if(m_queued_present.present_swap_chain!=VK_NULL_HANDLE)
++      DoPresent(m_queued_present.signal_semaphore, m_queued_present.present_swap_chain,
++                m_queued_present.present_image_index);
+     m_present_done.store(true);
+     m_present_done_cv.notify_one();
+   }
+diff --git a/src/common/vulkan/context.h b/src/common/vulkan/context.h
+index bc9ebb8..2655bf3 100644
+--- a/src/common/vulkan/context.h
++++ b/src/common/vulkan/context.h
+@@ -157,7 +157,7 @@ public:
+ 
+   void SubmitCommandBuffer(VkSemaphore wait_semaphore = VK_NULL_HANDLE, VkSemaphore signal_semaphore = VK_NULL_HANDLE,
+                            VkSwapchainKHR present_swap_chain = VK_NULL_HANDLE,
+-                           uint32_t present_image_index = 0xFFFFFFFF, bool submit_on_thread = false);
++                           uint32_t present_image_index = 0xFFFFFFFF, bool submit_on_thread = false, SwapChain* banana_chain=nullptr);
+   void MoveToNextCommandBuffer();
+ 
+   void ExecuteCommandBuffer(bool wait_for_completion);
+@@ -215,6 +215,7 @@ private:
+ 
+   void DoSubmitCommandBuffer(u32 index, VkSemaphore wait_semaphore, VkSemaphore signal_semaphore);
+   void DoPresent(VkSemaphore wait_semaphore, VkSwapchainKHR present_swap_chain, uint32_t present_image_index);
++  void DoBananaPresent(SwapChain* chain,u32 frame,u32 image);
+   void WaitForPresentComplete(std::unique_lock<std::mutex>& lock);
+   void PresentThread();
+   void StartPresentThread();
+@@ -275,6 +276,7 @@ private:
+     VkSwapchainKHR present_swap_chain;
+     u32 command_buffer_index;
+     u32 present_image_index;
++    SwapChain* banana_chain;
+   };
+ 
+   QueuedPresent m_queued_present = {};
+diff --git a/src/common/vulkan/swap_chain.cpp b/src/common/vulkan/swap_chain.cpp
+index d9a54e0..65a7d31 100644
+--- a/src/common/vulkan/swap_chain.cpp
++++ b/src/common/vulkan/swap_chain.cpp
+@@ -6,6 +6,9 @@
+ #include "../log.h"
+ #include "context.h"
+ #include "util.h"
++#ifdef WITH_BANANA_DRM_VK
++#include "banana_scanout.h"
++#endif
+ #include <algorithm>
+ #include <array>
+ #include <cmath>
+@@ -470,6 +473,9 @@ void SwapChain::DestroyVulkanSurface(VkInstance instance, WindowInfo* wi, VkSurf
+ std::vector<SwapChain::FullscreenModeInfo>
+ SwapChain::GetSurfaceFullscreenModes(VkInstance instance, VkPhysicalDevice physical_device, const WindowInfo& wi)
+ {
++#ifdef WITH_BANANA_DRM_VK
++  if(std::getenv("BANANA_DUCK_VK_DRM")) return {};
++#endif
+   if (wi.type == WindowInfo::Type::Display)
+     return GetDisplayModes(instance, physical_device, wi);
+ 
+@@ -479,6 +485,15 @@ SwapChain::GetSurfaceFullscreenModes(VkInstance instance, VkPhysicalDevice physi
+ std::unique_ptr<SwapChain> SwapChain::Create(const WindowInfo& wi, VkSurfaceKHR surface, bool vsync)
+ {
+   std::unique_ptr<SwapChain> swap_chain = std::make_unique<SwapChain>(wi, surface, vsync);
++#ifdef WITH_BANANA_DRM_VK
++  if(surface == VK_NULL_HANDLE && std::getenv("BANANA_DUCK_VK_DRM")) {
++    swap_chain->m_banana=std::make_unique<BananaScanout>();
++    if(!swap_chain->m_banana->Create(swap_chain->m_window_info)) return nullptr;
++    swap_chain->m_surface_format={VK_FORMAT_R8G8B8A8_UNORM,VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
++    if(!swap_chain->SetupSwapChainImages()) return nullptr;
++    return swap_chain;
++  }
++#endif
+   if (!swap_chain->CreateSwapChain() || !swap_chain->SetupSwapChainImages() || !swap_chain->CreateSemaphores())
+     return nullptr;
+ 
+@@ -685,17 +700,20 @@ bool SwapChain::SetupSwapChainImages()
+ {
+   Assert(m_images.empty());
+ 
+-  u32 image_count;
+-  VkResult res = vkGetSwapchainImagesKHR(g_vulkan_context->GetDevice(), m_swap_chain, &image_count, nullptr);
+-  if (res != VK_SUCCESS)
++  std::vector<VkImage> images;
++#ifdef WITH_BANANA_DRM_VK
++  if(m_banana) images=m_banana->Images();
++  else
++#endif
+   {
+-    LOG_VULKAN_ERROR(res, "vkGetSwapchainImagesKHR failed: ");
+-    return false;
++    u32 image_count=0;
++    VkResult res=vkGetSwapchainImagesKHR(g_vulkan_context->GetDevice(),m_swap_chain,&image_count,nullptr);
++    if(res!=VK_SUCCESS || image_count==0) return false;
++    images.resize(image_count);
++    res=vkGetSwapchainImagesKHR(g_vulkan_context->GetDevice(),m_swap_chain,&image_count,images.data());
++    if(res!=VK_SUCCESS) return false;
+   }
+-
+-  std::vector<VkImage> images(image_count);
+-  res = vkGetSwapchainImagesKHR(g_vulkan_context->GetDevice(), m_swap_chain, &image_count, images.data());
+-  Assert(res == VK_SUCCESS);
++  const u32 image_count=static_cast<u32>(images.size());
+ 
+   m_load_render_pass = g_vulkan_context->GetRenderPass(m_surface_format.format, VK_FORMAT_UNDEFINED,
+                                                        VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_LOAD);
+@@ -722,8 +740,10 @@ bool SwapChain::SetupSwapChainImages()
+     }
+ 
+     image.framebuffer = image.texture.CreateFramebuffer(m_load_render_pass);
+-    if (image.framebuffer == VK_NULL_HANDLE)
++    if (image.framebuffer == VK_NULL_HANDLE) {
++      image.texture.Destroy(false);
+       return false;
++    }
+ 
+     m_images.emplace_back(std::move(image));
+   }
+@@ -737,12 +757,18 @@ void SwapChain::DestroySwapChainImages()
+   {
+     // Images themselves are cleaned up by the swap chain object
+     vkDestroyFramebuffer(g_vulkan_context->GetDevice(), it.framebuffer, nullptr);
++#ifdef WITH_BANANA_DRM_VK
++    if(m_banana) it.texture.Destroy(false);
++#endif
+   }
+   m_images.clear();
+ }
+ 
+ void SwapChain::DestroySwapChain()
+ {
++#ifdef WITH_BANANA_DRM_VK
++  if(m_banana) {m_banana.reset();return;}
++#endif
+   if (m_swap_chain == VK_NULL_HANDLE)
+     return;
+ 
+@@ -750,8 +776,22 @@ void SwapChain::DestroySwapChain()
+   m_swap_chain = VK_NULL_HANDLE;
+ }
+ 
++#ifdef WITH_BANANA_DRM_VK
++void SwapChain::BananaBarrier(VkCommandBuffer cb,bool acquire) {
++  m_banana->Barrier(cb,m_current_image,acquire);
++  GetCurrentTexture().OverrideImageLayout(acquire?VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:VK_IMAGE_LAYOUT_GENERAL);
++}
++bool SwapChain::BananaPresent(u32 index) {return m_banana->Present(index);}
++#endif
+ VkResult SwapChain::AcquireNextImage()
+ {
++#ifdef WITH_BANANA_DRM_VK
++  if(m_banana) {
++    if(!m_banana->Acquire()) {Log_ErrorPrint("Banana Vulkan scanout timed out");std::abort();}
++    m_current_image=(m_current_image+1)%GetImageCount();
++    return VK_SUCCESS;
++  }
++#endif
+   if (!m_swap_chain)
+     return VK_ERROR_SURFACE_LOST_KHR;
+ 
+@@ -761,6 +801,9 @@ VkResult SwapChain::AcquireNextImage()
+ 
+ bool SwapChain::ResizeSwapChain(u32 new_width /* = 0 */, u32 new_height /* = 0 */)
+ {
++#ifdef WITH_BANANA_DRM_VK
++  if(m_banana) return true; // physical DSI mode is fixed
++#endif
+   DestroySwapChainImages();
+ 
+   if (new_width != 0 && new_height != 0)
+@@ -781,6 +824,9 @@ bool SwapChain::ResizeSwapChain(u32 new_width /* = 0 */, u32 new_height /* = 0 *
+ 
+ bool SwapChain::RecreateSwapChain()
+ {
++#ifdef WITH_BANANA_DRM_VK
++  if(m_banana) return true;
++#endif
+   DestroySwapChainImages();
+ 
+   if (!CreateSwapChain() || !SetupSwapChainImages())
+@@ -805,6 +851,9 @@ bool SwapChain::SetVSync(bool enabled)
+ 
+ bool SwapChain::RecreateSurface(const WindowInfo& new_wi)
+ {
++#ifdef WITH_BANANA_DRM_VK
++  if(m_banana) return new_wi.type==WindowInfo::Type::Display;
++#endif
+   // Destroy the old swap chain, images, and surface.
+   DestroySwapChainImages();
+   DestroySwapChain();
+diff --git a/src/common/vulkan/swap_chain.h b/src/common/vulkan/swap_chain.h
+index c7ef1c9..c5da1b3 100644
+--- a/src/common/vulkan/swap_chain.h
++++ b/src/common/vulkan/swap_chain.h
+@@ -11,6 +11,9 @@
+ #include <vector>
+ 
+ namespace Vulkan {
++#ifdef WITH_BANANA_DRM_VK
++class BananaScanout;
++#endif
+ 
+ class SwapChain
+ {
+@@ -56,6 +59,11 @@ public:
+   ALWAYS_INLINE VkSemaphore GetImageAvailableSemaphore() const { return m_image_available_semaphore; }
+   ALWAYS_INLINE VkSemaphore GetRenderingFinishedSemaphore() const { return m_rendering_finished_semaphore; }
+   VkResult AcquireNextImage();
++#ifdef WITH_BANANA_DRM_VK
++  bool IsBananaDrm() const { return bool(m_banana); }
++  void BananaBarrier(VkCommandBuffer cb,bool acquire);
++  bool BananaPresent(u32 index);
++#endif
+ 
+   bool RecreateSurface(const WindowInfo& new_wi);
+   bool ResizeSwapChain(u32 new_width = 0, u32 new_height = 0);
+@@ -100,6 +108,9 @@ private:
+ 
+   VkSwapchainKHR m_swap_chain = VK_NULL_HANDLE;
+   std::vector<SwapChainImage> m_images;
++#ifdef WITH_BANANA_DRM_VK
++  std::unique_ptr<BananaScanout> m_banana;
++#endif
+   u32 m_current_image = 0;
+   bool m_vsync_enabled = false;
+ };
+diff --git a/src/core/common_host.cpp b/src/core/common_host.cpp
+index 98e1eb5..a907ca7 100644
+--- a/src/core/common_host.cpp
++++ b/src/core/common_host.cpp
+@@ -209,6 +209,10 @@ std::unique_ptr<AudioStream> Host::CreateAudioStream(AudioBackend backend, u32 s
+       return AudioStream::CreateXAudio2Stream(sample_rate, channels, buffer_ms, latency_ms, stretch);
+ #endif
+ 
++#ifdef WITH_SDL2
++    case AudioBackend::SDL:
++      return AudioStream::CreateSDLAudioStream(sample_rate, channels, buffer_ms, latency_ms, stretch);
++#endif
+     case AudioBackend::Null:
+       return AudioStream::CreateNullStream(sample_rate, channels, buffer_ms);
+ 
+diff --git a/src/core/settings.cpp b/src/core/settings.cpp
+index f6aabba..9fec317 100644
+--- a/src/core/settings.cpp
++++ b/src/core/settings.cpp
+@@ -2,6 +2,7 @@
+ // SPDX-License-Identifier: (GPL-3.0 OR CC-BY-NC-ND-4.0)
+ 
+ #include "settings.h"
++#include <cstdlib>
+ #include "achievements.h"
+ #include "common/assert.h"
+ #include "common/file_system.h"
+@@ -200,6 +201,10 @@ void Settings::Load(SettingsInterface& si)
+ 
+   gpu_renderer = ParseRendererName(si.GetStringValue("GPU", "Renderer", GetRendererName(DEFAULT_GPU_RENDERER)).c_str())
+                    .value_or(DEFAULT_GPU_RENDERER);
++#ifdef WITH_BANANA_DRM_VK
++  if(const char* backend=std::getenv("BANANA_DUCK_RENDERER"))
++    gpu_renderer=ParseRendererName(backend).value_or(gpu_renderer);
++#endif
+   gpu_adapter = si.GetStringValue("GPU", "Adapter", "");
+   gpu_resolution_scale = static_cast<u32>(si.GetIntValue("GPU", "ResolutionScale", 1));
+   gpu_multisamples = static_cast<u32>(si.GetIntValue("GPU", "Multisamples", 1));
+@@ -1125,6 +1130,9 @@ const char* Settings::GetDisplayAlignmentDisplayName(DisplayAlignment alignment)
+ 
+ static constexpr const char* s_audio_backend_names[] = {
+   "Null",
++#ifdef WITH_SDL2
++  "SDL",
++#endif
+ #ifdef WITH_CUBEB
+   "Cubeb",
+ #endif
+@@ -1137,6 +1145,9 @@ static constexpr const char* s_audio_backend_names[] = {
+ };
+ static constexpr const char* s_audio_backend_display_names[] = {
+   TRANSLATE_NOOP("AudioBackend", "Null (No Output)"),
++#ifdef WITH_SDL2
++  TRANSLATE_NOOP("AudioBackend", "SDL (ALSA)"),
++#endif
+ #ifdef WITH_CUBEB
+   TRANSLATE_NOOP("AudioBackend", "Cubeb"),
+ #endif
+diff --git a/src/core/settings.h b/src/core/settings.h
+index 2d52a72..ce1d7e1 100644
+--- a/src/core/settings.h
++++ b/src/core/settings.h
+@@ -432,8 +432,12 @@ struct Settings
+   static constexpr AudioBackend DEFAULT_AUDIO_BACKEND = AudioBackend::XAudio2;
+ #elif defined(__ANDROID__)
+   static constexpr AudioBackend DEFAULT_AUDIO_BACKEND = AudioBackend::AAudio;
++#else
++#ifdef WITH_SDL2
++  static constexpr AudioBackend DEFAULT_AUDIO_BACKEND = AudioBackend::SDL;
+ #else
+   static constexpr AudioBackend DEFAULT_AUDIO_BACKEND = AudioBackend::Null;
++#endif
+ #endif
+ 
+   static constexpr DisplayCropMode DEFAULT_DISPLAY_CROP_MODE = DisplayCropMode::Overscan;
+diff --git a/src/core/types.h b/src/core/types.h
+index 49ede88..b746813 100644
+--- a/src/core/types.h
++++ b/src/core/types.h
+@@ -124,6 +124,9 @@ enum class DisplayAlignment
+ enum class AudioBackend : u8
+ {
+   Null,
++#ifdef WITH_SDL2
++  SDL,
++#endif
+ #ifdef WITH_CUBEB
+   Cubeb,
+ #endif
 diff --git a/src/duckstation-nogui/CMakeLists.txt b/src/duckstation-nogui/CMakeLists.txt
 index 60b97ec..74ace33 100644
 --- a/src/duckstation-nogui/CMakeLists.txt
@@ -475,3 +1079,152 @@ index bcb3104..164b482 100644
      int fd;
    };
  
+diff --git a/src/util/CMakeLists.txt b/src/util/CMakeLists.txt
+index 1a8ef95..35124c2 100644
+--- a/src/util/CMakeLists.txt
++++ b/src/util/CMakeLists.txt
+@@ -93,6 +93,7 @@ endif()
+ 
+ if(SDL2_FOUND)
+   target_sources(util PRIVATE 
++    banana_sdl_audio.cpp
+     sdl_input_source.cpp
+     sdl_input_source.h
+   )
+diff --git a/src/util/audio_stream.h b/src/util/audio_stream.h
+index eeafbff..3896e1a 100644
+--- a/src/util/audio_stream.h
++++ b/src/util/audio_stream.h
+@@ -78,6 +78,9 @@ public:
+   void SetStretchMode(AudioStretchMode mode);
+ 
+   static std::unique_ptr<AudioStream> CreateNullStream(u32 sample_rate, u32 channels, u32 buffer_ms);
++#ifdef WITH_SDL2
++  static std::unique_ptr<AudioStream> CreateSDLAudioStream(u32 rate,u32 channels,u32 ms,u32 latency,AudioStretchMode stretch);
++#endif
+ 
+ #ifdef WITH_CUBEB
+   static std::unique_ptr<AudioStream> CreateCubebAudioStream(u32 sample_rate, u32 channels, u32 buffer_ms,
+diff --git a/src/util/banana_sdl_audio.cpp b/src/util/banana_sdl_audio.cpp
+new file mode 100644
+index 0000000..910dc26
+--- /dev/null
++++ b/src/util/banana_sdl_audio.cpp
+@@ -0,0 +1,75 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++// SDL2 ALSA output for Banana's legacy DuckStation build.
++#include "audio_stream.h"
++#include "common/log.h"
++#include <SDL.h>
++#include <algorithm>
++#include <cstring>
++Log_SetChannel(BananaSDLAudio);
++namespace {
++class SDLAudio final : public AudioStream {
++  SDL_AudioDeviceID device = 0;
++  bool initialized = false;
++  std::atomic<u32> volume{100};
++  static void Callback(void* userdata, Uint8* bytes, int len) {
++    auto& self = *static_cast<SDLAudio*>(userdata);
++    const u32 frame_bytes = self.m_channels * sizeof(s16);
++    const u32 frames = static_cast<u32>(len) / frame_bytes;
++    auto* samples = reinterpret_cast<s16*>(bytes);
++    self.ReadFrames(samples, frames);
++    const u32 vol = self.volume.load(std::memory_order_relaxed);
++    if (vol != 100) {
++      for (u32 i=0; i<frames*self.m_channels; i++)
++        samples[i]=static_cast<s16>(std::clamp<int>(static_cast<int>(samples[i])*static_cast<int>(vol)/100,-32768,32767));
++    }
++    std::memset(bytes+frames*frame_bytes,0,len-frames*frame_bytes);
++  }
++public:
++  SDLAudio(u32 rate,u32 channels,u32 ms,AudioStretchMode stretch)
++    : AudioStream(rate,channels,ms,stretch) {}
++  ~SDLAudio() override {
++    if (device) SDL_CloseAudioDevice(device);
++    if (initialized) SDL_QuitSubSystem(SDL_INIT_AUDIO);
++  }
++  bool Initialize(u32 latency) {
++    if (SDL_InitSubSystem(SDL_INIT_AUDIO)!=0) {
++      Log_ErrorPrintf("SDL audio init failed: %s",SDL_GetError()); return false;
++    }
++    initialized=true;
++    SDL_AudioSpec want{},got{};
++    want.freq=static_cast<int>(m_sample_rate);
++    want.format=AUDIO_S16SYS;
++    want.channels=static_cast<Uint8>(m_channels);
++    u32 frames=std::clamp<u32>((latency?latency:25)*m_sample_rate/1000,256,4096);
++    u32 samples=256; while(samples<frames && samples<4096) samples*=2;
++    want.samples=static_cast<Uint16>(samples);
++    want.callback=Callback;
++    want.userdata=this;
++    device=SDL_OpenAudioDevice(nullptr,0,&want,&got,SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
++    if (!device) { Log_ErrorPrintf("SDL audio open failed: %s",SDL_GetError()); return false; }
++    if(got.format!=want.format || got.freq!=want.freq || got.channels!=want.channels) {
++      Log_ErrorPrintf("SDL audio format mismatch"); return false;
++    }
++    BaseInitialize();
++    m_volume=100;
++    m_paused=true;
++    Log_InfoPrintf("BANANA SDL audio active: driver=%s rate=%d channels=%u samples=%u",
++      SDL_GetCurrentAudioDriver(),got.freq,got.channels,got.samples);
++    return true;
++  }
++  void SetPaused(bool paused) override {
++    if (!device || paused==m_paused) return;
++    SDL_PauseAudioDevice(device,paused?1:0);
++    m_paused=paused;
++  }
++  void SetOutputVolume(u32 v) override {
++    volume.store(std::min(v,100u),std::memory_order_relaxed);
++    m_volume=std::min(v,100u);
++  }
++};
++}
++std::unique_ptr<AudioStream> AudioStream::CreateSDLAudioStream(u32 rate,u32 channels,u32 ms,u32 latency,AudioStretchMode stretch) {
++  auto stream=std::make_unique<SDLAudio>(rate,channels,ms,stretch);
++  if(!stream->Initialize(latency)) return {};
++  return stream;
++}
+diff --git a/src/util/vulkan_host_display.cpp b/src/util/vulkan_host_display.cpp
+index b1fdea7..ce6cf72 100644
+--- a/src/util/vulkan_host_display.cpp
++++ b/src/util/vulkan_host_display.cpp
+@@ -653,8 +653,14 @@ bool VulkanHostDisplay::Render(bool skip_present)
+   {
+     const Vulkan::Util::DebugScope debugScope(cmdbuffer, "VulkanHostDisplay::Render");
+     // Swap chain images start in undefined
+-    swap_chain_texture.OverrideImageLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+-    swap_chain_texture.TransitionToLayout(cmdbuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
++#ifdef WITH_BANANA_DRM_VK
++    if(m_swap_chain->IsBananaDrm()) m_swap_chain->BananaBarrier(cmdbuffer,true);
++    else
++#endif
++    {
++      swap_chain_texture.OverrideImageLayout(VK_IMAGE_LAYOUT_UNDEFINED);
++      swap_chain_texture.TransitionToLayout(cmdbuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
++    }
+ 
+     RenderDisplay();
+ 
+@@ -666,9 +672,19 @@ bool VulkanHostDisplay::Render(bool skip_present)
+     vkCmdEndRenderPass(cmdbuffer);
+     Vulkan::Util::EndDebugScope(cmdbuffer);
+ 
+-    swap_chain_texture.TransitionToLayout(cmdbuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
++#ifdef WITH_BANANA_DRM_VK
++    if(m_swap_chain->IsBananaDrm()) m_swap_chain->BananaBarrier(cmdbuffer,false);
++    else
++#endif
++      swap_chain_texture.TransitionToLayout(cmdbuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+   }
+ 
++#ifdef WITH_BANANA_DRM_VK
++  if(m_swap_chain->IsBananaDrm())
++    g_vulkan_context->SubmitCommandBuffer(VK_NULL_HANDLE,VK_NULL_HANDLE,VK_NULL_HANDLE,
++        m_swap_chain->GetCurrentImageIndex(),g_settings.gpu_threaded_presentation,m_swap_chain.get());
++  else
++#endif
+   g_vulkan_context->SubmitCommandBuffer(m_swap_chain->GetImageAvailableSemaphore(),
+                                         m_swap_chain->GetRenderingFinishedSemaphore(), m_swap_chain->GetSwapChain(),
+                                         m_swap_chain->GetCurrentImageIndex(), !m_swap_chain->IsVSyncEnabled());
