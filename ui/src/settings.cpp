@@ -1460,7 +1460,7 @@ namespace banana
 			if (it.key == "hs_pick") { openPickGames(); return MOVED; }
 			if (it.key == "credits") { openCredits(); return MOVED; }
 			if (it.key == "emmc_install") {
-                openUpdates(); emmcMode = true; installView = true; applying = true;
+                openUpdates(); emmcMode = true; emmcConsent = false; installView = true; applying = true;
                 ustatus = "checking"; nextStatus2 = now + 500;
                 unlink((runDir + "/emmc-status").c_str());
                 spawn("/usr/libexec/banana/emmc-install", "probe");
@@ -4617,9 +4617,16 @@ namespace banana
 		int n = 2 + (int)pkgs.size();	// the online row, the beta channel, then the packages on the card
 		if (emmcMode && installView) {
             if (applying) return NONE;
-            if (k == Key::B) { emmcMode = false; installView = false; page = LIST; armed = -1; return MOVED; }
+            auto cancelEmmc = [&]() { emmcMode = false; emmcConsent = false; installView = false; page = LIST; armed = -1; return MOVED; };
+            if (k == Key::B) return cancelEmmc();
+            if (!updated && ustatus.compare(0, 6, "ready ") == 0) {
+                if (k == Key::LEFT || k == Key::UP) { emmcConsent = false; return MOVED; }
+                if (k == Key::RIGHT || k == Key::DOWN) { emmcConsent = true; return MOVED; }
+            }
             if (k != Key::A || updated || ustatus.compare(0, 6, "ready ") != 0) return NONE;
-            if (armed != 9100) { armed = 9100; return MOVED; }
+            if (!emmcConsent) return cancelEmmc();
+            if (armed != 9100) { armed = 9100; emmcConsent = false; return MOVED; }
+            emmcConsent = false;
             armed = -1; applying = true; ustatus = "checking"; nextStatus2 = now + 500;
             spawn("/usr/libexec/banana/emmc-install", "install", "ERASE-INTERNAL-EMMC");
             return MOVED;
@@ -5610,14 +5617,25 @@ namespace banana
         wrapped("Experimental: physical eMMC boot still needs device testing.", 20, 40, 250, 560, 3, p.muted);
         be->endScreen();
         be->beginScreen(1); box("screen", false, 0, 0, 640, 480);
-        wrapped(updated ? "eMMC installation complete" : failed ? "eMMC installation failed" : ready ? "Erase internal storage?" : "Installing to eMMC", 27, 30, 28, 580, 2, p.ink);
+        wrapped(updated ? "eMMC installation complete" : failed ? "eMMC installation failed" : ready ? (armed == 9100 ? "Final installation consent (2/2)" : "eMMC installation warning (1/2)") : "Installing to eMMC", 27, 30, 28, 580, 2, p.ink);
         std::string note = updated ? "Shut down, remove the BananaOS boot SD, insert a FAT32 or exFAT data SD, then power on. Missing game folders are created automatically."
-            : ready ? "ALL files and the existing OS on internal eMMC will be erased. The SD is kept. Settings are copied internally; ROMs, BIOS and saves stay on the data SD. A boot backup is not a full data backup."
+            : ready ? (armed == 9100
+                ? "Have you understood the risks, accepted responsibility and backed up your data? You are responsible for all problems caused by using this feature, including data loss, failure to boot and recovery costs. Agreeing erases internal eMMC and starts installation. It cannot be cancelled after it starts."
+                : "Installation erases the existing operating system and ALL files on internal eMMC. Installation failure or power loss may cause data loss or failure to boot. You are responsible for all problems caused by using this feature. Back up your important data yourself before continuing.")
             : failed ? ustatus.substr(8) : "Do not turn off power or remove the SD. The copied system is checked by reading it back.";
-        wrapped(note, 21, 30, 112, 580, 8, p.muted);
+        wrapped(note, 20, 30, 108, 580, 8, p.muted);
         if (!ready && !updated && !failed) wrapped(ustatus, 24, 30, 340, 580, 2, p.ink);
-        if (ready) wrapped(armed == 9100 ? "A again: erase eMMC and install" : "A: confirm erasing eMMC", 22, 30, 355, 580, 2, p.accent);
-        if (!applying) face("B", "Back", 18, faceWidth("B", "Back"));
+        if (ready) {
+            for (int choice = 0; choice < 2; ++choice) {
+                bool on = emmcConsent == (choice == 1);
+                float x = choice == 0 ? 30 : 330;
+                box(on ? "pick" : "slot", on, x, 326, 280, 64);
+                const char* label = choice == 0 ? "Cancel" : armed == 9100 ? "Agree and install" : "Agree and continue";
+                text(label, true, 21, x + 18, 347, on ? p.onPick : p.ink);
+            }
+            wrapped("Left/right: select. A: confirm. B: cancel.", 17, 30, 397, 580, 1, p.muted);
+        }
+        if (!applying) face("B", ready ? "Cancel" : "Back", 18, faceWidth("B", ready ? "Cancel" : "Back"));
         be->endScreen();
     }
 

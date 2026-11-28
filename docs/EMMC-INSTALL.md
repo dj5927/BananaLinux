@@ -59,3 +59,15 @@ Python imports and boot configuration logic are also tested. Physical boot,
 power interruption and the user's current eMMC boot-selection state still need
 device verification. Until then this is a prerelease, and stable v40 remains
 available.
+
+
+## v42 consent screens
+
+Installation now has two distinct modal warning screens. The first explains
+full internal-storage erasure, installation/power-loss risks, backup and user
+responsibility for all problems. The second repeats user responsibility,
+including data loss, boot failure and recovery costs, and explicitly asks for
+final installation consent. Both screens default to Cancel. Select Agree and
+confirm separately on each screen; B cancels before installation begins.
+A repeated from the first screen cannot accept the second screen's default.
+The wording is a product warning; no legal-enforceability claim is made.

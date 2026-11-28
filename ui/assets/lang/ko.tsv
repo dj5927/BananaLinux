@@ -3177,3 +3177,10 @@ settings		ALL files and the existing OS on internal eMMC will be erased. The SD 
 settings		Do not turn off power or remove the SD. The copied system is checked by reading it back.	전원을 끄거나 SD를 빼지 마세요. 복사한 시스템을 다시 읽어 검증합니다.
 settings		A again: erase eMMC and install	A를 다시 누르면 eMMC를 지우고 설치합니다
 settings		A: confirm erasing eMMC	A: eMMC 삭제 확인
+settings		eMMC installation warning (1/2)	eMMC 설치 주의사항 (1/2)
+settings		Final installation consent (2/2)	최종 설치 동의 (2/2)
+settings		Installation erases the existing operating system and ALL files on internal eMMC. Installation failure or power loss may cause data loss or failure to boot. You are responsible for all problems caused by using this feature. Back up your important data yourself before continuing.	설치하면 내부 eMMC의 기존 운영체제와 모든 파일이 삭제됩니다. 설치 실패 또는 전원 차단으로 데이터 손실이나 부팅 불가가 발생할 수 있습니다. 이 기능 사용으로 발생하는 모든 문제의 책임은 사용자에게 있습니다. 필요한 데이터는 먼저 직접 백업하세요.
+settings		Have you understood the risks, accepted responsibility and backed up your data? You are responsible for all problems caused by using this feature, including data loss, failure to boot and recovery costs. Agreeing erases internal eMMC and starts installation. It cannot be cancelled after it starts.	위험과 사용자 책임을 이해했고 필요한 데이터를 백업했습니까? 이 기능 사용으로 발생하는 데이터 손실·부팅 불가·복구 비용 등 모든 문제는 사용자 책임입니다. 동의하면 내부 eMMC를 지우고 설치를 시작하며, 시작 후에는 취소할 수 없습니다.
+settings		Agree and continue	동의하고 계속
+settings		Agree and install	동의하고 설치
+settings		Left/right: select. A: confirm. B: cancel.	왼쪽/오른쪽: 선택  A: 확인  B: 취소

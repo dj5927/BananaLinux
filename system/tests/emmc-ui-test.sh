@@ -40,15 +40,32 @@ ui() {
  chroot "$r" /usr/bin/banana-ui --headless /tmp/emmc-shots/ --size "$1" --data /data/banana --roms /data/roms --systems /etc/banana/systems.conf --script "$2" 2> "$t/ui.log" || { cat "$t/ui.log"; exit 1; }
 }
 for size in 640x480 1024x768; do
+ # Default Cancel on screen one: A must never start installation.
  : > "$r/run/banana/emmc-commands"
- ui "$size" "$nav; shot warning; press a; shot armed; press b"
+ ui "$size" "$nav; shot warning-$size; press a"
+ test "$(cat "$r/run/banana/emmc-commands")" = probe
+ # B on either screen cancels.
+ : > "$r/run/banana/emmc-commands"
+ ui "$size" "$nav; press right; press b"
  test "$(cat "$r/run/banana/emmc-commands")" = probe
  : > "$r/run/banana/emmc-commands"
- ui "$size" "$nav; press a; upstate; press a; sleep 700; upstate; shot done; press b"
+ ui "$size" "$nav; press right; press a; upstate; shot responsibility-$size; press b"
+ test "$(cat "$r/run/banana/emmc-commands")" = probe
+ # Screen two defaults to Cancel again; repeated A cannot inherit consent.
+ : > "$r/run/banana/emmc-commands"
+ ui "$size" "$nav; press right; press a; press a; press a; sleep 700; press a"
+ test "$(grep -c '^install ' "$r/run/banana/emmc-commands" || :)" = 0
+ # Explicit left/Cancel on screen two also prevents installation.
+ : > "$r/run/banana/emmc-commands"
+ ui "$size" "$nav; press right; press a; press right; press left; press a"
+ test "$(cat "$r/run/banana/emmc-commands")" = probe
+ # Only selecting Agree and confirming on each distinct screen installs once.
+ : > "$r/run/banana/emmc-commands"
+ ui "$size" "$nav; press right; press a; press right; shot final-agree-$size; press a; sleep 700; upstate; shot done-$size; press b"
  test "$(grep -c '^install ERASE-INTERNAL-EMMC$' "$r/run/banana/emmc-commands")" = 1
  grep -q 'status "done eMMC"' "$t/ui.log"
- echo "EMMC_UI_DOUBLE_CONFIRM_AND_CANCEL_PASS $size"
+ echo "EMMC_UI_TWO_WARNINGS_DEFAULT_CANCEL_BOTH_STAGES_REPEATED_A_AND_EXPLICIT_CONSENT_PASS $size"
 done
-out=/mnt/e/BananaOS-Korean-0.5.3.6.41/logs/emmc-ui
+out=/mnt/e/BananaOS-Korean-0.5.3.6.42/logs/emmc-ui
 mkdir -p "$out"
 cp "$r/tmp/emmc-shots/"*.png "$out/"

@@ -504,6 +504,7 @@ namespace banana
 		// the top panel was all that showed the install, while the package list stayed on the bottom one)
 		bool installView = false;
 		bool emmcMode = false;
+		bool emmcConsent = false;
 		void renderEmmc();
 		std::string installVersion;
 		void renderInstall();
