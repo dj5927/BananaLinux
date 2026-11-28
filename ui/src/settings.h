@@ -505,6 +505,10 @@ namespace banana
 		bool installView = false;
 		bool emmcMode = false;
 		bool emmcConsent = false;
+		bool sdFormatMode = false, sdFormatExfat = true;
+		int sdFormatStage = 0;
+		std::string sdFormatToken;
+		void renderSdFormat();
 		void renderEmmc();
 		std::string installVersion;
 		void renderInstall();

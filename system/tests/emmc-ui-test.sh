@@ -66,6 +66,6 @@ for size in 640x480 1024x768; do
  grep -q 'status "done eMMC"' "$t/ui.log"
  echo "EMMC_UI_TWO_WARNINGS_DEFAULT_CANCEL_BOTH_STAGES_REPEATED_A_AND_EXPLICIT_CONSENT_PASS $size"
 done
-out=/mnt/e/BananaOS-Korean-0.5.3.6.42/logs/emmc-ui
+out=/mnt/e/BananaOS-Korean-0.5.3.6.44/logs/emmc-ui
 mkdir -p "$out"
 cp "$r/tmp/emmc-shots/"*.png "$out/"

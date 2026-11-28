@@ -33,12 +33,15 @@ attach)
     printf '%s\n' /data/roms > "$S/roms"
     rm -f "$S/error"
     ;;
-detach)
+detach|detach-strict)
     # Detach removed media; existing open handles get I/O errors, never another card's files.
     reverse=
     for pair in $MAP; do reverse="${pair#*:} $reverse"; done
     for p in $reverse; do
-        mountpoint -q "/data/$p" && { umount "/data/$p" 2>/dev/null || umount -l "/data/$p"; }
+        if mountpoint -q "/data/$p"; then
+            if [ "$1" = detach-strict ]; then umount "/data/$p"
+            else umount "/data/$p" 2>/dev/null || umount -l "/data/$p"; fi
+        fi
     done
     rm -f "$S/emmc-media"
     ;;

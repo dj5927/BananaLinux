@@ -135,12 +135,12 @@ namespace banana
 	}
 
 	// a program in the background, not waited for (Wi-Fi coming up takes seconds)
-	static void spawn(const char* path, const char* arg, const char* arg2 = nullptr)
+	static void spawn(const char* path, const char* arg, const char* arg2 = nullptr, const char* arg3 = nullptr, const char* arg4 = nullptr)
 	{
 		pid_t p = fork();
 		if (p == 0)
 		{
-			if (fork() == 0) { setsid(); execl(path, path, arg, arg2, (char*)nullptr); _exit(127); }
+			if (fork() == 0) { setsid(); execl(path, path, arg, arg2, arg3, arg4, (char*)nullptr); _exit(127); }
 			_exit(0);
 		}
 		if (p > 0) waitpid(p, nullptr, 0);
@@ -839,6 +839,7 @@ namespace banana
 			add(S, "gear", "Time zone", "Your time zone, for the clock and your games. Summer time is included.",
 				menu, "timezone", names, tzs);
 		}
+		add(S, "gear", "Format SD card", "Boot from eMMC, then insert one SD. Erases ALL SD partitions and creates game folders.", "", "sd_format", {}, {}, Item::PAGE);
 		add(S, "gear", "Install to eMMC", "Erases internal storage. Boot from SD first. ROMs, BIOS and saves use a FAT32 or exFAT data SD.", "", "emmc_install", {}, {}, Item::PAGE);
 		add(S, "gear", "Updates", "New versions of Banana: checking, installing, and going back.", "", "sys_updates", {}, {}, Item::PAGE);
 		add(S, "picture", "Box art", "Covers, title screens, genres and years for your games: fetching them, and where they come from.", "", "sys_boxart", {}, {}, Item::PAGE);
@@ -1459,6 +1460,14 @@ namespace banana
 			if (it.key == "hs_sync") { if (syncing()) stopSync(); else startSync(); return MOVED; }
 			if (it.key == "hs_pick") { openPickGames(); return MOVED; }
 			if (it.key == "credits") { openCredits(); return MOVED; }
+			if (it.key == "sd_format") {
+                openUpdates(); sdFormatMode = true; sdFormatExfat = true; sdFormatStage = 0;
+                sdFormatToken.clear(); emmcConsent = false; installView = true; applying = true;
+                ustatus = "checking"; nextStatus2 = now + 500;
+                unlink((runDir + "/sd-format-status").c_str());
+                spawn("/usr/libexec/banana/sd-format", "probe");
+                return MOVED;
+            }
 			if (it.key == "emmc_install") {
                 openUpdates(); emmcMode = true; emmcConsent = false; installView = true; applying = true;
                 ustatus = "checking"; nextStatus2 = now + 500;
@@ -3754,7 +3763,7 @@ namespace banana
 		usel = 0; utop = 0; armed = -1;
 		message.clear();
 		ustatus.clear();
-		applying = false; updated = false; installView = false; emmcMode = false;
+		applying = false; updated = false; installView = false; emmcMode = false; sdFormatMode = false;
 		{ const char* tv = getenv("BANANA_VERSION"); version = tv ? tv : readLine("/etc/banana/version"); }
 		slot = readLine(runDir + "/slot");
 		{ const char* tb = getenv("BANANA_BOARD"); board = tb ? tb : readLine("/etc/banana/board"); }
@@ -3855,8 +3864,11 @@ namespace banana
 	void Settings::pollUpdate()
 	{
 		nextStatus2 = now + 500;
-		ustatus = readLine(runDir + (emmcMode ? "/emmc-status" : "/update-status"));
-		if (emmcMode && ustatus.compare(0, 6, "ready ") == 0) applying = false;
+		ustatus = readLine(runDir + (sdFormatMode ? "/sd-format-status" : emmcMode ? "/emmc-status" : "/update-status"));
+		if ((emmcMode || sdFormatMode) && ustatus.compare(0, 6, "ready ") == 0) {
+            applying = false;
+            if (sdFormatMode && sdFormatToken.empty()) sdFormatToken = readLine(runDir + "/sd-format-token");
+        }
 		if (ustatus.compare(0, 4, "done") == 0) { applying = false; updated = true; }
 		else if (ustatus.compare(0, 6, "failed") == 0) applying = false;
 	}
@@ -4615,6 +4627,25 @@ namespace banana
 	Settings::Result Settings::pressUpdates(Key k)
 	{
 		int n = 2 + (int)pkgs.size();	// the online row, the beta channel, then the packages on the card
+		if (sdFormatMode && installView) {
+            if (applying) return NONE;
+            if (k == Key::B) { sdFormatMode = false; installView = false; page = LIST; armed = -1; sd2Scan(); return MOVED; }
+            if (updated || ustatus.compare(0, 6, "ready ") != 0 || sdFormatToken.empty()) return NONE;
+            if (sdFormatStage == 0) {
+                if (k == Key::LEFT || k == Key::UP) { sdFormatExfat = false; return MOVED; }
+                if (k == Key::RIGHT || k == Key::DOWN) { sdFormatExfat = true; return MOVED; }
+                if (k == Key::A) { sdFormatStage = 1; emmcConsent = false; return MOVED; }
+                return NONE;
+            }
+            if (k == Key::LEFT || k == Key::UP) { emmcConsent = false; return MOVED; }
+            if (k == Key::RIGHT || k == Key::DOWN) { emmcConsent = true; return MOVED; }
+            if (k != Key::A) return NONE;
+            if (!emmcConsent) { sdFormatMode = false; installView = false; page = LIST; armed = -1; return MOVED; }
+            if (sdFormatStage == 1) { sdFormatStage = 2; emmcConsent = false; return MOVED; }
+            emmcConsent = false; applying = true; ustatus = "checking"; nextStatus2 = now + 500;
+            spawn("/usr/libexec/banana/sd-format", "format", sdFormatExfat ? "exfat" : "fat32", "ERASE-ENTIRE-SD", sdFormatToken.c_str());
+            return MOVED;
+        }
 		if (emmcMode && installView) {
             if (applying) return NONE;
             auto cancelEmmc = [&]() { emmcMode = false; emmcConsent = false; installView = false; page = LIST; armed = -1; return MOVED; };
@@ -5607,6 +5638,40 @@ namespace banana
 
 	// the install on a screen of its own, on the bottom panel where the package was picked (the list and its buttons
 	// gone): what it is doing, a bar, and only what can be pressed when it is over; the top panel says the same in short
+    void Settings::renderSdFormat()
+    {
+        SPal p = pal(light);
+        const bool ready = ustatus.compare(0, 6, "ready ") == 0;
+        const bool failed = ustatus.compare(0, 6, "failed") == 0;
+        be->beginScreen(0); box("screen", false, 0, 0, 640, 480);
+        wrapped("Format SD card", 30, 40, 150, 560, 2, p.ink);
+        if (ready) wrapped(ustatus.substr(6), 24, 40, 220, 560, 2, p.ink);
+        wrapped("All old SD partitions are removed. The whole card becomes one data partition.", 20, 40, 285, 560, 3, p.muted);
+        be->endScreen();
+        be->beginScreen(1); box("screen", false, 0, 0, 640, 480);
+        wrapped(updated ? "SD format complete" : failed ? "SD format failed" : !ready ? "Formatting SD card" : sdFormatStage == 0 ? "Choose filesystem" : sdFormatStage == 1 ? "SD erasure warning (1/2)" : "Final SD erasure consent (2/2)", 27, 30, 28, 580, 2, p.ink);
+        std::string note = updated ? "The SD is ready. ROM, BIOS, save and other required folders were created automatically."
+            : failed ? ustatus.substr(8)
+            : !ready ? "Do not remove the SD or turn off power. Preparing, formatting and checking the card."
+            : sdFormatStage == 0 ? "exFAT supports files larger than 4 GiB. FAT32 is for compatibility. Both choices remove every old partition and file."
+            : sdFormatStage == 1 ? "ALL partitions and files on this SD will be erased, including any operating system, ROMs, BIOS and saves. Back up anything you need before continuing."
+            : "You are responsible for all problems caused by formatting, including data loss and recovery costs. Agreeing erases the ENTIRE SD. Formatting cannot be cancelled after it starts.";
+        wrapped(note, 20, 30, 108, 580, 7, p.muted);
+        if (ready) {
+            if (sdFormatStage > 0) wrapped(sdFormatExfat ? "Selected: exFAT" : "Selected: FAT32", 21, 30, 278, 580, 1, p.ink);
+            for (int choice = 0; choice < 2; ++choice) {
+                bool on = (sdFormatStage == 0 ? sdFormatExfat : emmcConsent) == (choice == 1);
+                float x = choice == 0 ? 30 : 330;
+                box(on ? "pick" : "slot", on, x, 326, 280, 64);
+                const char* label = sdFormatStage == 0 ? (choice == 0 ? "FAT32" : "exFAT") : choice == 0 ? "Cancel" : sdFormatStage == 1 ? "Agree and continue" : "Agree and format";
+                text(label, true, 21, x + 18, 347, on ? p.onPick : p.ink);
+            }
+            wrapped("Left/right: select. A: confirm. B: cancel.", 17, 30, 397, 580, 1, p.muted);
+        } else if (!updated && !failed) wrapped(ustatus, 24, 30, 340, 580, 2, p.ink);
+        if (!applying) face("B", ready ? "Cancel" : "Back", 18, faceWidth("B", ready ? "Cancel" : "Back"));
+        be->endScreen();
+    }
+
     void Settings::renderEmmc()
     {
         SPal p = pal(light);
@@ -5641,6 +5706,7 @@ namespace banana
 
 	void Settings::renderInstall()
 	{
+		if (sdFormatMode) { renderSdFormat(); return; }
 		if (emmcMode) { renderEmmc(); return; }
 		SPal p = pal(light);
 		const bool failed = !applying && !updated && ustatus.compare(0, 6, "failed") == 0;

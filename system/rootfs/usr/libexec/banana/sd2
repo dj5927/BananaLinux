@@ -4,6 +4,9 @@
 # "sd2 scan" at boot and on every MMC block device's uevent; it looks at what's there now, so the order of events
 # doesn't matter. The card the system runs from (the one /data is on) is never the second card.
 #   sd2 scan     mount or unmount to match the slot, and update /run/banana/sd2
+mkdir -p /run/banana
+# All callers, including direct UI scans, serialize with whole-card formatting.
+[ "${1:-}" = --locked ] || exec flock -o /run/banana/sd-media.lock "$0" --locked
 M=/run/sd2
 S=/run/banana/sd2
 mkdir -p $M $S
