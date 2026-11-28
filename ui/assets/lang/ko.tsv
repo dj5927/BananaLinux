@@ -772,16 +772,16 @@ superdrastic		Save your spot and quit (hold)	진행 상태 저장 후 종료 (�
 superdrastic		Quit (hold)	종료 (길게)
 superdrastic		Not set	설정 안 됨
 systems		Nintendo DS	Nintendo DS
-systems		Nintendo	닌텐도
+systems		Nintendo	Nintendo
 systems		Game Boy Advance	Game Boy Advance
 systems		Game Boy Color	Game Boy Color
 systems		Game Boy	Game Boy
-systems		Nintendo Entertainment System	패밀리 컴퓨터
+systems		Nintendo Entertainment System	Nintendo Entertainment System
 systems		Super Nintendo	Super Nintendo
 systems		Mega Drive	Mega Drive
-systems		Sega	세가
+systems		Sega	Sega
 systems		PlayStation	PlayStation
-systems		Sony	소니
+systems		Sony	Sony
 systems		Nintendo 64	Nintendo 64
 systems		Döda Kvarter	Döda Kvarter
 systems		ROCKNIXDS	ROCKNIXDS
@@ -2849,11 +2849,11 @@ settings		Page	페이지
 settings		No list	목록 없음
 settings		No description.	설명 없음.
 systems		Game & Watch	Game & Watch
-systems		FinalBurn Neo	파이널번 네오
-systems		EasyRPG	이지 RPG
+systems		FinalBurn Neo	FinalBurn Neo
+systems		EasyRPG	EasyRPG
 systems		MKXP	MKXP
-settings		EasyRPG	이지 RPG
-settings		EasyRPG buttons	이지 RPG 버튼
+settings		EasyRPG	EasyRPG
+settings		EasyRPG buttons	EasyRPG 버튼
 settings		MKXP buttons	MKXP 버튼
 settings		This RPG Maker system uses BananaFront and its native game menu.	이 RPG 만들기 게임은 바나나OS 기본 프론트엔드와 일시 정지 메뉴로 실행합니다.
 settings		RGSS version	RGSS 버전
@@ -2865,8 +2865,8 @@ settings		Select the display filter for this game only.	이 게임에만 적용�
 settings		Swap confirm and cancel buttons for this game only.	이 게임의 확인 및 취소 버튼을 바꿉니다.
 settings		Swap X and Y for this game only.	이 게임의 X와 Y 버튼을 바꿉니다.
 menu		Copy game folders to roms/{folder}	roms/{folder} 폴더에 게임 폴더를 복사하세요.
-settings		FinalBurn Neo	파이널번 네오
-settings		FinalBurn Neo buttons	파이널번 네오 버튼
+settings		FinalBurn Neo	FinalBurn Neo
+settings		FinalBurn Neo buttons	FinalBurn Neo 버튼
 settings		FBNeo is the installed arcade core. Auto uses BananaFront's pause menu. SELECT and START are the usual arcade coin and start controls (game dependent).	설치된 아케이드 코어는 FBNeo입니다. 자동 모드에서는 바나나OS의 일시 정지 메뉴를 사용합니다. SELECT는 코인 투입, START는 게임 시작에 사용합니다(게임에 따라 다름).
 systems		Activity	플레이 기록
 settings		that is a package for the {package's handheld}, this is the {board}	이 패키지는 {package's handheld}용이며 현재 기종은 {board}입니다.
@@ -2929,19 +2929,19 @@ settings		Filename encoding	파일명 인코딩
 settings		Ruby runtime	Ruby 런타임
 settings		Auto checks scripts and tries other installed runtimes after failure. Manual selection uses only that runtime. Changes apply next launch.	자동은 스크립트를 검사하고 실패 시 다른 런타임으로 재시도합니다. 수동은 선택한 런타임만 사용합니다. 다음 실행부터 적용됩니다.
 settings		Valid UTF-8 names are preserved. Select the original encoding for old Korean or Japanese filenames. Changes apply after restart.	UTF-8 파일명은 그대로 사용합니다. 구형 한글·일본어 파일명은 원래 인코딩을 선택하세요. 재시작 후 적용됩니다.
-settings		Game Boy Advance defaults	게임보이 어드밴스 기본 설정
-settings		Game Boy Color defaults	게임보이 컬러 기본 설정
-settings		Game Boy defaults	게임보이 기본 설정
-settings		NES defaults	패미컴 기본 설정
-settings		Super Nintendo defaults	슈퍼패미컴 기본 설정
-settings		Mega Drive defaults	메가드라이브 기본 설정
-settings		Commodore 64 defaults	코모도어 64 기본 설정
-settings		ZX Spectrum defaults	ZX 스펙트럼 기본 설정
-settings		PlayStation defaults	플레이스테이션 기본 설정
-settings		Nintendo 64 defaults	닌텐도 64 기본 설정
-settings		FinalBurn Neo defaults	파이널번 네오 기본 설정
+settings		Game Boy Advance defaults	Game Boy Advance 기본 설정
+settings		Game Boy Color defaults	Game Boy Color 기본 설정
+settings		Game Boy defaults	Game Boy 기본 설정
+settings		NES defaults	NES 기본 설정
+settings		Super Nintendo defaults	Super Nintendo 기본 설정
+settings		Mega Drive defaults	Mega Drive 기본 설정
+settings		Commodore 64 defaults	Commodore 64 기본 설정
+settings		ZX Spectrum defaults	ZX Spectrum 기본 설정
+settings		PlayStation defaults	PlayStation 기본 설정
+settings		Nintendo 64 defaults	Nintendo 64 기본 설정
+settings		FinalBurn Neo defaults	FinalBurn Neo 기본 설정
 settings		PICO-8 defaults	PICO-8 기본 설정
-settings		EasyRPG defaults	이지RPG 기본 설정
+settings		EasyRPG defaults	EasyRPG 기본 설정
 settings		MKXP defaults	MKXP 기본 설정
 settings		MKXP buttons	MKXP 버튼
 settings		Global button layout	전체 버튼 배치
@@ -2972,8 +2972,8 @@ settings		Auto (L1)	자동 (L1)
 settings		Auto (R1)	자동 (R1)
 settings		Auto (L3)	자동 (L3)
 settings		Auto (R3)	자동 (R3)
-settings		Game & Watch defaults	게임 & 워치 기본 설정
-settings		Nintendo DS defaults	닌텐도 DS 기본 설정
+settings		Game & Watch defaults	Game & Watch 기본 설정
+settings		Nintendo DS defaults	Nintendo DS 기본 설정
 settings		Open this emulator's default settings. Changes apply to games on their next launch.	에뮬레이터 기본 설정을 엽니다. 다음 게임 실행부터 적용됩니다.
 settings		Choose an installed core. Auto uses the system's built-in core.	설치된 코어를 선택합니다. 자동은 기종의 기본 코어를 사용합니다.
 settings		PICO-8 engine	PICO-8 엔진
@@ -2991,10 +2991,10 @@ settings		Game audio	게임 소리
 settings		Mute or enable Game & Watch audio.	게임 & 워치 소리를 켜거나 끕니다.
 settings		Choose the default DS emulator.	DS 기본 에뮬레이터를 선택합니다.
 settings		Default settings for every installed game system and emulator.	모든 설치된 게임 기종과 에뮬레이터의 기본 설정입니다.
-settings		PlayStation Portable	플레이스테이션 포터블
-settings		PlayStation Portable defaults	PSP 기본 설정
-settings		Dreamcast	드림캐스트
-settings		Dreamcast defaults	드림캐스트 기본 설정
+settings		PlayStation Portable	PlayStation Portable
+settings		PlayStation Portable defaults	PlayStation Portable 기본 설정
+settings		Dreamcast	Dreamcast
+settings		Dreamcast defaults	Dreamcast 기본 설정
 settings		Standalone emulator using the Mali Vulkan graphics stack.	Mali Vulkan 그래픽을 사용하는 독립 실행 에뮬레이터입니다.
 settings		Internal resolution	내부 해상도
 settings		Higher resolution improves image quality but may reduce speed. Auto keeps the native emulator setting.	해상도를 높이면 화질이 좋아지지만 속도가 느려질 수 있습니다. 자동은 에뮬레이터 설정을 따릅니다.

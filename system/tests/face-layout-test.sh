@@ -6,7 +6,7 @@ t=$(mktemp -d)
 trap 'rm -rf "$t"' EXIT
 export BANANA_FACE_SETTINGS="$t/settings.conf"
 . "$L/emulator-defaults"
-test "$(face_layout)" = individual
+test "$(face_layout)" = nintendo
 for mode in individual nintendo xbox; do
     printf 'nds_swap_ab = on\nface_layout = %s\n' "$mode" > "$BANANA_FACE_SETTINGS"
     test "$(face_layout)" = "$mode"

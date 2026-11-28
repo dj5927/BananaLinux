@@ -92,7 +92,7 @@ namespace banana
 			{ "ra_btn_r3", "game", ENUM, RA_BTN, 0, 0, true, true },
 			{ "ra_btn_back", "companion", ENUM, RA_BTN_BACK, 0, 0, true, true },	// (the Game Boy Advance's row alone: banana-ui's)
 			{ "ra_swap_ab", "off", ENUM, ON_OFF, 0, 0, true, true },
-			{ "face_layout", "individual", ENUM, FACE_LAYOUT, 0, 0, true },
+			{ "face_layout", "nintendo", ENUM, FACE_LAYOUT, 0, 0, true },
 			{ "nds_emulator", "superdrastic", ENUM, NDS, 0, 0, true },
 			{ "nds_btn_l2", "swap", ENUM, NDS_BTN, 0, 0, true },
 			{ "nds_btn_r2", "ff", ENUM, NDS_BTN, 0, 0, true },
@@ -123,6 +123,7 @@ namespace banana
 			{ "files_unwrap", "on", ENUM, ON_OFF, 0, 0 },
 			{ "files_hidden", "off", ENUM, ON_OFF, 0, 0 },
 			{ "core.gba", "gpsp", CORE, nullptr, 0, 0 },
+			{ "core.psx", "duckstation_sa", CORE, nullptr, 0, 0 },
 		};
 
 		const KeyDef* find(const std::string& key)

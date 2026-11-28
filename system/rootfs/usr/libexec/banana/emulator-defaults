@@ -10,10 +10,10 @@ emu_override() {
     awk -v k="${BANANA_SYSTEM}.$1" 'index($0,k " = ")==1 {v=substr($0,length(k)+4)} END{if(v!="inherit")print v}' "${BANANA_DEFAULTS_FILE:-/data/banana/emulator-defaults.conf}" 2>/dev/null || :
 }
 
-# Card wins over image defaults. Invalid/missing values preserve individual layouts.
+# Card wins over image defaults. Missing or invalid values use the Nintendo default; explicit Individual remains available.
 face_layout() {
     value=$(awk -F= '$1 ~ /^[[:space:]]*face_layout[[:space:]]*$/ {v=$2; gsub(/^[[:space:]]+|[[:space:]]+$/,"",v)} END {print v}' "${BANANA_FACE_SETTINGS:-/data/banana/settings.conf}" 2>/dev/null || :)
-    case "$value" in nintendo|xbox) printf '%s' "$value" ;; *) printf '%s' individual ;; esac
+    case "$value" in individual|nintendo|xbox) printf '%s' "$value" ;; *) printf '%s' nintendo ;; esac
 }
 
 # The built-in controller's printed Nintendo layout, and its Xbox equivalent.
