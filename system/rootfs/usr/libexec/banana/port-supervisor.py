@@ -79,11 +79,18 @@ def main():
     try:
         env=gpu.start(os.environ.copy(),startup_cancelled)
         audio_fix=Path("/usr/lib/banana/ports/libbanana-port-audio.so")
-        if script.name.casefold()=="doukutsu-rs.sh" and env.get("BANANA_PORT_AUDIO_RECOVERY","1")=="1" and audio_fix.is_file():
+        private_alsa=audio_fix.parent/"alsa/libasound.so.2"
+        if script.name.casefold()=="doukutsu-rs.sh" and env.get("BANANA_PORT_AUDIO_RECOVERY","1")=="1" and audio_fix.is_file() and private_alsa.is_file():
             env["BANANA_PORT_AUDIO_RECOVERY"]="1"
-            env["LD_PRELOAD"]=str(audio_fix)+(" "+env["LD_PRELOAD"] if env.get("LD_PRELOAD") else "")
+            preload=[str(audio_fix)]
+            # Absolute preload survives launch scripts that replace LD_LIBRARY_PATH.
+            # The private SONAME satisfies the game's libasound.so.2 dependency.
+            preload.append(str(private_alsa))
+            if env.get("LD_PRELOAD"):
+                preload.append(env["LD_PRELOAD"])
+            env["LD_PRELOAD"]=" ".join(preload)
             env.setdefault("RUST_BACKTRACE","1")
-            note("CPAL playback recovery with timestamp guard enabled")
+            note("CPAL playback recovery with plugin pointer and timestamp guards enabled")
         while not stopping:
             child = subprocess.Popen(["/bin/bash", str(script)], cwd=str(script.parent),
                                      stdout=log, stderr=subprocess.STDOUT,

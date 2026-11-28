@@ -1,4 +1,5 @@
 menu "Banana"
+source "$BR2_EXTERNAL_BANANA_PATH/package/banana-port-alsa/Config.in"
 source "$BR2_EXTERNAL_BANANA_PATH/package/banana-ui/Config.in"
 source "$BR2_EXTERNAL_BANANA_PATH/package/bananad/Config.in"
 source "$BR2_EXTERNAL_BANANA_PATH/package/superdrastic/Config.in"

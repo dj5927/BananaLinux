@@ -17,7 +17,6 @@ static int (*next_revents)(snd_pcm_t *, struct pollfd *, unsigned, unsigned shor
 static snd_pcm_stream_t (*next_stream)(snd_pcm_t *);
 static snd_pcm_state_t (*next_state)(snd_pcm_t *);
 static int (*next_recover)(snd_pcm_t *, int, int);
-static int (*next_resume)(snd_pcm_t *);
 static int (*next_prepare)(snd_pcm_t *);
 
 static int (*next_status)(snd_pcm_t *, snd_pcm_status_t *);
@@ -40,7 +39,6 @@ static void init(void)
     next_stream = dlsym(RTLD_NEXT, "snd_pcm_stream");
     next_state = dlsym(RTLD_NEXT, "snd_pcm_state");
     next_recover = dlsym(RTLD_NEXT, "snd_pcm_recover");
-    next_resume = dlsym(RTLD_NEXT, "snd_pcm_resume");
     next_prepare = dlsym(RTLD_NEXT, "snd_pcm_prepare");
     next_status = dlsym(RTLD_NEXT, "snd_pcm_status");
     next_htstamp = dlsym(RTLD_NEXT, "snd_pcm_status_get_htstamp");
@@ -55,7 +53,7 @@ int snd_pcm_poll_descriptors_revents(snd_pcm_t *pcm, struct pollfd *pfds,
     int rc = next_revents(pcm, pfds, count, events);
     int saved_errno = errno;
     if (!enabled || rc || !events || !(*events & POLLERR) ||
-        !next_stream || !next_state || !next_recover || !next_resume || !next_prepare ||
+        !next_stream || !next_state || !next_recover || !next_prepare ||
         !next_status || !next_htstamp || !next_trigger ||
         next_stream(pcm) != SND_PCM_STREAM_PLAYBACK) return rc;
     snd_pcm_state_t state = next_state(pcm);
@@ -63,9 +61,9 @@ int snd_pcm_poll_descriptors_revents(snd_pcm_t *pcm, struct pollfd *pfds,
     if (state == SND_PCM_STATE_XRUN) {
         recovered = next_recover(pcm, -EPIPE, 1);
     } else if (state == SND_PCM_STATE_SUSPENDED) {
-        // One bounded attempt; do not block the audio thread in a resume retry loop.
-        recovered = next_resume(pcm);
-        if (recovered < 0 && recovered != -EAGAIN) recovered = next_prepare(pcm);
+        // Resume only restarts the slave; prepare resets every plugin application pointer.
+        // A failed mmap_emul write can otherwise make the next status() abort.
+        recovered = next_prepare(pcm);
     }
     if (recovered == 0) {
         snd_pcm_state_t after = next_state(pcm);
@@ -125,7 +123,9 @@ int snd_pcm_recover(snd_pcm_t *pcm, int error, int silent)
 {
     pthread_once(&once, init);
     if (!next_recover) return -ENOSYS;
-    int rc = next_recover(pcm, error, silent);
+    int restart = enabled && error == -ESTRPIPE && next_prepare &&
+        next_stream && next_stream(pcm) == SND_PCM_STREAM_PLAYBACK;
+    int rc = restart ? next_prepare(pcm) : next_recover(pcm, error, silent);
     int saved_errno = errno;
     if (enabled && !rc && (error == -EPIPE || error == -ESTRPIPE) &&
         next_stream && next_stream(pcm) == SND_PCM_STREAM_PLAYBACK) {

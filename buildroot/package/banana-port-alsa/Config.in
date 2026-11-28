@@ -1,0 +1,5 @@
+config BR2_PACKAGE_BANANA_PORT_ALSA
+	bool
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	help
+	  Private ALSA playback compatibility library for selected PortMaster games.
