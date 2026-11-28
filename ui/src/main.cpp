@@ -2311,7 +2311,7 @@ int main(int argc, char** argv)
 	rnds::setDecoder(stbDecode);
 	rnds::setSizer(stbSize);
 	rnds::setZipReader(readZip);	// the icon of a DS ROM kept in a .zip
-	// the card's settings.conf made whole (missing keys added, invalid values put back): first boot and after an update
+	// Initialize a missing settings file; existing user files remain byte-for-byte untouched on boot.
 	normalizeSettings(o.data);
 	auto settings = readSettings(o.data);
 	if (!o.theme.empty()) settings["theme"] = "file:" + o.theme;	// --theme: the theme being made (headless render)
@@ -2322,7 +2322,7 @@ int main(int argc, char** argv)
 	if (o.headless.empty() && settings["language"].empty())
 	{
 		settings["language"] = "ko";
-		setConfValue(o.data + "/settings.conf", "language", "ko");
+		// This is an in-memory default, not a user setting migration.
 	}
 	if (lang::load(langDir, settings["language"], { "menu", "settings", "systems" }) && lang::active())
 	{

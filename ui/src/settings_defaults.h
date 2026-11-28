@@ -34,9 +34,8 @@ namespace banana
 	// dropped so the launcher falls back to its own default. Written beside and renamed over, only when changed.
 	bool resetSettings(const std::string& dataDir, ResetScope scope);
 
-	// First boot, and every boot after an update: the card's settings.conf with every template key it lacks added, a
-	// value the schema doesn't accept put back to the template's, and duplicate keys dropped. Comments and the user's
-	// own keys stay as they are. Written beside and renamed over, and only when something changed.
-	// Returns true when the file was written.
+	// Initialize a missing settings.conf only. Existing files are never rewritten by startup or OTA.
+	// Missing/invalid keys use defaults in memory; explicit user edits and resets are separate.
+	// Returns true only if a new file was created successfully.
 	bool normalizeSettings(const std::string& dataDir);
 }

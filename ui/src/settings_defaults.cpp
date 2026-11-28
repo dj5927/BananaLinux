@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <fcntl.h>
 #include <iterator>
 #include <unistd.h>
 #include <vector>
@@ -73,8 +74,7 @@ namespace banana
 			{ "bottom_dim_percent", "25", INTEGER, nullptr, 0, 100 },
 			{ "wifi", "on", ENUM, ON_OFF, 0, 0 },
 			{ "bluetooth", "off", ENUM, ON_OFF, 0, 0 },
-			// (in the template since Bluetooth audio, but not here: normalizeSettings kept the card's line as an unknown
-			// key and added the template's again at every start, 36 lines of it on the Plus)
+			// Bluetooth audio is also defined in the image template.
 			{ "bt_audio", "latency", ENUM, BT_AUDIO, 0, 0 },
 			{ "quick_resume", "off", ENUM, ON_OFF, 0, 0, true },
 			{ "sd2_roms", "on", ENUM, ON_OFF, 0, 0 },
@@ -286,82 +286,37 @@ namespace banana
 
 	std::map<std::string, std::string> readSettings(const std::string& dataDir)
 	{
-		// compiled defaults, then the image's template (it may be newer than the menu), then the card's own values
-		std::map<std::string, std::string> r;
+		// Overlay defaults only in memory. Never normalize or migrate the user's file on boot.
+		std::map<std::string, std::string> r, card;
 		for (const auto& k : KEYS) r[k.key] = k.def;
 		readConf("/etc/banana/settings.conf", r);
-		readConf(dataDir + "/settings.conf", r);
+		readConf(dataDir + "/settings.conf", card);
+		for (const auto& kv : card)
+			if (validKey(kv.first, kv.second) || (kv.first.rfind("core.", 0) == 0 && kv.second.empty()))
+				r[kv.first] = kv.second;
 		return r;
 	}
 
 	bool normalizeSettings(const std::string& dataDir)
 	{
+		// Historical name retained for callers. Only initialize a missing file, never rewrite one.
 		const std::string path = dataDir + "/settings.conf";
-		const std::vector<std::pair<std::string, std::string>> defs = templateKeys();
-		std::map<std::string, std::string> defmap;
-		for (const auto& d : defs) defmap[d.first] = d.second;
-		auto fallback = [&](const std::string& key) -> std::string
-		{
-			auto it = defmap.find(key);
-			if (it != defmap.end() && validKey(key, it->second)) return it->second;
-			std::string v = defaultFor(key);
-			return validKey(key, v) ? v : "";
-		};
-
-		// a card with no settings.conf gets the image's, comments included; with no image file (the host test) the
-		// schema's values written out plainly
-		if (access(path.c_str(), F_OK) != 0)
-		{
-			std::string text = readAll("/etc/banana/settings.conf");
-			if (text.empty())
-				for (const auto& d : defs)
-					if (validKey(d.first, d.second)) text += d.first + " = " + d.second + "\n";
-			return !text.empty() && writeAtomic(path, text);
-		}
-
-		std::string original = readAll(path);
-		std::ifstream in(path);
-		// there but unreadable (a card error): left alone, as setConfValue does
-		if (!in) return false;
-
-		struct Line { std::string raw, key, value; bool known = false; };
-		std::vector<Line> lines;
-		std::map<std::string, int> last;	// the line that counts for a known key (the last, as getConfValue reads it)
-		std::string ln;
-		while (std::getline(in, ln))
-		{
-			Line l;
-			l.raw = ln;
-			if (!ln.empty() && ln.back() == '\r') l.raw.pop_back();
-			if (split(ln, l.key, l.value))
-			{
-				l.known = knownKey(l.key);
-				if (l.known) last[l.key] = (int)lines.size();
-			}
-			lines.push_back(l);
-		}
-
-		std::map<std::string, bool> seen;
-		std::string out;
-		for (size_t i = 0; i < lines.size(); i++)
-		{
-			const Line& l = lines[i];
-			if (!l.known) { out += l.raw + "\n"; continue; }	// comments, blanks and the user's own keys stay
-			if (last[l.key] != (int)i) continue;					// an earlier duplicate: dropped
-			std::string v = validKey(l.key, l.value) ? l.value : fallback(l.key);
-			if (v.empty()) continue;								// no default to put in its place: dropped
-			out += l.key + " = " + v + "\n";
-			seen[l.key] = true;
-		}
-		for (const auto& d : defs)
-		{
-			if (seen[d.first]) continue;
-			std::string v = validKey(d.first, d.second) ? d.second : fallback(d.first);
-			if (!v.empty()) out += d.first + " = " + v + "\n";
-		}
-
-		if (out == original) return false;
-		return writeAtomic(path, out);
+		if (access(path.c_str(), F_OK) == 0) return false;
+		std::string text = readAll("/etc/banana/settings.conf");
+		if (text.empty())
+			for (const auto& d : templateKeys())
+				if (validKey(d.first, d.second)) text += d.first + " = " + d.second + "\n";
+		if (text.empty()) return false;
+		// O_EXCL protects an existing file, even a symlink or one created since the check.
+		int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
+		if (fd < 0) return false;
+		FILE* w = fdopen(fd, "w");
+		if (!w) { close(fd); unlink(path.c_str()); return false; }
+		bool ok = fwrite(text.data(), 1, text.size(), w) == text.size();
+		ok &= fflush(w) == 0 && fsync(fileno(w)) == 0;
+		ok &= fclose(w) == 0;
+		if (!ok) unlink(path.c_str());
+		return ok;
 	}
 
 	bool resetSettings(const std::string& dataDir, ResetScope scope)
@@ -414,8 +369,8 @@ namespace banana
 		{
 			const Line& l = lines[i];
 			if (!l.known) { out += l.raw + "\n"; continue; }	// comments, blanks, the user's own keys stay
-			if (last[l.key] != (int)i) continue;				// an earlier duplicate: dropped
 			if (!inScope(l.key)) { out += l.raw + "\n"; seen[l.key] = true; continue; }
+			if (last[l.key] != (int)i) continue;				// an earlier duplicate in this reset scope
 			std::string v = fallback(l.key);
 			if (v.empty()) continue;							// no default (an unknown core.<system>): dropped
 			out += l.key + " = " + v + "\n";

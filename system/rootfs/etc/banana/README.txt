@@ -66,3 +66,11 @@ A game's own name and sort title (X on any game in the library): banana/game-tit
 "<system>/<game's file> TAB name TAB sort title" a line; scraping box art again leaves it alone. A gamelist.xml's
 <sortname> sorts the game too.
 Logs: banana/logs/.
+
+BIOS and RPG runtime files (supply your own legally obtained files):
+DuckStation: bios/psx/ (or bios/); original PS1 BIOS files, e.g. scph5501.bin.
+Flycast: bios/dc/ or bios/dreamcast/ (or bios/); dc_boot.bin and dc_flash.bin.
+FinalBurn Neo: bios/fbneo/ for support files such as hiscore.dat; matching BIOS ROM archives belong with the ROM set as required by the core.
+PPSSPP does not need a separate BIOS. EasyRPG: bios/rtp/2000, bios/rtp/2003; fonts and soundfonts under bios/easyrpg-player/.
+MKXP: bios/mkxp/rtp/xp, vx, vxace, and fonts under bios/mkxp/rtp/fonts or bios/mkxp/fonts.
+The system creates these folders at boot; existing files are not replaced.

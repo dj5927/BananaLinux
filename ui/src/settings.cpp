@@ -1126,7 +1126,7 @@ namespace banana
 		if (it.file == data + "/settings.conf") def = getConfValue("/etc/banana/settings.conf", it.key, def);
 		if (it.key == "led_brightness") def = getConfValue("/etc/banana/bananad.conf", it.key, "128");
 		if (it.file.find("retroarch.cfg") != std::string::npos) def = getConfValue("/etc/banana/retroarch.cfg", it.key, def);
-		std::string v = getConfValue(it.file, it.key, it.key.rfind("core.",0)==0 ? "" : def);
+		std::string v = getConfValue(it.file, it.key, def);
 		it.at = -1;
 		for (size_t i = 0; i < it.values.size(); i++)
 			if (it.values[i] == v) it.at = (int)i;
