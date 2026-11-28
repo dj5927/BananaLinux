@@ -1,0 +1,16 @@
+#!/bin/sh
+# Create missing game-data folders only. Never copy settings or format a card.
+set -eu
+D=${1:?media root required}
+SYSTEMS=${2:-/etc/banana/systems.conf}
+mkdir -p "$D/roms" "$D/bios" "$D/saves" "$D/states" "$D/screenshots" "$D/store"
+mkdir -p "$D/saves/nds" "$D/states/nds" "$D/saves/psx" "$D/states/psx" "$D/saves/psp" "$D/states/psp" "$D/saves/dreamcast"
+mkdir -p "$D/bios/psx" "$D/bios/dc" "$D/bios/dreamcast" "$D/bios/fbneo"
+mkdir -p "$D/bios/rtp/2000" "$D/bios/rtp/2003" "$D/bios/easyrpg-player/Font" "$D/bios/easyrpg-player/Soundfont"
+mkdir -p "$D/bios/mkxp/rtp/xp" "$D/bios/mkxp/rtp/vx" "$D/bios/mkxp/rtp/vxace" "$D/bios/mkxp/rtp/fonts" "$D/bios/mkxp/fonts" "$D/bios/mkxp/soundfonts"
+awk '/^\[/{if(id!="")print (f!=""?f:id); id=substr($0,2,length($0)-2); f=""} /^folder *=/{sub(/^folder *= */,""); f=$0} END{if(id!="")print (f!=""?f:id)}' "$SYSTEMS" |
+while IFS= read -r f; do
+    # Absolute app paths and parent traversal never become directories on the card.
+    case "/$f/" in *"/../"*|*"/./"*|//*|/) continue;; esac
+    mkdir -p "$D/roms/$f"
+done

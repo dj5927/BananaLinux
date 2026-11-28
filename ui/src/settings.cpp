@@ -839,6 +839,7 @@ namespace banana
 			add(S, "gear", "Time zone", "Your time zone, for the clock and your games. Summer time is included.",
 				menu, "timezone", names, tzs);
 		}
+		add(S, "gear", "Install to eMMC", "Erases internal storage. Boot from SD first. ROMs, BIOS and saves use a FAT32 or exFAT data SD.", "", "emmc_install", {}, {}, Item::PAGE);
 		add(S, "gear", "Updates", "New versions of Banana: checking, installing, and going back.", "", "sys_updates", {}, {}, Item::PAGE);
 		add(S, "picture", "Box art", "Covers, title screens, genres and years for your games: fetching them, and where they come from.", "", "sys_boxart", {}, {}, Item::PAGE);
 		// the Updates page (System > Updates)
@@ -1458,6 +1459,13 @@ namespace banana
 			if (it.key == "hs_sync") { if (syncing()) stopSync(); else startSync(); return MOVED; }
 			if (it.key == "hs_pick") { openPickGames(); return MOVED; }
 			if (it.key == "credits") { openCredits(); return MOVED; }
+			if (it.key == "emmc_install") {
+                openUpdates(); emmcMode = true; installView = true; applying = true;
+                ustatus = "checking"; nextStatus2 = now + 500;
+                unlink((runDir + "/emmc-status").c_str());
+                spawn("/usr/libexec/banana/emmc-install", "probe");
+                return MOVED;
+            }
 			if (it.key == "update") openUpdates(); else if (it.key == "setup") openSetup(false, ""); else openNetworks();
 			return MOVED;
 		}
@@ -3746,7 +3754,7 @@ namespace banana
 		usel = 0; utop = 0; armed = -1;
 		message.clear();
 		ustatus.clear();
-		applying = false; updated = false; installView = false;
+		applying = false; updated = false; installView = false; emmcMode = false;
 		{ const char* tv = getenv("BANANA_VERSION"); version = tv ? tv : readLine("/etc/banana/version"); }
 		slot = readLine(runDir + "/slot");
 		{ const char* tb = getenv("BANANA_BOARD"); board = tb ? tb : readLine("/etc/banana/board"); }
@@ -3847,7 +3855,8 @@ namespace banana
 	void Settings::pollUpdate()
 	{
 		nextStatus2 = now + 500;
-		ustatus = readLine(runDir + "/update-status");
+		ustatus = readLine(runDir + (emmcMode ? "/emmc-status" : "/update-status"));
+		if (emmcMode && ustatus.compare(0, 6, "ready ") == 0) applying = false;
 		if (ustatus.compare(0, 4, "done") == 0) { applying = false; updated = true; }
 		else if (ustatus.compare(0, 6, "failed") == 0) applying = false;
 	}
@@ -4606,6 +4615,15 @@ namespace banana
 	Settings::Result Settings::pressUpdates(Key k)
 	{
 		int n = 2 + (int)pkgs.size();	// the online row, the beta channel, then the packages on the card
+		if (emmcMode && installView) {
+            if (applying) return NONE;
+            if (k == Key::B) { emmcMode = false; installView = false; page = LIST; armed = -1; return MOVED; }
+            if (k != Key::A || updated || ustatus.compare(0, 6, "ready ") != 0) return NONE;
+            if (armed != 9100) { armed = 9100; return MOVED; }
+            armed = -1; applying = true; ustatus = "checking"; nextStatus2 = now + 500;
+            spawn("/usr/libexec/banana/emmc-install", "install", "ERASE-INTERNAL-EMMC");
+            return MOVED;
+        }
 		if (installView)
 		{
 			// the install's screen: nothing to do while it writes; then A restarts (written) and B goes back to the list
@@ -5582,8 +5600,30 @@ namespace banana
 
 	// the install on a screen of its own, on the bottom panel where the package was picked (the list and its buttons
 	// gone): what it is doing, a bar, and only what can be pressed when it is over; the top panel says the same in short
+    void Settings::renderEmmc()
+    {
+        SPal p = pal(light);
+        const bool ready = ustatus.compare(0, 6, "ready ") == 0;
+        const bool failed = ustatus.compare(0, 6, "failed") == 0;
+        be->beginScreen(0); box("screen", false, 0, 0, 640, 480);
+        wrapped("Install to eMMC", 30, 40, 170, 560, 2, p.ink);
+        wrapped("Experimental: physical eMMC boot still needs device testing.", 20, 40, 250, 560, 3, p.muted);
+        be->endScreen();
+        be->beginScreen(1); box("screen", false, 0, 0, 640, 480);
+        wrapped(updated ? "eMMC installation complete" : failed ? "eMMC installation failed" : ready ? "Erase internal storage?" : "Installing to eMMC", 27, 30, 28, 580, 2, p.ink);
+        std::string note = updated ? "Shut down, remove the BananaOS boot SD, insert a FAT32 or exFAT data SD, then power on. Missing game folders are created automatically."
+            : ready ? "ALL files and the existing OS on internal eMMC will be erased. The SD is kept. Settings are copied internally; ROMs, BIOS and saves stay on the data SD. A boot backup is not a full data backup."
+            : failed ? ustatus.substr(8) : "Do not turn off power or remove the SD. The copied system is checked by reading it back.";
+        wrapped(note, 21, 30, 112, 580, 8, p.muted);
+        if (!ready && !updated && !failed) wrapped(ustatus, 24, 30, 340, 580, 2, p.ink);
+        if (ready) wrapped(armed == 9100 ? "A again: erase eMMC and install" : "A: confirm erasing eMMC", 22, 30, 355, 580, 2, p.accent);
+        if (!applying) face("B", "Back", 18, faceWidth("B", "Back"));
+        be->endScreen();
+    }
+
 	void Settings::renderInstall()
 	{
+		if (emmcMode) { renderEmmc(); return; }
 		SPal p = pal(light);
 		const bool failed = !applying && !updated && ustatus.compare(0, 6, "failed") == 0;
 		// the update script's steps: checking (unpacked and hashed), writing N%, verifying, done <version>

@@ -72,7 +72,10 @@ DISK=$(root_disk /proc/self/mountinfo /sys)
 done
 [ -n "$DISK" ] || DISK=/dev/mmcblk0
 echo "$DISK" > /run/banana/disk
-SLOT=a; grep -q 'root=PARTLABEL=banana-root-b' /proc/cmdline && SLOT=b
+SLOT=a
+case $(readlink /sys/dev/block/$(awk '$5 == "/" {d=$3} END{print d}' /proc/self/mountinfo) 2>/dev/null) in
+    *p3) SLOT=b ;;
+esac
 echo "$SLOT" > /run/banana/slot
 mark "rcS: slot $SLOT booted"
 if [ ! -b ${DISK}p4 ]; then
@@ -95,6 +98,9 @@ data || {
     echo "${DISK}p4 could not be mounted" > /run/banana/data-failed
 }
 /usr/libexec/banana/data-layout
+if [ -e /data/banana/emmc-install.conf ]; then
+    flock /run/banana/sd2.lock /usr/libexec/banana/sd2 scan
+fi
 # a machine id of the card's own (#174): the image had none, so every handheld was the same machine to a program that
 # asks - BananaDS makes the DS's network address from it, and two handhelds in one game need two. Made once and kept on
 # the card; /etc/machine-id (the root is read-only) points at the copy in /run

@@ -503,6 +503,8 @@ namespace banana
 		// the install's own screen: from A on a package (or Install) until the result is read (QA: a single line on
 		// the top panel was all that showed the install, while the package list stayed on the bottom one)
 		bool installView = false;
+		bool emmcMode = false;
+		void renderEmmc();
 		std::string installVersion;
 		void renderInstall();
 		double nextStatus2 = 0;

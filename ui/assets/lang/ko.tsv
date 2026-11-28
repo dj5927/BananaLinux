@@ -3165,3 +3165,15 @@ settings		Choose Panfrost or Mali for this 64-bit port. Changes apply next launc
 settings		Leave to menu?	메뉴로 나갈까요?
 settings		Progress since the last save will be lost.	마지막 저장 이후의 진행 상황이 사라집니다.
 settings		Keep playing	계속 플레이
+settings		Install to eMMC	eMMC에 설치
+settings		Erases internal storage. Boot from SD first. ROMs, BIOS and saves use a FAT32 or exFAT data SD.	내부 저장소를 지웁니다. SD로 부팅한 뒤 설치하세요. ROM·BIOS·저장 데이터는 FAT32/exFAT SD를 사용합니다.
+settings		Experimental: physical eMMC boot still needs device testing.	시험 기능: 실제 기기의 eMMC 부팅 확인이 필요합니다.
+settings		eMMC installation complete	eMMC 설치 완료
+settings		eMMC installation failed	eMMC 설치 실패
+settings		Erase internal storage?	내부 저장소를 지울까요?
+settings		Installing to eMMC	eMMC 설치 준비·진행 중
+settings		Shut down, remove the BananaOS boot SD, insert a FAT32 or exFAT data SD, then power on. Missing game folders are created automatically.	전원을 끄고 바나나OS 부팅 SD를 빼세요. FAT32 또는 exFAT 데이터 SD를 넣고 켜면 필요한 게임 폴더가 자동 생성됩니다.
+settings		ALL files and the existing OS on internal eMMC will be erased. The SD is kept. Settings are copied internally; ROMs, BIOS and saves stay on the data SD. A boot backup is not a full data backup.	내부 eMMC의 기존 OS와 파일이 모두 삭제됩니다. SD는 유지됩니다. 설정은 내부로 복사하고 ROM·BIOS·저장 데이터는 SD를 사용합니다. 부팅 정보 백업은 전체 데이터 백업이 아닙니다.
+settings		Do not turn off power or remove the SD. The copied system is checked by reading it back.	전원을 끄거나 SD를 빼지 마세요. 복사한 시스템을 다시 읽어 검증합니다.
+settings		A again: erase eMMC and install	A를 다시 누르면 eMMC를 지우고 설치합니다
+settings		A: confirm erasing eMMC	A: eMMC 삭제 확인

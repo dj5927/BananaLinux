@@ -1,0 +1,45 @@
+#!/bin/sh
+# /data remains the eMMC settings partition. Game data is bound from the selected SD.
+# Called under sd2.lock at boot and on card events. No formatting, copying or deletion.
+set -eu
+M=/run/sd2
+S=/run/banana/sd2
+ROOT=$(cat /run/banana/disk 2>/dev/null || :)
+MAP='roms:roms bios:bios saves:saves states:states screenshots:screenshots store:store saves/nds:drastic/backup states/nds:drastic/savestates saves/psx:banana/duckstation/memcards states/psx:banana/duckstation/savestates bios/psx:banana/duckstation/bios saves/psp:banana/easyemu/userdata/psp/config/ppsspp/PSP/SAVEDATA states/psp:banana/easyemu/userdata/psp/config/ppsspp/PSP/PPSSPP_STATE saves/dreamcast:banana/easyemu/userdata/dreamcast/data bios/dc:banana/easyemu/userdata/dreamcast/bios'
+[ "$(cat "/sys/class/block/${ROOT##*/}/device/type" 2>/dev/null)" = MMC ] || exit 0
+[ -e /data/banana/emmc-install.conf ] || exit 0
+case ${1:-attach} in
+attach)
+    SYSTEMS=/etc/banana/systems.conf
+    [ ! -s /run/banana/systems.conf ] || SYSTEMS=/run/banana/systems.conf
+    /usr/libexec/banana/media-layout "$M" "$SYSTEMS"
+    # If one bind fails, undo those just made. Never merge two cards' saves.
+    attached=
+    trap 'for p in $attached; do umount "/data/$p" 2>/dev/null || :; done' EXIT
+    for pair in $MAP; do
+        src=${pair%%:*}; p=${pair#*:}
+        # Import legacy native-engine data from this SD only; existing destination files win.
+        if [ "$src" != "$p" ] && [ -d "$M/$p" ]; then
+            cp -Rn "$M/$p/." "$M/$src/"
+        fi
+        mkdir -p "/data/$p"
+        if ! mountpoint -q "/data/$p"; then
+            mount --bind "$M/$src" "/data/$p"
+            attached="$p $attached"
+        fi
+    done
+    trap - EXIT
+    : > "$S/emmc-media"
+    printf '%s\n' /data/roms > "$S/roms"
+    rm -f "$S/error"
+    ;;
+detach)
+    # Detach removed media; existing open handles get I/O errors, never another card's files.
+    reverse=
+    for pair in $MAP; do reverse="${pair#*:} $reverse"; done
+    for p in $reverse; do
+        mountpoint -q "/data/$p" && { umount "/data/$p" 2>/dev/null || umount -l "/data/$p"; }
+    done
+    rm -f "$S/emmc-media"
+    ;;
+esac

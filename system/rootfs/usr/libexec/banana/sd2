@@ -26,6 +26,7 @@ for d in /sys/class/block/mmcblk[0-9]; do
 done
 mounted=$(sed -n "s|^/dev/\([^ ]*\) $M .*|\1|p" /proc/mounts | head -n 1)
 if [ -z "$card" ]; then
+    /usr/libexec/banana/emmc-media detach
     if [ -n "$mounted" ]; then
         # file sharing stopped first (a computer with a file open on \\<address>\sd2 kept the card busy), then up
         # again without the card's share
@@ -38,6 +39,7 @@ if [ -z "$card" ]; then
     exit 0
 fi
 if [ -z "$mounted" ] || [ "${mounted%p[0-9]*}" != "$card" ]; then
+    /usr/libexec/banana/emmc-media detach
     [ -n "$mounted" ] && { umount $M 2>/dev/null || umount -l $M; }
     # the menu says the card is being read while this runs (a large card's mount, and its games coming after the
     # menu's first list, looked like an empty library)
@@ -52,6 +54,19 @@ if [ -z "$mounted" ] || [ "${mounted%p[0-9]*}" != "$card" ]; then
         { rm -f $S/roms; logger -t sd2 "the card in the second slot ($part) can't be read: exFAT or FAT32 only"; exit 1; }
     logger -t sd2 "the second slot's card ($part) is at $M"
     /usr/libexec/banana/share restart        # (file sharing on: the card as \\<address>\sd2 too)
+fi
+/usr/libexec/banana/media-layout "$M" /etc/banana/systems.conf || {
+    echo 'Could not create SD folders (card full or read-only)' > "$S/error"
+    rm -f "$S/roms"
+    exit 1
+}
+if [ -e /data/banana/emmc-install.conf ]; then
+    /usr/libexec/banana/emmc-media attach || {
+        echo 'Could not attach SD game data' > "$S/error"
+        rm -f "$S/roms"
+        exit 1
+    }
+    exit 0
 fi
 on=$(sed -n 's/^sd2_roms *= *//p' /data/banana/settings.conf 2>/dev/null | tail -n 1)
 [ -n "$on" ] || on=$(sed -n 's/^sd2_roms *= *//p' /etc/banana/settings.conf 2>/dev/null | tail -n 1)
