@@ -78,6 +78,11 @@ def main():
         return stopping
     try:
         env=gpu.start(os.environ.copy(),startup_cancelled)
+        audio_fix=Path("/usr/lib/banana/ports/libbanana-port-audio.so")
+        if script.name.casefold()=="doukutsu-rs.sh" and env.get("BANANA_PORT_AUDIO_RECOVERY","1")=="1" and audio_fix.is_file():
+            env["BANANA_PORT_AUDIO_RECOVERY"]="1"
+            env["LD_PRELOAD"]=str(audio_fix)+(" "+env["LD_PRELOAD"] if env.get("LD_PRELOAD") else "")
+            note("CPAL playback recovery enabled")
         while not stopping:
             child = subprocess.Popen(["/bin/bash", str(script)], cwd=str(script.parent),
                                      stdout=log, stderr=subprocess.STDOUT,

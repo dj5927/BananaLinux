@@ -1,0 +1,7 @@
+# doukutsu-rs playback recovery (v33)
+
+PortMaster binary7,149,808 bytes references CPAL9d269d8 and dynamically imports libasound. Its ALSA polling code matches only OUT/IN before avail/EPIPE recovery; POLLERR can therefore loop silently after a stopped client underruns. Source evidence: https://github.com/doukutsu-rs/cpal/blob/9d269d8/src/host/alsa/mod.rs . This matches a possible mechanism for the user report; physical hardware cause is not confirmed.
+
+For the official Doukutsu-rs.sh entry only, the supervisor adds the opt-in libbanana-port-audio.so to LD_PRELOAD and sets BANANA_PORT_AUDIO_RECOVERY=1. Existing preloads, graphics paths, selected Mali/Panfrost, saves and game executables are preserved. BANANA_PORT_AUDIO_RECOVERY=0 opts out. The helper resolves the next ALSA implementation, recovers playback XRUN via snd_pcm_recover, and performs a bounded resume/prepare for SUSPENDED. Only successful PREPARED/RUNNING recovery produces POLLOUT. Capture, normal traffic, disconnected devices, and recovery failures preserve original behavior. No signal handler performs ALSA calls.
+
+Validation:12 mocked PCM error/normal/capture cases, disabled negative control, repeated real SIGSTOP/SIGCONT with a clock-driven PCM underrun model, native and ARM64 target execution, supervisor lifecycle regression. These tests do not replace an RG DS game/audio test. v32 UI, GPU code/libraries, v31 power daemon, kernel, DTB and all emulator binaries are compared byte-for-byte in the packaged update.

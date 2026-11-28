@@ -76,6 +76,10 @@ CC ?= gcc
 banana-leaseshim.so: src/leaseshim.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -O2 -Wall -shared -fPIC -o $@ $< -ldl
 
+# Opt-in playback recovery for affected PortMaster clients.
+libbanana-port-audio.so: src/port_audio.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -O2 -Wall -Wextra -Werror -shared -fPIC $(shell $(PKG_CONFIG) --cflags alsa) -o $@ $< -ldl -lpthread
+
 # the speaker EQ (Settings > Display & sound > Speaker EQ): an ALSA filter plugin, in alsa-lib's plugin folder where
 # bananad's `type banana_eq` finds it. -DPIC: alsa-lib's plugin macros only skip their static-build symbol with it
 libasound_module_pcm_banana_eq.so: src/eq/pcm_banana_eq.c src/eq/eq.h
@@ -120,6 +124,7 @@ tests/lang-test: tests/lang-test.cpp src/lang.cpp src/lang.h
 	$(CXX) $(CXXFLAGS) -Isrc -o $@ tests/lang-test.cpp src/lang.cpp -lpthread
 
 install:
+	install -D -m 755 libbanana-port-audio.so $(DESTDIR)/usr/lib/banana/ports/libbanana-port-audio.so
 	install -D -m 755 banana-ui $(DESTDIR)/usr/bin/banana-ui
 	install -D -m 755 banana-leaseshim.so $(DESTDIR)/usr/lib/banana/banana-leaseshim.so
 	install -D -m 755 libasound_module_pcm_banana_eq.so $(DESTDIR)/usr/lib/alsa-lib/libasound_module_pcm_banana_eq.so
@@ -148,7 +153,7 @@ install:
 
 clean:
 	rm -rf rc-obj
-	rm -f banana-ui banana-leaseshim.so libasound_module_pcm_banana_eq.so banana-scrape banana-sync banana-bshare banana-fetch tests/pokemon-test tests/gamecomp-test tests/input-test tests/wav-test tests/eq-test tests/lang-raw-test tests/lang-test tests/complink-test tests/nds-pages-test tests/nds-rom-test tests/nds-rom-dump tests/nds-ram-test tests/nds-logic-test tests/nds-romfile-test tests/nds-townmap-test tests/gba-live-test tests/gba-pages-test tests/gba-rom-test tests/gba-items-gen tests/soft-base-test tests/gba-exp-test tests/gba-expitems-gen tests/gba-hidden-items tests/ach-test
+	rm -f libbanana-port-audio.so banana-ui banana-leaseshim.so libasound_module_pcm_banana_eq.so banana-scrape banana-sync banana-bshare banana-fetch tests/pokemon-test tests/gamecomp-test tests/input-test tests/wav-test tests/eq-test tests/lang-raw-test tests/lang-test tests/complink-test tests/nds-pages-test tests/nds-rom-test tests/nds-rom-dump tests/nds-ram-test tests/nds-logic-test tests/nds-romfile-test tests/nds-townmap-test tests/gba-live-test tests/gba-pages-test tests/gba-rom-test tests/gba-items-gen tests/soft-base-test tests/gba-exp-test tests/gba-expitems-gen tests/gba-hidden-items tests/ach-test
 
 .PHONY: host install clean
 
