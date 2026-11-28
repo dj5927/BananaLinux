@@ -170,6 +170,10 @@ def install(p):
     try:
         cmd('mount','-t','vfat',target+'p1',str(WORK))
         conf=WORK/'extlinux/extlinux.conf'
+        # The other SD slot may predate PARTUUID-aware slot detection. It must
+        # not boot internally until a future OTA installs a compatible system.
+        inactive = 'b' if p['slot'] == 'a' else 'a'
+        (WORK/inactive/'Image').unlink(missing_ok=True)
         text=rewrite_extlinux(conf.read_text(),p['guids'],p['slot'])
         conf.write_text(text)
         cmd('sync')

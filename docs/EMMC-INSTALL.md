@@ -44,6 +44,12 @@ slot A/B even after switching from PARTLABEL to PARTUUID. OTA continues to write
 the inactive slot on the system disk and preserves UUID arguments and settings.
 eMMC hardware boot partitions and their enablement are not modified.
 
+The copied inactive SD slot may hold older firmware that does not identify
+PARTUUID roots correctly. Its boot kernel is invalidated on the eMMC copy;
+the first subsequent OTA populates that slot safely. Previous version is
+therefore unavailable immediately after installation. The original SD slots
+and their kernels are retained unchanged.
+
 ## Validation boundaries
 
 Tests use sparse loop disks rather than real hardware: GPT/bootloader/root

@@ -79,6 +79,7 @@ with tempfile.TemporaryDirectory(prefix='banana-v41-',dir='/var/tmp') as tmp:
   conf=(ROOT.parent/'buildroot/board/rgds/extlinux.conf.in').read_text().replace('@DTB@','fixture')
   (boot/'extlinux/extlinux.conf').write_text(conf)
   (boot/'a').mkdir();(boot/'a/Image').write_bytes(b'kernel')
+  (boot/'b').mkdir();(boot/'b/Image').write_bytes(b'old-incompatible-kernel')
   umount(boot)
   # Deterministic roots and Rockchip-loader fixture.
   with open(source,'r+b',buffering=0) as f:
@@ -106,6 +107,8 @@ with tempfile.TemporaryDirectory(prefix='banana-v41-',dir='/var/tmp') as tmp:
   assert not (m.WORK/'roms').exists();umount(m.WORK)
   mount(target+'p1',m.WORK)
   cfg=(m.WORK/'extlinux/extlinux.conf').read_text()
+  assert (m.WORK/'a/Image').read_bytes()==b'kernel'
+  assert not (m.WORK/'b/Image').exists()
   assert 'PARTLABEL=' not in cfg and 'banana.slot=a' in cfg
   umount(m.WORK)
   assert (data/'roms/keep.rom').read_bytes()==b'USER-ROM'
