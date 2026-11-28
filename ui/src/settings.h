@@ -129,12 +129,15 @@ namespace banana
 		// dimmed bottom panel, as a touch does (gameplay buttons don't)
 		bool gameWake() { bool w = wake; wake = false; return w; }
 		void gameRender();
+		bool gameQuitPending() const { return gQuitConfirm; }
+		bool gameConfirmKey(const InputEvent& ev, GameAction& action);
+		void gameRequestQuit();
 		GameAction gameTouch(float x, float y, bool down);	// device px on the panel's screen
 		GameAction saTopTouch(float x,float y,bool down);
 		bool rpgMenuActive() const { return gRpgMenu; }
 		int saQuickSlot() const { return gSaSlot; }
 		bool saQuickFast() const { return gSaFast; }
-		bool rpgPauseRequested() const { return gRpgPaused || gRpgMenu || gRpgConfirm != 0; }
+		bool rpgPauseRequested() const { return gRpgPaused || gRpgMenu || gRpgConfirm != 0 || gQuitConfirm; }
 		void portHotkeyOnly(bool on) { gPortBlind=on; }
 		void portCover(const std::string& path);
 		bool rpgTopMenu() const { return gRpgTopMenu; }
@@ -762,6 +765,13 @@ namespace banana
 		void tick(float x, float y, const rnds::Color& c);	// a mark on a 2 px grid (a chosen file)
 		void meter(float x, float y, float w, double fraction);	// a progress bar
 		std::string gTitle, gSystem;
+		bool gQuitConfirm=false, gQuitF=false;
+		int gQuitDown=-1, gDrawScreen=1;
+		std::set<int> gQuitHeld;
+		GameAction gameQuitTouch(float x,float y,bool down);
+		void gamePanelBegin(int screen);
+		void gamePanelEnd();
+		void gameQuitOverlay();
 		int gScreen = 1, gFlash = -1, gDown = -1;
 		// the States view (universal companion tier 0): slots 0-9 with their thumbnails; a slot tapped twice loads it
 		bool gStates = false;

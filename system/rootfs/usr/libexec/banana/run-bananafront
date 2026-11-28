@@ -17,11 +17,6 @@ setting() {
     [ -n "$v" ] || v=$(sed -n "/^ *$1 *= */{s///;h};\${x;p}" /etc/banana/settings.conf 2>/dev/null)
     printf '%s' "$v"
 }
-# Capture a few read-only snapshots; neither frontend nor performance policy is changed.
-if [ "$BANANA_SYSTEM" = fbneo ] && [ "${BANANA_FBNEO_DIAGNOSTICS_STARTED:-}" != 1 ]; then
-    export BANANA_FBNEO_DIAGNOSTICS_STARTED=1
-    /usr/bin/python3 /usr/libexec/banana/fbneo-diagnostics.py "$$" "$2" </dev/null >/dev/null 2>&1 &
-fi
 # the core Settings > Other systems picked for the system (as run-retroarch: the image's, then the card's)
 if [ -n "$BANANA_SYSTEM" ] && [ "${1#/}" = "$1" ]; then
     c=$(setting "core.$BANANA_SYSTEM")

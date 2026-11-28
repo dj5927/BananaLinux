@@ -24,3 +24,9 @@ int snd_pcm_recover(snd_pcm_t *p,int err,int silent) {
 }
 int snd_pcm_resume(snd_pcm_t *p) { (void)p;calls++;if(!resume_rc)state=SND_PCM_STATE_RUNNING;return resume_rc; }
 int snd_pcm_prepare(snd_pcm_t *p) { (void)p;calls++;if(!prepare_rc)state=SND_PCM_STATE_PREPARED;return prepare_rc; }
+
+static snd_htimestamp_t fixture_now = { 2, 0 }, fixture_trigger = { 1, 0 };
+void fixture_timestamps(long now_sec,long trigger_sec) { fixture_now.tv_sec=now_sec; fixture_trigger.tv_sec=trigger_sec; }
+int snd_pcm_status(snd_pcm_t *pcm,snd_pcm_status_t *status) { (void)pcm;(void)status;return 0; }
+void snd_pcm_status_get_htstamp(const snd_pcm_status_t *status,snd_htimestamp_t *stamp) { (void)status;*stamp=fixture_now;if(timed && state==SND_PCM_STATE_PREPARED)stamp->tv_sec=0; }
+void snd_pcm_status_get_trigger_htstamp(const snd_pcm_status_t *status,snd_htimestamp_t *stamp) { (void)status;*stamp=fixture_trigger;if(timed && state==SND_PCM_STATE_PREPARED)stamp->tv_sec=100; }

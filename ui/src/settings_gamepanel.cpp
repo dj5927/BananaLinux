@@ -360,6 +360,7 @@ namespace banana
 
 	void Settings::gameOpen(const std::string& title, const std::string& system, int screen, bool touch)
 	{
+		gQuitConfirm=gQuitF=false; gQuitDown=-1; gQuitHeld.clear();
 		gTitle = title; gSystem = system; gScreen = screen; gTouch = touch;
 		gFlash = gDown = -1; gSeen = -1; awardsSeen = 0; wake = false;
 		gKeysOpen = false; gKeyPage = 0; gKeyShift = 0; gKeyTyped.clear();
@@ -793,6 +794,7 @@ namespace banana
 	Settings::GameAction Settings::gameTouch(float x, float y, bool down)
 	{
 		float lx = x / s, ly = y / s;
+		if(gQuitConfirm) return gameQuitTouch(lx,ly,down);
 		if(swanMenuActive()) return swanMenuTouch(lx,ly,down);
 		if (rpg::isSystem(gSysId) || gSysId=="ports" || gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation") return rpgPanelTouch(lx,ly,down);
 		int hit = -1;
@@ -928,6 +930,7 @@ namespace banana
 			return G_NONE;
 		}
 		if(gSwanNative && hit==2) { swanMenuToggle(); return G_NONE; }
+		if(acts[hit]==G_QUIT) {gameRequestQuit();return G_NONE;}
 		return acts[hit];
 	}
 
@@ -978,6 +981,81 @@ namespace banana
 		text("The game keeps running on the other screen. Done brings the tiles back.", false, 15, 12, 384, p.muted);
 	}
 
+	void Settings::gameRequestQuit()
+	{
+		gQuitConfirm=true; gQuitDown=gDown=gFlash=-1;
+	}
+	bool Settings::gameConfirmKey(const InputEvent& ev,GameAction& action)
+	{
+		action=G_NONE;
+		const int held=ev.code?ev.code:-(int(ev.key)+1);
+		if(ev.type==InputEvent::RELEASE) {
+			gQuitHeld.erase(held);
+			if(ev.key==Key::MENU) gQuitF=false;
+			return false;
+		}
+		if(ev.type!=InputEvent::PRESS) return false;
+		const bool fresh=gQuitHeld.insert(held).second;
+		if(ev.key==Key::MENU) gQuitF=true;
+		if(!gQuitConfirm) return false;
+		if(!fresh) return true;
+		if(gQuitF) {
+			if(ev.key==Key::START) {gQuitConfirm=false;gRpgMenu=gRpgPaused=false;gRpgConfirm=0;gSwanMenu=false;gSwanConfirm=0;action=G_QUIT;}
+			return true;
+		}
+		if(ev.key==Key::B) gQuitConfirm=false;
+		else if(ev.key==Key::A) {gQuitConfirm=false;gRpgMenu=gRpgPaused=false;gRpgConfirm=0;gSwanMenu=false;gSwanConfirm=0;action=G_QUIT;}
+		return true;
+	}
+	Settings::GameAction Settings::gameQuitTouch(float x,float y,bool down)
+	{
+		int hit=-1;
+		if(y>=303 && y<355) {
+			if(x>=224 && x<440) hit=0;
+			if(x>=452 && x<574) hit=1;
+		}
+		if(down) {gQuitDown=hit;return G_NONE;}
+		int was=gQuitDown;gQuitDown=-1;
+		if(hit<0 || hit!=was) return G_NONE;
+		gQuitConfirm=false;
+		if(hit==1) {gRpgMenu=gRpgPaused=false;gRpgConfirm=0;gSwanMenu=false;gSwanConfirm=0;return G_QUIT;}
+		return G_NONE;
+	}
+	void Settings::gamePanelBegin(int screen)
+	{
+		gDrawScreen=screen;be->beginScreen(screen);
+	}
+	void Settings::gamePanelEnd()
+	{
+		if(gQuitConfirm && gDrawScreen==gScreen) gameQuitOverlay();
+		be->endScreen();
+	}
+	void Settings::gameQuitOverlay()
+	{
+		SPal p=pal(light);
+		be->fill(0,0,X(640),X(480),Color(0,0,0,.58f));
+		box("bubble",false,42,140,556,234);
+		text("Leave to menu?",true,25,64,163,p.ink);
+		wrapped("Progress since the last save will be lost.",18,64,216,506,2,p.ink);
+		box("slot",false,224,303,216,52);
+		auto round=[&](float x,float y,float w,float h,Color color) {
+			be->fill(X(x+8),X(y),X(w-16),X(h),color);
+			for(int i=0;i<8;i++) {
+				float inset=8-std::sqrt(64.0f-(7.5f-i)*(7.5f-i));
+				be->fill(X(x+inset),X(y+i),X(w-2*inset),X(1),color);
+				be->fill(X(x+inset),X(y+h-1-i),X(w-2*inset),X(1),color);
+			}
+			be->fill(X(x),X(y+8),X(w),X(h-16),color);
+		};
+		round(452,303,122,52,Color::hex(0xff9aaa));
+		round(455,306,116,46,Color::hex(0xba354d));
+		box("slot",false,235,314,25,30);
+		text("B",true,18,241,319,p.ink);
+		text("Keep playing",true,21,270,317,p.ink);
+		text("A",true,18,466,319,Color(1,1,1,1));
+		text("Quit",true,22,495,317,Color(1,1,1,1));
+	}
+
 	void Settings::gameRender()
 	{
 		frame++;	// (a frame of the cache's, as render()'s: evict() after it)
@@ -1002,6 +1080,7 @@ namespace banana
 	}
 	bool Settings::swanKeyEvent(const InputEvent& ev, GameAction& action)
 	{
+		if(gameConfirmKey(ev,action)) return true;
 		action=G_NONE;
 		if(!gSwanNative) return false;
 		if(ev.type==InputEvent::RELEASE) {
@@ -1053,7 +1132,7 @@ namespace banana
 			case 2: swanMenuToggle(); return G_SAVE;
 			case 3: swanMenuToggle(); return G_LOAD;
 			case 4: gSwanConfirm=1; break;
-			case 5: gSwanConfirm=2; break;
+			case 5: gameRequestQuit(); break;
 			}
 		}
 		return G_NONE;
@@ -1087,7 +1166,7 @@ namespace banana
 	void Settings::swanMenuFrame()
 	{
 		SPal p=pal(light);
-		be->beginScreen(gScreen);
+		gamePanelBegin(gScreen);
 		box("screen",false,0,0,640,480);
 		box("bubble",false,18,10,604,48);
 		text(gSwanOptions?"Performance settings":"SwanStation menu",true,24,30,23,p.ink);
@@ -1127,7 +1206,7 @@ namespace banana
 			text("Game is paused while the menu is open.",false,15,142,439,p.muted);
 		}
 		face("B","Back",18,faceWidth("B","Back"));
-		be->endScreen();
+		gamePanelEnd();
 	}
 
 	void Settings::saQuickOpen()
@@ -1175,7 +1254,7 @@ namespace banana
 	Settings::GameAction Settings::saTile(int i)
 	{
 		if(i==2) { saMenuToggle(); return G_NONE; }
-		if(i==4) { gRpgConfirm=2; return G_NONE; }
+		if(i==4) {gameRequestQuit();return G_NONE;}
 		gRpgPaused=false;
 		if(i==0) return G_SAVE;
 		if(i==1) return G_LOAD;
@@ -1262,14 +1341,14 @@ namespace banana
 			case 3:gRpgMenu=gRpgPaused=false;return G_MENU;
 			case 4:gRpgMenu=false;gRpgPaused=true;break;
 			case 5:gRpgConfirm=1;break;
-			case 6:gRpgConfirm=2;break;
+			case 6:gameRequestQuit();break;
 			}
 		}
 		return G_NONE;
 	}
 	Settings::GameAction Settings::saTopTouch(float x,float y,bool down)
 	{
-		if(!saQuickPanel() || !gRpgMenu || !gRpgTopMenu || gRpgConfirm) return G_NONE;
+		if(gQuitConfirm || !saQuickPanel() || !gRpgMenu || !gRpgTopMenu || gRpgConfirm) return G_NONE;
 		return saTouch(x/s,y/s,down,true);
 	}
 	Settings::GameAction Settings::saTouch(float x,float y,bool down,bool top)
@@ -1347,7 +1426,7 @@ namespace banana
 	void Settings::saMenuFrame(int screen)
 	{
 		SPal p=pal(light);
-		be->beginScreen(screen);
+		gamePanelBegin(screen);
 		box("screen",false,0,0,640,480);
 		box("bubble",false,18,14,604,54);
 		text(gSaOptions?"Performance settings":"Menu",true,25,36,27,p.ink);
@@ -1385,13 +1464,13 @@ namespace banana
 			}
 		}
 		face("B","Back",18,faceWidth("B","Back"));
-		be->endScreen();
+		gamePanelEnd();
 	}
 
 	void Settings::saMenuNavFrame()
 	{
 		SPal p=pal(light);
-		be->beginScreen(gScreen);
+		gamePanelBegin(gScreen);
 		box("screen",false,0,0,640,480);
 		box("bubble",false,18,14,604,54);
 		text("Menu",true,25,36,27,p.ink);
@@ -1430,12 +1509,13 @@ namespace banana
 			text(label,true,17,x+98-w/2,y+65,fg);
 		}
 		wrapped("Use the D-pad or touch to navigate.",16,22,438,596,2,p.muted);
-		be->endScreen();
+		gamePanelEnd();
 	}
 
 	// Independent SA panel. No RetroAchievements or Libretro state slots.
 	bool Settings::rpgKeyEvent(const InputEvent& ev, GameAction& action)
 	{
+		if(gameConfirmKey(ev,action)) return true;
 		action=G_NONE;
 		const bool easy=gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation";
 		if (!rpg::isSystem(gSysId) && gSysId!="ports" && !easy) return false;
@@ -1538,13 +1618,14 @@ namespace banana
 			if(gSysId=="psp" || gSysId=="dreamcast" || gSysId=="duckstation") { gRpgPaused=false; return G_MENU; }
 			rpgMenuToggle();
 		}
-		else gRpgConfirm=hit==2?1:2;
+		else if(hit==2) gRpgConfirm=1;
+		else gameRequestQuit();
 		return G_NONE;
 	}
 	void Settings::rpgMenuFrame(int screen)
 	{
 		SPal p=pal(light);
-		be->beginScreen(screen);
+		gamePanelBegin(screen);
 		box("screen",false,0,0,640,480);
 		box("bubble",false,18,14,604,54);
 		text("Menu",true,25,36,27,p.ink);
@@ -1571,7 +1652,7 @@ namespace banana
 		else text(std::to_string(currentPage+1)+" / "+std::to_string(pages),true,18,290,386,p.muted);
 		wrapped("Settings apply next launch.",16,145,431,465,1,p.muted);
 		face("B","Back",18,faceWidth("B","Back"));
-		be->endScreen();
+		gamePanelEnd();
 	}
 	void Settings::rpgPanelFrame()
 	{
@@ -1582,7 +1663,7 @@ namespace banana
 		}
 		if (gRpgMenu && !gRpgTopMenu && !gRpgConfirm) { rpgMenuFrame(gScreen); return; }
 		SPal p=pal(light);
-		be->beginScreen(gScreen);
+		gamePanelBegin(gScreen);
 		box("screen",false,0,0,640,480);
 		text(fit(gTitle,true,25,600),true,25,20,12,p.ink);
 		const bool port=gSysId=="ports";
@@ -1597,7 +1678,7 @@ namespace banana
 		if (gRpgConfirm) {
 			wrapped(gRpgConfirm==1?"Restart this game? Unsaved progress will be lost.":"Quit this game? Unsaved progress will be lost.",24,32,110,576,5,p.ink);
 			button(20,365,292,60,"Cancel"); button(328,365,292,60,"Confirm");
-			be->endScreen();
+			gamePanelEnd();
 			if (gRpgMenu && gRpgTopMenu) {
 				if(easy) saMenuFrame(1-gScreen);
 				else rpgMenuFrame(1-gScreen);
@@ -1670,7 +1751,7 @@ namespace banana
 				text(keys,false,14,x+(w-sw)/2,y+90,fg);
 			}
 			wrapped("Touch a tile or use F shortcuts.",16,22,438,596,2,p.muted);
-			be->endScreen();
+			gamePanelEnd();
 			return;
 		}
 		for(int i=0;i<4;i++) {
@@ -1691,7 +1772,7 @@ namespace banana
 		}
 		if(port || easy) wrapped("Touch a tile or use F shortcuts.",16,22,438,596,2,p.muted);
 		else if (gRpgMenu) wrapped("Settings apply next launch.",16,22,438,596,2,p.muted);
-		be->endScreen();
+		gamePanelEnd();
 		if (gRpgMenu && gRpgTopMenu) rpgMenuFrame(1-gScreen);
 	}
 
@@ -1727,15 +1808,15 @@ namespace banana
 			if (rows.size() > (nearList.empty() ? 2u : 1u)) rows.resize(nearList.empty() ? 2 : 1);
 			for (auto& r : rows) raw->wantBadge(raw, r.badge);
 		}
-		be->beginScreen(gScreen);
+		gamePanelBegin(gScreen);
 		box("screen", false, 0, 0, 640, 480);
-		if (gKeysOpen) { gameKeysFrame(p); be->endScreen(); return; }	// (the panel is the keyboard while it is open)
-		if (gAchOpen) { gameAchFrame(p); be->endScreen(); return; }	// (and the achievements list while it is)
+		if (gKeysOpen) { gameKeysFrame(p); gamePanelEnd(); return; }	// (the panel is the keyboard while it is open)
+		if (gAchOpen) { gameAchFrame(p); gamePanelEnd(); return; }	// (and the achievements list while it is)
 		bool pk = companion && companion->active();
 		if (gbaPanel.pagesShown())
 		{
 			gbaPanel.draw();
-			be->endScreen();
+			gamePanelEnd();
 			return;
 		}
 		bool gc = !pk && gameComp && gameComp->active();
@@ -1743,7 +1824,7 @@ namespace banana
 		{
 			gcRender(p);
 			gcTabs(p);
-			be->endScreen();
+			gamePanelEnd();
 			return;
 		}
 		// ---- the header: the game, the system
@@ -1889,7 +1970,7 @@ namespace banana
 		float hw = text(hint, false, 15, 0, 0, p.muted, false, 0, true);
 		text(hint, false, 15, 320 - hw / 2, 438, p.muted);
 		if (compOn()) compIcon();
-		be->endScreen();
+		gamePanelEnd();
 	}
 
 	// ---- the game panel's drawing bits (the game companion's pages): numbers, chips, bars, the pager. Banana's look:
@@ -2356,10 +2437,10 @@ namespace banana
 		for (int i = 0; i < gcomp::NUM_PAGES; i++)
 		{
 			gcView = i; gcScreen = 0; gcList = gcRow = -1;
-			be->beginScreen(gScreen);
+			gamePanelBegin(gScreen);
 			gcRender(p);
 			gcTabs(p);
-			be->endScreen();
+			gamePanelEnd();
 			const gcomp::Page& pg = d.pages[i];
 			char b[256];
 			if (gcScreens > 2) { snprintf(b, sizeof b, "%s %s: %d screens", f.c_str(), gcomp::pageIdName(i), gcScreens); log(b); issues++; }

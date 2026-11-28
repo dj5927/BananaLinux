@@ -1467,6 +1467,20 @@ static int runHeadless(const Options& o, Host& lib, const std::string& variant, 
 			const bool changed = settings.gameButton(code, now);
 			logf("gbutton %s: %s view %s", b.c_str(), changed ? "switched" : "nothing", settings.gamePanelView().c_str());
 		}
+
+        else if(op=="gquitassert") {
+            int expected=0;cs>>expected;
+            if(settings.gameQuitPending()!=(expected!=0)) {logf("FAIL quit modal expected %d",expected);return 2;}
+            logf("PASS quit modal %d",expected);
+        }
+        else if(op=="gquitkey") {
+            std::string key,kind,expected;cs>>key>>kind>>expected;
+            InputEvent ev{};ev.type=kind=="release"?InputEvent::RELEASE:InputEvent::PRESS;
+            ev.key=key=="a"?Key::A:key=="b"?Key::B:key=="f"?Key::MENU:Key::START;
+            Settings::GameAction a;settings.gameConfirmKey(ev,a);
+            if(a!=(expected=="quit"?Settings::G_QUIT:Settings::G_NONE)) {logf("FAIL quit key");return 2;}
+            logf("PASS quit key %s %s",key.c_str(),kind.c_str());
+        }
 		else if (op == "safast")
 		{
 			std::string phase, runtime; cs>>phase; std::getline(cs>>std::ws,runtime);
@@ -2899,8 +2913,10 @@ int main(int argc, char** argv)
 			{
 				std::lock_guard<std::mutex> l(worker.uiLock);
 				syncRpgPause();
-				if(swanNative) {
-					swanPause.request(settingsView.swanMenuActive());
+				if(!nativeControl) {
+					swanPause.request((swanNative && settingsView.swanMenuActive()) || settingsView.gameQuitPending());
+                    // BananaFront has no GET_STATUS reply; closing an unacknowledged popup must stop polling.
+                    if(!swanNative && !settingsView.gameQuitPending() && !swanPause.known) swanPause=SwanMenuPause{};
 					swanPause.tick(t,swanSend);
 				}
 				if ((gameSysId=="mkxp" || nativeEasy) && t>=nextStatus) {
@@ -3013,7 +3029,7 @@ int main(int argc, char** argv)
 				ssize_t n;
 				while ((n = read(outFd, buf, sizeof buf)) > 0)
 				{
-					if(swanNative) {
+					if(!nativeControl) {
 						swanReply.append(buf,(size_t)n);
 						size_t nl;
 						while((nl=swanReply.find('\n'))!=std::string::npos) {
@@ -3024,8 +3040,8 @@ int main(int argc, char** argv)
 						}
 						// Ignore a contentless response (no newline in some RA versions).
 						if(swanReply=="GET_STATUS CONTENTLESS" || swanReply.size()>8192) swanReply.clear();
-					} else if (companion.active()) companion.feed(buf, (size_t)n);
-					else
+					} if (!swanNative && companion.active()) companion.feed(buf, (size_t)n);
+					else if(!swanNative)
 					{
 						std::lock_guard<std::mutex> l(worker.uiLock);	// (the panel reads its snapshot while drawing)
 						gameComp.feed(buf, (size_t)n);
@@ -3063,10 +3079,15 @@ int main(int argc, char** argv)
 									}
 									bottomIdle.activity(nowMs()); want=true;
 								}
-							} else if (settingsView.gameButton(ev.code, nowMs())) want = true;
+							} else {
+                                Settings::GameAction a;
+                                if(settingsView.gameConfirmKey(ev,a)) {swanAction(a);want=true;bottomIdle.activity(nowMs());}
+                                else if(settingsView.gameButton(ev.code,nowMs())) want=true;
+                            }
 							return;
 						}
 						if (ev.type == InputEvent::RELEASE) {
+							if(!nativeControl && !swanNative) {std::lock_guard<std::mutex> l(worker.uiLock);Settings::GameAction a;settingsView.gameConfirmKey(ev,a);}
 							if(swanNative) { std::lock_guard<std::mutex> l(worker.uiLock); Settings::GameAction a; settingsView.swanKeyEvent(ev,a); }
 							if (nativeControl) { std::lock_guard<std::mutex> l(worker.uiLock); Settings::GameAction a; settingsView.rpgKeyEvent(ev,a); }
 							return;

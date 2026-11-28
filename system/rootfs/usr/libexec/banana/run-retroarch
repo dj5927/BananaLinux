@@ -13,11 +13,6 @@ setting() {
     [ -n "$v" ] || v=$(sed -n "/^ *$1 *= */{s///;h};\${x;p}" /etc/banana/settings.conf 2>/dev/null)
     printf '%s' "$v"
 }
-# Capture a few read-only snapshots; neither frontend nor performance policy is changed.
-if [ "$BANANA_SYSTEM" = fbneo ] && [ "${BANANA_FBNEO_DIAGNOSTICS_STARTED:-}" != 1 ]; then
-    export BANANA_FBNEO_DIAGNOSTICS_STARTED=1
-    /usr/bin/python3 /usr/libexec/banana/fbneo-diagnostics.py "$$" "$2" </dev/null >/dev/null 2>&1 &
-fi
 # Settings > Other systems > Frontend (ra_frontend): BananaOS's own BananaFront instead of RetroArch for the 2D
 # systems (the same cores, saves, states and settings; RetroArch stays as the fallback). Auto: BananaFront only for the
 # systems checked on it (BF_SYSTEMS, both handhelds: stress ROM at least as fast, saves carried over, a game played);

@@ -3161,3 +3161,7 @@ settings		Use the D-pad or touch to navigate.	방향키 또는 터치로 조작�
 settings		Graphics driver	그래픽 드라이버
 settings		Default (Panfrost)	기본값 따름 (Panfrost)
 settings		Choose Panfrost or Mali for this 64-bit port. Changes apply next launch. The system restores Panfrost after the game ends.	이 64비트 포트 게임에 사용할 Panfrost 또는 Mali를 선택합니다. 다음 실행부터 적용되며, 게임 종료 후 Panfrost로 복원합니다.
+
+settings		Leave to menu?	메뉴로 나갈까요?
+settings		Progress since the last save will be lost.	마지막 저장 이후의 진행 상황이 사라집니다.
+settings		Keep playing	계속 플레이

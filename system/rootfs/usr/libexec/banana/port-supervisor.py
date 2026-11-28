@@ -82,7 +82,8 @@ def main():
         if script.name.casefold()=="doukutsu-rs.sh" and env.get("BANANA_PORT_AUDIO_RECOVERY","1")=="1" and audio_fix.is_file():
             env["BANANA_PORT_AUDIO_RECOVERY"]="1"
             env["LD_PRELOAD"]=str(audio_fix)+(" "+env["LD_PRELOAD"] if env.get("LD_PRELOAD") else "")
-            note("CPAL playback recovery enabled")
+            env.setdefault("RUST_BACKTRACE","1")
+            note("CPAL playback recovery with timestamp guard enabled")
         while not stopping:
             child = subprocess.Popen(["/bin/bash", str(script)], cwd=str(script.parent),
                                      stdout=log, stderr=subprocess.STDOUT,
