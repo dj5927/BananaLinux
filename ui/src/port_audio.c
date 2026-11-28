@@ -13,6 +13,9 @@
 
 static pthread_once_t once = PTHREAD_ONCE_INIT;
 static int enabled;
+static _Thread_local unsigned poll_depth;
+static _Thread_local int poll_fault;
+static _Thread_local int recovery_noted;
 static int (*next_revents)(snd_pcm_t *, struct pollfd *, unsigned, unsigned short *);
 static snd_pcm_stream_t (*next_stream)(snd_pcm_t *);
 static snd_pcm_state_t (*next_state)(snd_pcm_t *);
@@ -50,19 +53,38 @@ int snd_pcm_poll_descriptors_revents(snd_pcm_t *pcm, struct pollfd *pfds,
 {
     pthread_once(&once, init);
     if (!next_revents) return -ENOSYS;
+    // ALSA calls this symbol again while forwarding through conversion plugins.
+    // Observe nested errors, but prepare only the outer handle. A rate plugin can
+    // still report RUNNING while its slave is already XRUN or SUSPENDED.
+    if (!poll_depth) poll_fault = -1;
+    ++poll_depth;
     int rc = next_revents(pcm, pfds, count, events);
+    --poll_depth;
     int saved_errno = errno;
-    if (!enabled || rc || !events || !(*events & POLLERR) ||
-        !next_stream || !next_state || !next_recover || !next_prepare ||
-        !next_status || !next_htstamp || !next_trigger ||
-        next_stream(pcm) != SND_PCM_STREAM_PLAYBACK) return rc;
+    if (!enabled || rc || !events || !next_stream || !next_state ||
+        !next_recover || !next_prepare || !next_status || !next_htstamp ||
+        !next_trigger || next_stream(pcm) != SND_PCM_STREAM_PLAYBACK) {
+        errno = saved_errno;
+        return rc;
+    }
+    if (*events & POLLERR) {
+        snd_pcm_state_t observed = next_state(pcm);
+        if (observed == SND_PCM_STATE_XRUN || observed == SND_PCM_STATE_SUSPENDED)
+            poll_fault = observed;
+    }
+    if (poll_depth || (!(*events & POLLERR) && poll_fault < 0)) {
+        errno = saved_errno;
+        return rc;
+    }
     snd_pcm_state_t state = next_state(pcm);
+    if (state != SND_PCM_STATE_XRUN && state != SND_PCM_STATE_SUSPENDED &&
+        state != SND_PCM_STATE_DISCONNECTED && poll_fault >= 0)
+        state = (snd_pcm_state_t)poll_fault;
     int recovered = -1;
     if (state == SND_PCM_STATE_XRUN) {
         recovered = next_recover(pcm, -EPIPE, 1);
     } else if (state == SND_PCM_STATE_SUSPENDED) {
-        // Resume only restarts the slave; prepare resets every plugin application pointer.
-        // A failed mmap_emul write can otherwise make the next status() abort.
+        // Prepare the outer conversion chain, rather than resuming just a slave.
         recovered = next_prepare(pcm);
     }
     if (recovered == 0) {
@@ -71,6 +93,13 @@ int snd_pcm_poll_descriptors_revents(snd_pcm_t *pcm, struct pollfd *pfds,
             recovered_pcm = pcm;
             timestamp_noted = 0;
             *events = POLLOUT;
+            if (!recovery_noted) {
+                Dl_info backend = {0};
+                recovery_noted = 1;
+                dladdr((void *)next_status, &backend);
+                fprintf(stderr, "[banana-port-audio] outer PCM recovery v38; ALSA=%s\n",
+                        backend.dli_fname ? backend.dli_fname : "unknown");
+            }
             fprintf(stderr, "[banana-port-audio] recovered playback %s\n",
                     state == SND_PCM_STATE_XRUN ? "underrun" : "suspend");
         }
