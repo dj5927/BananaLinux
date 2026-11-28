@@ -89,7 +89,13 @@ def probe():
             raise RuntimeError('eMMC is mounted; unmount it first')
     for ln in Path('/proc/mounts').read_text().splitlines():
         if ln.split()[0].startswith(target): raise RuntimeError('eMMC is mounted; unmount it first')
-    if any(ln.split()[0].startswith(target) for ln in Path('/proc/swaps').read_text().splitlines()[1:]):
+    try:
+        swaps = Path('/proc/swaps').read_text().splitlines()[1:]
+    except FileNotFoundError:
+        # Linux omits /proc/swaps when CONFIG_SWAP=n (our shipped kernel).
+        # Other read failures must still abort this preflight.
+        swaps = []
+    if any(ln.split()[0].startswith(target) for ln in swaps):
         raise RuntimeError('eMMC swap is in use')
     for p in [targets[0], *targets[0].glob(targets[0].name + 'p*')]:
         holders = p/'holders'

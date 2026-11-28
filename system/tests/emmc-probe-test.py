@@ -1,10 +1,12 @@
 import importlib.util
 from pathlib import Path
 import tempfile
+import sys
 from unittest.mock import patch
-tool=Path(__file__).resolve().parents[1]/'rootfs/usr/libexec/banana/emmc-install.py'
+tool=Path(sys.argv[1]) if len(sys.argv)>1 else Path(__file__).resolve().parents[1]/'rootfs/usr/libexec/banana/emmc-install.py'
 spec=importlib.util.spec_from_file_location('m',tool);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
-with tempfile.TemporaryDirectory(prefix='banana-emmc-probe-',dir='/var/tmp') as tmp:
+# Use /tmp for native and qemu -L runs: the target firmware maps /var to /tmp.
+with tempfile.TemporaryDirectory(prefix='banana-emmc-probe-',dir='/tmp') as tmp:
  t=Path(tmp)
  def write(p,s):
   f=t/p.lstrip('/');f.parent.mkdir(parents=True,exist_ok=True);f.write_text(s);return f
@@ -31,6 +33,22 @@ with tempfile.TemporaryDirectory(prefix='banana-emmc-probe-',dir='/var/tmp') as 
   raise AssertionError('unsafe probe accepted')
  with patch.object(m,'Path',mapped),patch.object(m,'table',return_value=source),patch.object(m.shutil,'which',return_value='/fixture/tool'):
   assert m.probe()['target']=='/dev/mmcblk0'
+  # CONFIG_SWAP=n omits /proc/swaps entirely on production firmware.
+  (t/'proc/swaps').unlink()
+  for board in ('rgds','rgds-plus'):
+   write('/etc/banana/board',board)
+   assert m.probe()['target']=='/dev/mmcblk0'
+  write('/proc/swaps','Filename Type Size Used Priority\n')
+  # Missing optional file is allowed; permission and I/O failures must abort.
+  original_read=Path.read_text
+  for error in (PermissionError(13,'fixture denied'),OSError(5,'fixture I/O')):
+   def failed_read(path,*args,**kwargs):
+    if path==t/'proc/swaps':raise error
+    return original_read(path,*args,**kwargs)
+   with patch.object(Path,'read_text',failed_read):
+    try:m.probe()
+    except type(error):pass
+    else:raise AssertionError('swaps read failure was ignored')
   write('/sys/class/block/mmcblk0/ro','1');reject();write('/sys/class/block/mmcblk0/ro','0')
   write('/proc/mounts',mounts+'/dev/mmcblk0p1 /mnt/internal vfat rw 0 0\n');reject();write('/proc/mounts',mounts)
   write('/proc/self/mountinfo',info+'2 0 179:1 / /mnt/alias rw - vfat /dev/disk/by-uuid/alias rw\n');reject();write('/proc/self/mountinfo',info)
@@ -39,4 +57,4 @@ with tempfile.TemporaryDirectory(prefix='banana-emmc-probe-',dir='/var/tmp') as 
   write('/proc/mounts','tmpfs /data tmpfs rw 0 0\n');reject();write('/proc/mounts',mounts)
   write('/etc/banana/board','other');reject();write('/etc/banana/board','rgds-plus')
   assert m.probe()['target']=='/dev/mmcblk0'
-print('EMMC_PREFLIGHT_BOTH_BOARDS_AND_SEVEN_REJECTIONS_PASS')
+print('EMMC_PREFLIGHT_BOTH_BOARDS_NO_SWAP_AND_UNSAFE_TARGET_REJECTIONS_PASS')

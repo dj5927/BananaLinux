@@ -71,3 +71,12 @@ final installation consent. Both screens default to Cancel. Select Agree and
 confirm separately on each screen; B cancels before installation begins.
 A repeated from the first screen cannot accept the second screen's default.
 The wording is a product warning; no legal-enforceability claim is made.
+
+## v43 preflight on kernels without swap
+
+The shipped kernel disables CONFIG_SWAP, which legitimately omits /proc/swaps.
+The preflight now accepts that absent optional file. Other read failures remain
+fatal, and an existing swaps table containing the target still blocks install.
+Regression fixtures cover both boards with the file absent, active target swap,
+read errors, mounted aliases and the existing unsafe-target rejections. The same
+fixtures also run under the packaged ARM64 Python against the packaged helper.
