@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/aleksei74/FBNeo",
+  "commit": "36a8fe5c865f6e1e89fcb0820035b872269b83cd",
+  "workflow_run": "https://github.com/aleksei74/FBNeo/actions/runs/46100403051",
+  "artifact_name": "fbneo-libretro-linux-arm64",
+  "artifact_id": 15245188254,
+  "original_sha256": "1dc2e2b2d3945ba31b0be150fde1e8f741e18e64ae741263f2dd4066f95d25b7",
+  "installed_sha256": "4139b24944bbf61141fe016911f7117b881e4bf559f3b27cdef2cecfcdb655b5",
+  "transformation": "aarch64-linux-gnu-strip --strip-unneeded; all SHF_ALLOC section addresses, sizes and contents verified identical",
+  "compiler": "Ubuntu GCC 11.4.0",
+  "baseline_firmware": "v0.5.3.6.32",
+  "performance": "Not measured on hardware"
+}

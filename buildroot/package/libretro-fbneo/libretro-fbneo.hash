@@ -1,4 +1,4 @@
-# Locally verified codeload archive of feature/cv1000-arm64-low-spec.
-sha256  30ae0bf61292516995e3859d7761363660058298d814a15d73eaeb3e2315a24b  libretro-fbneo-c2647989b93a3acaf193420511384f953fa5dcd3.tar.gz
+# Verified codeload archive for reference GitHub Actions run 46100403051.
+sha256  780ca9bfb1549f04bca329040c07463f061385bcdbe39c09da1832cec1dc0ceb  libretro-fbneo-36a8fe5c865f6e1e89fcb0820035b872269b83cd.tar.gz
 sha256  cb9529c145dd1f0cab2b0bd708edf6b3d1ba6e48c4d667ffadb9e2014933b648  src/license.txt
 sha256  70411cebf1c000ba6fe9e27a62e96691c8b6cc84665dffe6d85edb4a5a07a917  LICENSE.md
